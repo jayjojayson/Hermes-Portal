@@ -1,0 +1,38 @@
+# Build-Kontext schlank halten – nur _wiki_server/ + Dockerfile sind nötig.
+**/.DS_Store
+**/__pycache__/
+**/*.pyc
+**/.pytest_cache/
+
+# Venvs (eigene Maschine)
+venv/
+**/venv/
+
+# Persönliche Wiki-Inhalte gehören NICHT ins Image
+blog/
+concepts/
+entities/
+raw/
+scripts/
+.claude/
+*.md
+!_wiki_server/*.md
+
+# Lokale Daten
+_wiki_server/data/chat.db
+_wiki_server/data/uploads/
+_wiki_server/data/shared/
+_wiki_server/data/config.json
+
+# Build-Artefakte HA-Add-on
+homeassistant/hermes_portal/rootfs/app/
+
+# OS / IDE
+.git/
+.idea/
+.vscode/
+.swp
+*.swo
+
+# Logs
+*.log

@@ -1,0 +1,2735 @@
+{% extends "base.html" %}
+
+{% block title %}⚙️ Settings – {{ portal_name }}{% endblock %}
+{% block page_key %}settings{% endblock %}
+
+{% block content %}
+<style>
+/* === Settings-Seite === */
+.settings-container {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.settings-header h2 {
+    color: var(--accent-secondary);
+    margin: 0;
+}
+
+/* === Tabs === */
+.settings-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+.settings-tab {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.settings-tab:hover:not(.active) {
+    color: var(--text-primary);
+    background: var(--bg-primary);
+}
+.settings-tab.active {
+    background: var(--accent-primary);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.settings-tab .tab-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.8rem;
+}
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* === Dunkler Rahmen um Box-Bereiche === */
+.settings-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+.settings-section-title {
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* === Memory-Editor: DUNKLE Boxen für einzelne Dateien === */
+.memory-file-card {
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+}
+.memory-file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+.memory-file-header h4 {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.memory-file-header .file-path {
+    font-family: monospace;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-left: 8px;
+}
+.memory-textarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 16px;
+    background: var(--surface);
+    color: var(--text-primary);
+    border: none;
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    line-height: 1.6;
+    resize: vertical;
+    outline: none;
+    box-sizing: border-box;
+}
+.memory-textarea:focus {
+    box-shadow: inset 0 0 0 2px var(--accent-primary);
+}
+.memory-actions {
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    border-top: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+/* === Memory Entry Cards === */
+.memory-entry-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+    margin-bottom: 12px;
+}
+.memory-entry-card:hover {
+    border-color: var(--accent-primary);
+}
+.memory-entry-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+.memory-entry-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--accent-secondary);
+    flex-shrink: 0;
+    background: var(--accent-glow);
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+.memory-entry-preview {
+    padding: 12px 16px;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+.memory-entry-preview:hover {
+    background: var(--bg-secondary);
+}
+.memory-entry-editor {
+    border-top: 1px solid var(--border-color);
+}
+
+.save-feedback {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 0.85rem;
+    color: var(--success-color, #22c55e);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.save-feedback.show { opacity: 1; }
+.save-feedback.error { color: var(--danger-color, #ef4444); }
+
+/* === Cronjobs === */
+.cron-toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.cron-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    overflow-x: auto;
+    display: block;
+}
+.cron-table th {
+    text-align: left;
+    padding: 10px 14px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    border-bottom: 2px solid var(--border-color);
+}
+.cron-table td {
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+.cron-table tbody tr {
+    background: var(--bg-primary);
+}
+.cron-table tbody tr:hover {
+    background: var(--bg-secondary);
+}
+.cron-table .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+}
+.cron-table .status-dot.enabled { background: var(--success-color, #22c55e); }
+.cron-table .status-dot.disabled { background: var(--danger-color, #ef4444); }
+.cron-table code {
+    font-size: 0.82rem;
+    background: var(--bg-tertiary);
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+/* === Cronjob Cards === */
+.cron-cards { display: flex; flex-direction: column; gap: 10px; }
+.cron-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 16px;
+    transition: background 0.15s;
+}
+.cron-card:hover { background: var(--bg-secondary); }
+.cron-card-row1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+.cron-card-row2 {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 0.81rem;
+    color: var(--text-secondary);
+}
+.cron-card-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+.cron-card-meta { display: flex; align-items: center; gap: 6px; }
+.cron-card-actions { margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+.cron-card-cmd {
+    font-family: monospace;
+    font-size: 0.80rem;
+    background: var(--bg-tertiary);
+    padding: 2px 7px;
+    border-radius: 4px;
+    max-width: 400px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: inline-block;
+    vertical-align: middle;
+}
+.status-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 4px;
+    flex-shrink: 0;
+}
+.status-dot.enabled { background: var(--success-color, #22c55e); }
+.status-dot.disabled { background: var(--danger-color, #ef4444); }
+
+/* Source-Badge: wiki vs hermes vs custom */
+.source-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+.source-badge.wiki { background: var(--accent-glow); color: var(--accent); }
+.source-badge.hermes { background: var(--accent-glow-3, rgba(168,85,247,0.15)); color: var(--accent-3, #a855f7); }
+.source-badge.builtin { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.source-badge.custom { background: rgba(34,197,94,0.15); color: #22c55e; }
+
+.cron-actions {
+    display: flex;
+    gap: 6px;
+    white-space: nowrap;
+}
+.cron-actions button,
+.cron-actions a {
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+.btn-sm { padding: 5px 12px; font-size: 0.82rem; border-radius: 6px; border: none; cursor: pointer; transition: all 0.15s; }
+.btn-sm-primary { background: var(--accent-primary); color: #fff; }
+.btn-sm-primary:hover { filter: brightness(1.15); }
+.btn-sm-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-color); }
+.btn-sm-secondary:hover { background: var(--bg-secondary); }
+.btn-sm-warning { background: #f39c1233; color: #f39c12; border: 1px solid #f39c1244; }
+.btn-sm-warning:hover { background: #f39c1255; }
+.btn-sm-danger { background: #ef444422; color: #ef4444; border: 1px solid #ef444433; }
+.btn-sm-danger:hover { background: #ef444444; }
+.btn-sm:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* === Usage === */
+.usage-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.usage-stat-card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.25rem;
+    text-align: center;
+}
+.usage-stat-card .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--accent-primary);
+}
+.usage-stat-card .stat-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.usage-bar-chart {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1.5rem;
+}
+.usage-bar-chart h4 {
+    margin: 0 0 1rem 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+.usage-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+.usage-bar-label {
+    width: 55px;
+    text-align: right;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-family: monospace;
+    flex-shrink: 0;
+}
+.usage-bar-track {
+    flex: 1;
+    height: 18px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+}
+.usage-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.4s ease;
+    min-width: 2px;
+}
+.usage-bar-fill.low { background: var(--accent-primary); }
+.usage-bar-fill.mid { background: #f39c12; }
+.usage-bar-fill.high { background: #ef4444; }
+.usage-bar-count {
+    width: 50px;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    font-family: monospace;
+    flex-shrink: 0;
+}
+
+/* === Skills-Suche === */
+.skills-search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1rem;
+    align-items: center;
+}
+.skills-search-bar input {
+    flex: 1;
+    padding: 8px 12px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+.skills-search-bar input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+.skills-filter-bar {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+}
+.filter-chip {
+    padding: 3px 12px;
+    border-radius: 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    transition: all 0.15s;
+}
+.filter-chip:hover, .filter-chip.active {
+    background: var(--accent-primary);
+    color: #fff;
+    border-color: var(--accent-primary);
+}
+.skills-count {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+}
+
+/* === Split View (Skills & References) — height constrained by .split-view below === */
+.split-right-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    gap: 8px;
+    opacity: 0.6;
+}
+.split-right-empty .split-empty-icon {
+    font-size: 2.5rem;
+}
+.split-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background 0.15s;
+}
+.split-item:last-child { border-bottom: none; }
+.split-item:hover { background: var(--bg-secondary); }
+.split-item.active {
+    background: var(--accent-primary);
+    color: #fff;
+}
+.split-item.active .split-item-meta,
+.split-item.active .split-item-cat {
+    color: rgba(255,255,255,0.75);
+}
+.split-item.active .source-badge {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+}
+.split-item-name {
+    font-weight: 600;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.split-item-meta {
+    font-size: 0.76rem;
+    color: var(--text-secondary);
+}
+.split-left-list {
+    flex: 1;
+    overflow-y: auto;
+}
+.split-editor-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 10px 10px 0 0;
+    flex-wrap: wrap;
+}
+.split-editor-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+.split-editor-path {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: monospace;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.split-editor-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+/* === Split View === */
+.split-view {
+    display: flex;
+    gap: 12px;
+    align-self: stretch;
+    height: 70vh;
+    min-height: 0;
+    max-height: 70vh;
+    overflow: hidden;
+}
+.split-left {
+    flex: 0 0 33.33%;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+}
+.split-right {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary);
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    width: 0;
+}
+#skills-editor-active, #ref-editor-active {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex !important;
+    flex-direction: column !important;
+    height: 100%;
+}
+.split-editor-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    border-radius: 0 0 10px 10px;
+    overflow: hidden;
+}
+.split-editor-body .line-numbers {
+    width: 42px;
+    min-width: 42px;
+    padding: 12px 8px 12px 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.65;
+    text-align: right;
+    overflow-y: auto;
+    user-select: none;
+    border-right: 1px solid var(--border-color);
+    white-space: pre;
+    opacity: 0.6;
+}
+.split-editor-body .line-numbers::-webkit-scrollbar {
+    display: none;
+}
+.split-editor-textarea {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    padding: 12px 16px;
+    background: transparent;
+    color: var(--text-primary);
+    border: none;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.65;
+    resize: none;
+    outline: none;
+    box-sizing: border-box;
+    overflow-y: auto;
+}
+.split-editor-textarea:focus {
+    box-shadow: none;
+}
+.split-left-toolbar {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-secondary);
+    border-radius: 10px 10px 0 0;
+    flex-shrink: 0;
+}
+.split-left-toolbar input {
+    width: 100%;
+    padding: 6px 10px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    box-sizing: border-box;
+}
+.split-left-toolbar input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+.split-left-list {
+    flex: 1;
+    overflow-y: auto;
+}
+.split-left-filter {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+.split-left-filter .filter-chip {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+}
+@media (max-width: 768px) {
+    .split-view { flex-direction: column; }
+    .split-left { width: 100%; max-height: 200px; }
+    .split-right { min-height: 350px; }
+}
+
+/* === Modal === */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 999;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(4px);
+}
+.modal-overlay.active { display: flex; }
+.modal {
+    background: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.modal h3 {
+    margin-top: 0;
+    color: var(--accent-secondary);
+}
+.modal label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+.modal input, .modal textarea, .modal select {
+    width: 100%;
+    padding: 8px 12px;
+    margin-top: 4px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    box-sizing: border-box;
+}
+.modal textarea {
+    min-height: 80px;
+    font-family: monospace;
+    resize: vertical;
+}
+.modal-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+</style>
+
+<div class="settings-container">
+    <div class="settings-header">
+        <h2>⚙️ Settings</h2>
+        <span style="font-size:0.85rem; color:var(--text-secondary);">Persönliches Admin-Panel</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="settings-tabs">
+        <button class="settings-tab active" onclick="switchTab('cronjobs')" id="tab-cronjobs">
+            ⏰ Cronjobs
+        </button>
+        <button class="settings-tab" onclick="switchTab('personality')" id="tab-personality">
+            🧠 Personality & Memory
+        </button>
+        <button class="settings-tab" onclick="switchTab('skills')" id="tab-skills">
+            🛠️ Skills
+        </button>
+        <button class="settings-tab" onclick="switchTab('references')" id="tab-references">
+            📚 References
+        </button>
+        <button class="settings-tab" onclick="switchTab('usage')" id="tab-usage">
+            📊 Usage
+        </button>
+        <button class="settings-tab" onclick="switchTab('app')" id="tab-app">
+            <img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true"> App
+        </button>
+        <button class="settings-tab" onclick="switchTab('support')" id="tab-support">
+            ❤️ Support
+        </button>
+    </div>
+
+    <style>
+    /* tab-logo: in Tab-Buttons UND in Section-Titles + Verweisen einheitlich
+       auf 1.1em. Das eigentliche PNG ist 500×500 — ohne diese Regel würde es
+       in Section-Titles und Personality-Link in Originalgröße erscheinen. */
+    .tab-logo {
+        width: 1.1em;
+        height: 1.1em;
+        object-fit: contain;
+        vertical-align: -0.18em;
+        margin-right: 2px;
+        display: inline-block;
+    }
+    .settings-section-title .tab-logo {
+        /* In Section-Title 1.4em (passt zur größeren Schrift dort) */
+        width: 1.4em;
+        height: 1.4em;
+        vertical-align: -0.28em;
+    }
+    </style>
+
+    <!-- ===================== -->
+    <!-- TAB: App-Einstellungen -->
+    <!-- ===================== -->
+    <div class="tab-content" id="tab-content-app">
+        <div class="settings-section">
+            <div class="settings-section-title">
+                <img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true">
+                Verbindung zum Hermes-Agent
+            </div>
+            <div id="app-status-banner" style="margin-bottom:1rem; padding:10px 14px; border-radius:8px; background:var(--bg-tertiary); font-size:0.88rem;">
+                Status wird geladen…
+            </div>
+            <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+                <label class="app-field">
+                    <span>Modus</span>
+                    <select id="app-connection_mode" class="app-input">
+                        <option value="local">Local (gleicher Host/VM/Container wie Hermes)</option>
+                        <option value="ssh">SSH (Hermes läuft auf anderem Gerät im Netzwerk)</option>
+                    </select>
+                </label>
+                <label class="app-field">
+                    <span>Host / IP des Hermes-Agent</span>
+                    <input id="app-agent_host" class="app-input" placeholder="192.168.x.y oder 127.0.0.1">
+                </label>
+                <label class="app-field app-ssh-only">
+                    <span>SSH-User</span>
+                    <input id="app-ssh_user" class="app-input" placeholder="root">
+                </label>
+                <label class="app-field app-ssh-only">
+                    <span>SSH-Port</span>
+                    <input id="app-ssh_port" class="app-input" type="number" min="1" max="65535" placeholder="22">
+                </label>
+                <label class="app-field app-ssh-only">
+                    <span>Pfad zum privaten SSH-Key (auf dem Portal-Host)</span>
+                    <input id="app-ssh_key_path" class="app-input" placeholder="/data/.ssh/id_ed25519">
+                </label>
+                <label class="app-field app-ssh-only">
+                    <span>SSH-Passwort <em style="color:var(--text-secondary);font-style:normal;font-size:0.8em;">(nur falls kein Key)</em></span>
+                    <input id="app-ssh_password" class="app-input" type="password" placeholder="(leer lassen = nicht ändern)">
+                </label>
+            </div>
+            <div style="margin-top:1rem;">
+                <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 Speichern</button>
+                <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 Verbindung testen</button>
+                <span class="save-feedback" id="app-save-feedback">✓ Gespeichert!</span>
+            </div>
+
+            <!-- SSH-Key Wizard (nur im SSH-Mode sichtbar) -->
+            <div class="app-ssh-wizard app-ssh-only" style="margin-top:1.5rem; padding-top:1rem; border-top:1px dashed var(--border-color);">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
+                    <div>
+                        <strong>🔑 SSH-Key des Portals</strong>
+                        <div id="ssh-key-status" style="font-size:0.82rem; color:var(--text-secondary); margin-top:2px;">Status wird geladen…</div>
+                    </div>
+                    <div style="display:flex; gap:6px;">
+                        <button class="btn-sm btn-sm-primary" onclick="generateSshKey(false)" id="ssh-gen-btn">⚙️ Key erzeugen</button>
+                        <button class="btn-sm btn-sm-warning" onclick="generateSshKey(true)" id="ssh-regen-btn" style="display:none;">♻️ Neu erzeugen</button>
+                    </div>
+                </div>
+
+                <div id="ssh-pub-box" style="display:none; margin-top:0.75rem;">
+                    <label class="brf-field" style="margin-bottom:0.5rem;">
+                        <span>Public Key (auf dem Hermes-Host in <code>~/.ssh/authorized_keys</code> einfügen)</span>
+                        <textarea id="ssh-pubkey" class="app-input" rows="3" readonly style="font-family:var(--mono); font-size:0.78rem; height:4.5rem; min-height:4.5rem; max-height:4.5rem; resize:none; white-space:pre; overflow-x:auto; word-break:normal;"></textarea>
+                    </label>
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <button class="btn-sm btn-sm-secondary" onclick="copySshPubkey()">📋 Pubkey kopieren</button>
+                        <span id="ssh-pub-feedback" style="font-size:0.82rem; color:var(--success-color, #22c55e); opacity:0; transition:opacity 0.3s;">Kopiert!</span>
+                        <span id="ssh-fingerprint" style="font-size:0.78rem; color:var(--text-secondary); margin-left:auto; font-family:var(--mono);"></span>
+                    </div>
+
+                    <details style="margin-top:0.75rem;">
+                        <summary style="cursor:pointer; font-size:0.86rem;">📖 Manuell: Wie installiere ich den Key auf dem Hermes-Host?</summary>
+                        <ol style="font-size:0.85rem; line-height:1.6; color:var(--text-secondary); margin-top:0.5rem;">
+                            <li>Pubkey oben kopieren.</li>
+                            <li>Auf dem Hermes-Host als <code id="ssh-user-display">root</code> einloggen.</li>
+                            <li>Datei <code>~/.ssh/authorized_keys</code> öffnen (anlegen falls nicht vorhanden, <code>chmod 700 ~/.ssh</code>).</li>
+                            <li>Pubkey-Zeile am Ende einfügen, speichern.</li>
+                            <li>Hier auf <strong>🔌 Verbindung testen</strong> klicken — sollte grün werden.</li>
+                        </ol>
+                        <p style="font-size:0.82rem; color:var(--text-secondary);">
+                            Alternativ direkt vom Portal-Host:
+                            <code id="ssh-copy-cmd">ssh-copy-id -i &lt;key-path&gt; root@&lt;host&gt;</code>
+                        </p>
+                    </details>
+
+                    <details style="margin-top:0.5rem;">
+                        <summary style="cursor:pointer; font-size:0.86rem;">🤖 Automatisch: Prompt an den Hermes-Agent (kopieren &amp; in die Hermes-CLI einfügen)</summary>
+                        <p style="font-size:0.83rem; color:var(--text-secondary); margin:0.5rem 0;">
+                            Diesen Prompt im Chat oder über <code>hermes -z "&lt;prompt&gt;"</code> an deinen Hermes-Agenten geben.
+                            Er übernimmt SSH-Server-Installation, Authorized-Keys-Eintrag und Port-Freigabe.
+                        </p>
+                        <textarea id="ssh-agent-prompt" readonly
+                            style="width:100%; height:18rem; min-height:18rem; padding:0.6rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); font-family:var(--mono); font-size:0.78rem; line-height:1.45; resize:vertical; box-sizing:border-box;"></textarea>
+                        <div style="margin-top:0.5rem; display:flex; align-items:center; gap:8px;">
+                            <button class="btn-sm btn-sm-secondary" onclick="copyAgentPrompt()">📋 Prompt kopieren</button>
+                            <span id="ssh-agent-prompt-feedback" style="font-size:0.82rem; color:var(--success-color, #22c55e); opacity:0; transition:opacity 0.3s;">Kopiert!</span>
+                        </div>
+                    </details>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">👤 Identität</div>
+            <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+                <label class="app-field">
+                    <span>Dein Name</span>
+                    <input id="app-user_name" class="app-input" placeholder="z.B. Jan">
+                </label>
+                <label class="app-field">
+                    <span>Name deines Agenten</span>
+                    <input id="app-agent_name" class="app-input" placeholder="z.B. Wally, Athena, Jarvis">
+                </label>
+                <label class="app-field">
+                    <span>Wiki-Kategorie 1 (statt „Entitäten")</span>
+                    <input id="app-category_entity_label" class="app-input" placeholder="Entitäten">
+                </label>
+                <label class="app-field">
+                    <span>Wiki-Kategorie 2 (statt „Konzepte")</span>
+                    <input id="app-category_concept_label" class="app-input" placeholder="Konzepte">
+                </label>
+            </div>
+            <p style="margin-top:0.6rem; font-size:0.85rem; color:var(--text-secondary);">
+                💡 Die <strong>Agenten-Persönlichkeit</strong> wird über die Memory-Dateien (SOUL.md) im Tab
+                <a href="#" onclick="switchTab('personality');return false;" style="color:var(--accent-primary);">🧠 Personality &amp; Memory</a> gepflegt.
+            </p>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">📁 Pfade auf dem Hermes-Agent</div>
+            <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+                <label class="app-field">
+                    <span>Austausch-Ordner</span>
+                    <input id="app-exchange_path" class="app-input" placeholder="/mnt/austausch">
+                </label>
+                <label class="app-field">
+                    <span>Wiki-Subpfad (unter Austausch)</span>
+                    <input id="app-wiki_subpath" class="app-input" placeholder="wiki">
+                </label>
+                <label class="app-field">
+                    <span>Hermes-Home</span>
+                    <input id="app-hermes_home" class="app-input" placeholder="/root/.hermes">
+                </label>
+                <label class="app-field">
+                    <span>Hermes-Binary</span>
+                    <input id="app-hermes_bin" class="app-input" placeholder="hermes">
+                </label>
+                <label class="app-field">
+                    <span>Briefing-Skript (relativ zu Wiki)</span>
+                    <input id="app-briefing_script" class="app-input" placeholder="scripts/daily_briefing.py">
+                </label>
+                <label class="app-field">
+                    <span>Briefing-Output-HTML (relativ zu Wiki)</span>
+                    <input id="app-briefing_output" class="app-input" placeholder="blog/briefing.html">
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">📰 RSS-Feeds (News)</div>
+            <div id="app-rss-list" style="display:flex; flex-direction:column; gap:8px;"></div>
+            <div style="margin-top:0.6rem;">
+                <button class="btn-sm btn-sm-secondary" onclick="addRssRow()">➕ Feed hinzufügen</button>
+            </div>
+        </div>
+
+        <!-- Sticky Save-Bar am Tab-Ende -->
+        <div class="settings-section" style="position:sticky; bottom:0; z-index:10; background:var(--bg-secondary); border:1px solid var(--accent-primary); display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+            <span style="font-weight:600;">💾 Änderungen übernehmen</span>
+            <span style="font-size:0.82rem; color:var(--text-secondary); flex:1;">
+                Pfad- und Verbindungs-Änderungen werden direkt aktiv (kein Neustart nötig).
+            </span>
+            <span class="save-feedback" id="app-save-feedback-bottom">✓ Gespeichert!</span>
+            <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 Verbindung testen</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 Speichern</button>
+        </div>
+    </div>
+
+    <style>
+    .app-field { display:flex; flex-direction:column; gap:4px; font-size:0.86rem; color:var(--text-secondary); }
+    .app-field > span { font-weight:600; color:var(--text-primary); }
+    .app-input { width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); font-size:0.9rem; box-sizing:border-box; }
+    .app-input:focus { outline:none; border-color:var(--accent-primary); }
+    .app-rss-row { display:flex; gap:6px; }
+    .app-rss-row input { flex:1 1 auto; }
+    .app-rss-row .btn-rm { flex:0 0 auto; }
+    body[data-app-mode="local"] .app-ssh-only { opacity:0.45; pointer-events:none; }
+    </style>
+
+    <!-- ===================== -->
+    <!-- TAB: Support           -->
+    <!-- ===================== -->
+    <div class="tab-content" id="tab-content-support">
+        <div class="settings-section">
+            <div class="settings-section-title">❤️ Unterstütze das Projekt</div>
+            <p style="font-size:0.9rem; color:var(--text-secondary); margin:0 0 1.25rem 0;">
+                Hermes Portal ist ein Open-Source-Projekt. Wenn dir das Tool gefällt
+                und du Lust hast, die Weiterentwicklung zu unterstützen — über jede
+                Tasse Kaffee ☕ und jeden ⭐ Stern auf
+                <a href="https://github.com/jayjojayson/Hermes-Portal" target="_blank" rel="noopener"
+                   style="color:var(--accent-primary);">GitHub</a>
+                freuen wir uns!
+            </p>
+            <div class="support-grid">
+                <a href="https://www.paypal.me/quadFlyerFW" target="_blank" rel="noopener"
+                   class="support-card support-paypal">
+                    <div class="support-icon">💙</div>
+                    <div class="support-body">
+                        <div class="support-title">PayPal</div>
+                        <div class="support-desc">Einmalig per PayPal.me unterstützen</div>
+                    </div>
+                    <div class="support-arrow">→</div>
+                </a>
+                <a href="https://ko-fi.com/jayjojayson" target="_blank" rel="noopener"
+                   class="support-card support-kofi">
+                    <div class="support-icon">☕</div>
+                    <div class="support-body">
+                        <div class="support-title">Ko-fi</div>
+                        <div class="support-desc">Einen Kaffee spendieren via Ko-fi</div>
+                    </div>
+                    <div class="support-arrow">→</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">🐙 GitHub &amp; Community</div>
+            <p style="font-size:0.9rem; color:var(--text-secondary); margin:0 0 1.25rem 0;">
+                Code, Bug-Reports, Feature-Wünsche, Fragen an die Community — alles auf GitHub.
+            </p>
+            <div class="support-grid">
+                <a href="https://github.com/jayjojayson/Hermes-Portal" target="_blank" rel="noopener"
+                   class="support-card support-github">
+                    <div class="support-icon">⭐</div>
+                    <div class="support-body">
+                        <div class="support-title">Projekt</div>
+                        <div class="support-desc">Repository · Code · Releases</div>
+                    </div>
+                    <div class="support-arrow">→</div>
+                </a>
+                <a href="https://github.com/jayjojayson/Hermes-Portal/discussions" target="_blank" rel="noopener"
+                   class="support-card support-github">
+                    <div class="support-icon">💬</div>
+                    <div class="support-body">
+                        <div class="support-title">Discussions</div>
+                        <div class="support-desc">Fragen, Ideen, Show &amp; Tell</div>
+                    </div>
+                    <div class="support-arrow">→</div>
+                </a>
+                <a href="https://github.com/jayjojayson/Hermes-Portal/issues" target="_blank" rel="noopener"
+                   class="support-card support-github">
+                    <div class="support-icon">🐞</div>
+                    <div class="support-body">
+                        <div class="support-title">Issues</div>
+                        <div class="support-desc">Bugs melden · Feature-Wünsche</div>
+                    </div>
+                    <div class="support-arrow">→</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    .support-grid {
+        display: grid; gap: 12px;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+    .support-card {
+        display: flex; align-items: center; gap: 14px;
+        padding: 16px 18px;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: transform 0.15s, border-color 0.15s, background 0.15s, box-shadow 0.15s;
+    }
+    .support-card:hover {
+        transform: translateY(-2px);
+        border-color: var(--accent-primary);
+        background: var(--bg-tertiary);
+        box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+    }
+    .support-icon  { font-size: 1.8rem; line-height: 1; }
+    .support-body  { flex: 1; min-width: 0; }
+    .support-title { font-weight: 700; font-size: 0.98rem; }
+    .support-desc  { font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px; }
+    .support-arrow {
+        font-size: 1.4rem; color: var(--text-secondary);
+        transition: transform 0.15s, color 0.15s;
+    }
+    .support-card:hover .support-arrow {
+        transform: translateX(4px);
+        color: var(--accent-primary);
+    }
+    .support-paypal:hover { border-color: #003087; }
+    .support-kofi:hover   { border-color: #ff5e5b; }
+    .support-github:hover { border-color: #6e7681; }
+    </style>
+
+    <!-- ===================== -->
+    <!-- TAB: Cronjobs          -->
+    <!-- ===================== -->
+    <div class="tab-content active" id="tab-content-cronjobs">
+        <div class="settings-section">
+            <div class="settings-section-title">
+                ⏰ Aufgabenplanung (Wiki + Hermes Agent)
+                <span style="font-weight:normal;color:var(--text-secondary);margin-left:0.5rem;">
+                    (<span id="cron-count">0</span> aktiv)
+                </span>
+            </div>
+            <div class="cron-toolbar">
+                <button class="btn-sm btn-sm-primary" onclick="openCronModal()">➕ Neuer Cronjob</button>
+                <button class="btn-sm btn-sm-warning" onclick="loadCronjobs()">🔄 Aktualisieren</button>
+                <span style="font-size:0.82rem; color:var(--text-secondary); margin-left:auto;">
+                    Alle Jobs werden vom <span class="source-badge hermes">hermes</span> Agenten ausgeführt
+                </span>
+            </div>
+            <div id="cron-list">
+                <!-- Wird dynamisch geladen -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- TAB: Personality       -->
+    <!-- ===================== -->
+    <div class="tab-content" id="tab-content-personality">
+        <div class="settings-section">
+            <div class="settings-section-title">👤 Identität</div>
+            <p style="font-size:0.9rem; color:var(--text-secondary); margin:0;">
+                Name des Agenten, dein Name und Wiki-Kategorien werden im Tab
+                <a href="#" onclick="switchTab('app');return false;" style="color:var(--accent-primary);"><img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true"> App</a>
+                gesetzt. Die Persönlichkeit (Tonfall, Wissen, Vorlieben) lebt unten in den Memory-Dateien:
+                vor allem <code>SOUL.md</code> für den Charakter, <code>USER.md</code> für deine Eigenheiten
+                und <code>MEMORY.md</code> für langfristige Erinnerungen.
+            </p>
+        </div>
+
+        <div class="settings-section">
+            <div class="settings-section-title">🔤 Memory-Dateien bearbeiten</div>
+            {% for key, path in memory_files|dictsort %}
+            <div class="memory-file-card" id="card-{{ key }}">
+                <div class="memory-file-header">
+                    <h4>
+                        {% if key == 'note' %}📝 Note{% elif key == 'soul' %}🔮 SOUL{% elif key == 'profile' %}👤 Profile{% elif key == 'user' %}👤 USER.md{% elif key == 'memory' %}💾 MEMORY.md{% elif key == 'config' %}⚙️ Config{% else %}{{ key }}{% endif %}
+                        <span class="file-path">{{ path }}</span>
+                    </h4>
+                    <div>
+                        <button class="btn-sm btn-sm-primary" onclick="saveMemory('{{ key }}')">💾 Speichern</button>
+                        <span class="save-feedback" id="feedback-{{ key }}">✓ Gespeichert!</span>
+                    </div>
+                </div>
+                <textarea class="memory-textarea" id="mem-{{ key }}" spellcheck="false">{{ memory_contents.get(key, '') }}</textarea>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- TAB: Skills            -->
+    <!-- ===================== -->
+    <div class="tab-content" id="tab-content-skills">
+        <div class="settings-section">
+            <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+                <span>🛠️ Skills Übersicht</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span class="skills-count" id="skills-visible-count" style="font-size:0.8rem;color:var(--text-secondary);"></span>
+                    <button class="btn-sm btn-sm-secondary" onclick="loadSkills()" style="font-size:0.78rem;padding:3px 10px;">🔄</button>
+                </div>
+            </div>
+
+            <div class="split-view">
+                <!-- Linke Spalte: Liste -->
+                <div class="split-left">
+                    <div class="split-left-toolbar">
+                        <input type="text" id="skills-search-input" placeholder="🔍 Skills durchsuchen…" oninput="filterSkills()">
+                    </div>
+                    <div class="split-left-list" id="skills-list">
+                        <!-- Wird dynamisch geladen -->
+                    </div>
+                </div>
+
+                <!-- Rechte Spalte: Editor -->
+                <div class="split-right" id="skills-editor-panel">
+                    <div class="split-right-empty" id="skills-editor-empty">
+                        <span class="split-empty-icon">🛠️</span>
+                        <span>Skill aus der Liste auswählen</span>
+                        <span style="font-size:0.78rem;">Klicke links auf einen Skill zum Bearbeiten</span>
+                    </div>
+                    <div id="skills-editor-active" style="display:none;">
+                        <div class="split-editor-header">
+                            <span class="split-editor-title" id="skills-editor-title">—</span>
+                            <span class="source-badge" id="skills-editor-badge" style="font-size:0.72rem;"></span>
+                            <span class="split-editor-path" id="skills-editor-path"></span>
+                            <div class="split-editor-actions">
+                                <span class="save-feedback" id="skills-editor-feedback">✓ Gespeichert!</span>
+                                <button class="btn-sm btn-sm-primary" onclick="saveSkillInline()">💾 Speichern</button>
+                            </div>
+                        </div>
+                        <div class="split-editor-body">
+                            <div class="line-numbers" id="skills-line-numbers" aria-hidden="true"></div>
+                            <textarea class="split-editor-textarea" id="skills-editor-textarea" spellcheck="false" onscroll="syncLineNumbers('skills')" oninput="syncLineNumbers('skills')"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- TAB: References       -->
+    <!-- ===================== -->
+    <div class="tab-content" id="tab-content-references">
+        <div class="settings-section">
+            <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
+                <span>📚 References</span>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <span style="font-size:0.78rem;color:var(--text-secondary);">{{ cfg.wiki_path('references') }}</span>
+                    <button class="btn-sm btn-sm-secondary" onclick="loadReferences()" style="font-size:0.78rem;padding:3px 10px;">🔄</button>
+                </div>
+            </div>
+
+            <div class="split-view">
+                <!-- Linke Spalte: Dateiliste -->
+                <div class="split-left">
+                    <div class="split-left-toolbar">
+                        <input type="text" id="ref-search-input" placeholder="🔍 Dateien durchsuchen…" oninput="filterReferences()">
+                    </div>
+                    <div class="split-left-list" id="references-list">
+                        <!-- Wird dynamisch geladen -->
+                    </div>
+                </div>
+
+                <!-- Rechte Spalte: Editor -->
+                <div class="split-right" id="ref-editor-panel">
+                    <div class="split-right-empty" id="ref-editor-empty">
+                        <span class="split-empty-icon">📄</span>
+                        <span>Datei aus der Liste auswählen</span>
+                        <span style="font-size:0.78rem;">Klicke links auf eine Datei zum Bearbeiten</span>
+                    </div>
+                    <div id="ref-editor-active" style="display:none;">
+                        <div class="split-editor-header">
+                            <span class="split-editor-title" id="ref-editor-title">—</span>
+                            <span class="split-editor-path" id="ref-editor-meta" style="color:var(--text-secondary);font-size:0.78rem;"></span>
+                            <div class="split-editor-actions">
+                                <span class="save-feedback" id="ref-editor-feedback">✓ Gespeichert!</span>
+                                <button class="btn-sm btn-sm-danger" id="ref-editor-delete-btn" onclick="deleteReferenceInline()">🗑️</button>
+                                <button class="btn-sm btn-sm-primary" onclick="saveReferenceInline()">💾 Speichern</button>
+                            </div>
+                        </div>
+                        <div class="split-editor-body">
+                            <div class="line-numbers" id="ref-line-numbers" aria-hidden="true"></div>
+                            <textarea class="split-editor-textarea" id="ref-editor-textarea" spellcheck="false" onscroll="syncLineNumbers('refs')" oninput="syncLineNumbers('refs')"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================== -->
+    <!-- TAB: Usage             -->
+    <!-- ===================== -->
+    <div class="tab-content" id="tab-content-usage">
+        <div class="settings-section">
+            <div class="settings-section-title" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span>📊 API-Nutzung</span>
+                <div class="usage-date-nav">
+                    <button class="udn-btn" title="Tag zurück" onclick="usageShiftDate(-1)">‹</button>
+                    <input type="date" id="usage-date-input" class="udn-input" onchange="usageOnDateChange()">
+                    <button class="udn-btn" title="Tag vor" onclick="usageShiftDate(1)">›</button>
+                    <button class="udn-btn udn-today" title="Heute" onclick="usageJumpToday()">Heute</button>
+                </div>
+                <span id="usage-date-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:auto;"></span>
+            </div>
+
+            <!-- Requests-Karten -->
+            <div style="margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">🔁 API Requests</div>
+            <div class="usage-stats">
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-today">0</div>
+                    <div class="stat-label">Requests heute</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-hour">0</div>
+                    <div class="stat-label">Requests diese Stunde</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-peak">0</div>
+                    <div class="stat-label">Spitzenstunde</div>
+                </div>
+            </div>
+
+            <!-- Token-Karten -->
+            <div style="margin-top:1.5rem; margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">🧮 Token-Verbrauch</div>
+            <div class="usage-stats">
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-tok-total">—</div>
+                    <div class="stat-label">Total Tokens</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-tok-in">—</div>
+                    <div class="stat-label">Input Tokens</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-tok-out">—</div>
+                    <div class="stat-label">Output Tokens</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-tok-cache">—</div>
+                    <div class="stat-label">Cache-Hits</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-tok-calls">—</div>
+                    <div class="stat-label">API Calls (aus Log)</div>
+                </div>
+            </div>
+
+            <!-- Modell-Tabelle -->
+            <div style="margin-top:1.5rem; margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">🤖 Verbrauch nach Modell</div>
+            <div id="usage-model-table" style="margin-bottom:1.5rem;"></div>
+
+            <!-- Token-Verlauf als Linien-Chart -->
+            <div class="usage-chart-card">
+                <div class="usage-chart-head">
+                    <h4>🧮 Token-Verlauf heute</h4>
+                    <div class="usage-chart-legend">
+                        <span class="lg-dot lg-total"></span>Total
+                        <span class="lg-dot lg-in"></span>Input
+                        <span class="lg-dot lg-out"></span>Output
+                    </div>
+                </div>
+                <div id="usage-token-chart" class="usage-line-chart-wrap"></div>
+            </div>
+
+            <!-- Requests pro Stunde — kompaktes Mini-Balken-Chart -->
+            <div class="usage-chart-card" style="margin-top:1rem;">
+                <div class="usage-chart-head">
+                    <h4>🔁 Requests pro Stunde</h4>
+                </div>
+                <div id="usage-bars" class="usage-mini-bars"></div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    /* Usage-Tab Redesign — kompakter, schickere Karten + SVG-Chart */
+    #tab-content-usage .usage-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 8px;
+    }
+    #tab-content-usage .usage-stat-card {
+        padding: 10px 14px;
+        border: 1px solid var(--border-color);
+        border-radius: 10px;
+        background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-tertiary) 100%);
+    }
+    #tab-content-usage .usage-stat-card .stat-value {
+        font-size: 1.4rem; font-weight: 700; line-height: 1.1;
+        color: var(--accent-primary, var(--text-primary));
+    }
+    #tab-content-usage .usage-stat-card .stat-label {
+        font-size: 0.74rem; color: var(--text-secondary);
+        text-transform: uppercase; letter-spacing: 0.04em;
+        margin-top: 4px;
+    }
+    .usage-chart-card {
+        padding: 14px 16px;
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        background: var(--bg-secondary);
+        margin-top: 1.25rem;
+    }
+    .usage-chart-head {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 12px; margin-bottom: 8px;
+    }
+    .usage-chart-head h4 { margin: 0; font-size: 0.95rem; }
+    .usage-chart-legend {
+        display: flex; gap: 12px; font-size: 0.76rem; color: var(--text-secondary);
+        align-items: center;
+    }
+    .lg-dot {
+        display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+        margin-right: 4px; vertical-align: middle;
+    }
+    .lg-total { background: #60a5fa; }
+    .lg-in    { background: #22c55e; }
+    .lg-out   { background: #f59e0b; }
+
+    .usage-date-nav {
+        display: inline-flex; align-items: center; gap: 4px;
+        background: var(--bg-tertiary); padding: 2px;
+        border-radius: 8px; border: 1px solid var(--border-color);
+    }
+    .udn-btn {
+        background: transparent; border: none; color: var(--text-primary);
+        padding: 4px 10px; border-radius: 6px; cursor: pointer;
+        font-size: 0.9rem; font-weight: 600; min-width: 28px;
+    }
+    .udn-btn:hover { background: var(--bg-primary); }
+    .udn-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .udn-btn.udn-today { font-size: 0.78rem; padding: 4px 10px; }
+    .udn-input {
+        background: var(--bg-primary); color: var(--text-primary);
+        border: 1px solid var(--border-color); border-radius: 6px;
+        padding: 3px 6px; font-size: 0.85rem; font-family: var(--mono);
+        color-scheme: dark;
+    }
+
+    .usage-line-chart-wrap { width: 100%; }
+    .usage-line-chart-wrap svg { width: 100%; display: block; }
+
+    /* Kompakte Request-Balken (2-zeilig statt full-row) */
+    #tab-content-usage .usage-mini-bars {
+        display: grid;
+        grid-template-columns: repeat(24, 1fr);
+        gap: 2px;
+        align-items: end;
+        height: 64px;
+        padding: 4px 2px 18px 2px;
+        position: relative;
+    }
+    #tab-content-usage .usage-mini-bars .mb-col {
+        display: flex; flex-direction: column; justify-content: end;
+        height: 100%; position: relative;
+    }
+    #tab-content-usage .usage-mini-bars .mb-bar {
+        width: 100%; background: var(--accent-primary);
+        border-radius: 2px 2px 0 0; min-height: 1px;
+        transition: background 0.15s;
+    }
+    #tab-content-usage .usage-mini-bars .mb-bar:hover { background: var(--accent-secondary); }
+    #tab-content-usage .usage-mini-bars .mb-lbl {
+        position: absolute; bottom: -16px; left: 0; right: 0;
+        text-align: center; font-size: 0.66rem; color: var(--text-secondary);
+        font-family: var(--mono);
+    }
+    </style>
+</div>
+
+<!-- Cronjob Modal -->
+<div class="modal-overlay" id="cron-modal">
+    <div class="modal">
+        <h3 id="modal-title">➕ Neuer Hermes-Cronjob</h3>
+        <input type="hidden" id="cron-edit-id" value="">
+        <label for="cron-name">Name</label>
+        <input type="text" id="cron-name" placeholder="z.B. Daily Briefing">
+        <label for="cron-schedule">Schedule (Cron-Format oder Intervall)</label>
+        <input type="text" id="cron-schedule" placeholder="z.B. 0 7 * * * oder every 4h">
+        <label for="cron-command">Prompt / Befehl</label>
+        <textarea id="cron-command" rows="4" placeholder="z.B. Erstelle einen kurzen Wetterbericht für Berlin und sende ihn als Telegram-Nachricht."></textarea>
+        <label for="cron-deliver">Deliver (Ziel der Ausgabe)</label>
+        <select id="cron-deliver" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:0.9rem;">
+            <option value="origin">origin (diese Chat-Session)</option>
+            <option value="telegram">telegram (Home-Channel)</option>
+            <option value="local">local (nur lokal speichern)</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:8px; margin-top:1rem; cursor:pointer;">
+            <input type="checkbox" id="cron-enabled" checked> Sofort aktivieren
+        </label>
+        <div class="modal-buttons">
+            <button class="btn-sm btn-sm-warning" onclick="closeCronModal()">Abbrechen</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveCronjob()">💾 Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- Skill Editor Modal -->
+<div class="modal-overlay" id="skill-modal">
+    <div class="modal" style="max-width: 900px; width: 95%;">
+        <h3 id="skill-modal-title">🛠️ Skill bearbeiten</h3>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-bottom:0.5rem;" id="skill-modal-path"></div>
+        <textarea id="skill-editor-content" rows="25" style="width:100%; min-height: 400px; font-family: var(--mono); font-size: 0.88rem; line-height: 1.6; background: var(--bg-secondary); color: var(--text-primary); border: 1px solid var(--border-color); border-radius: 8px; padding: 16px; resize: vertical; box-sizing: border-box;" spellcheck="false"></textarea>
+        <div class="modal-buttons" style="margin-top: 1rem;">
+            <span class="save-feedback" id="skill-feedback">✓ Gespeichert!</span>
+            <button class="btn-sm btn-sm-warning" onclick="closeSkillEditor()">Schließen</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveSkill()">💾 Speichern</button>
+        </div>
+    </div>
+</div>
+
+<!-- New Memory Modal -->
+<div class="modal-overlay" id="new-memory-modal">
+    <div class="modal">
+        <h3>➕ Neue Erinnerung</h3>
+        <label>Ziel-Datei</label>
+        <select id="new-memory-file" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:0.9rem;">
+            <option value="memory">💾 MEMORY.md (Allgemeine Erinnerungen)</option>
+            <option value="user">👤 USER.md (Benutzer-Profil)</option>
+            <option value="soul">🔮 SOUL.md (Persönlichkeit)</option>
+        </select>
+        <label style="margin-top:1rem;">Inhalt</label>
+        <textarea id="new-memory-content" rows="8" style="width:100%;margin-top:4px;background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border-color);border-radius:6px;padding:10px;font-family:var(--mono);font-size:0.88rem;resize:vertical;box-sizing:border-box;" placeholder="Neue Erinnerung / Erkenntnis hier eingeben..."></textarea>
+        <div class="modal-buttons" style="margin-top:1rem;">
+            <span class="save-feedback" id="new-memory-feedback">✓ Gespeichert!</span>
+            <button class="btn-sm btn-sm-warning" onclick="closeNewMemoryModal()">Abbrechen</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveNewMemory()">💾 Speichern</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// HILFSFUNKTIONEN
+// ============================================================
+function escHtml(s) {
+    var div = document.createElement('div');
+    div.textContent = s || '';
+    return div.innerHTML;
+}
+
+function escJs(s) {
+    return (s || '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+function fmtNum(n) {
+    if (!n && n !== 0) return '—';
+    // 2 Nachkommastellen für M (Input/Output liegen oft <1% auseinander, ein
+    // Stellen-Wert würde sie identisch aussehen lassen).
+    if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toLocaleString();
+}
+
+function formatSize(bytes) {
+    if (!bytes && bytes !== 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+// ============================================================
+// TAB SWITCHING
+// ============================================================
+function switchTab(tab) {
+    document.querySelectorAll('.settings-tab').forEach(function(t) { t.classList.remove('active'); });
+    document.querySelectorAll('.tab-content').forEach(function(t) { t.classList.remove('active'); });
+    var tabEl = document.getElementById('tab-' + tab);
+    var contentEl = document.getElementById('tab-content-' + tab);
+    if (tabEl) tabEl.classList.add('active');
+    if (contentEl) contentEl.classList.add('active');
+    if (tab === 'app') loadAppConfig();
+    if (tab === 'cronjobs') loadCronjobs();
+    if (tab === 'usage') loadUsage();
+    if (tab === 'references') loadReferences();
+    if (tab === 'skills') loadSkills();
+    if (tab === 'personality') { /* static */ }
+}
+
+// ============================================================
+// APP CONFIG  (Tab "App")
+// ============================================================
+var APP_FIELDS = [
+    'connection_mode','agent_host','ssh_user','ssh_port','ssh_key_path','ssh_password',
+    'user_name','agent_name',
+    'category_entity_label','category_concept_label',
+    'exchange_path','wiki_subpath','hermes_home','hermes_bin',
+    'briefing_script','briefing_output'
+];
+
+function renderAppStatus(meta) {
+    var banner = document.getElementById('app-status-banner');
+    if (!banner || !meta || !meta.client) return;
+    var c = meta.client;
+    var dot = c.connected ? '🟢' : '🔴';
+    var paramMsg = meta.has_paramiko ? '' : ' · ⚠️ paramiko nicht installiert – SSH-Mode benötigt es';
+    var hostInfo = c.mode === 'ssh' ? ' → ' + (c.host || '?') : '';
+    var errMsg = (c.error ? ' · Fehler: ' + c.error : '');
+    banner.innerHTML = dot + ' Verbindung <strong>' + c.mode + '</strong>' + hostInfo
+        + (c.connected ? ' · OK' : ' · nicht verbunden')
+        + errMsg + paramMsg;
+}
+
+function applySshOnlyVisibility(mode) {
+    document.body.setAttribute('data-app-mode', mode || 'local');
+}
+
+function loadAppConfig() {
+    fetch('/api/settings/app', {cache:'no-store'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        APP_FIELDS.forEach(function(k) {
+            var el = document.getElementById('app-' + k);
+            if (!el) return;
+            var v = d[k];
+            if (v === undefined || v === null) v = '';
+            el.value = v;
+        });
+        renderRssFeeds(d.rss_feeds || []);
+        renderAppStatus(d._meta);
+        applySshOnlyVisibility(d.connection_mode);
+        var sel = document.getElementById('app-connection_mode');
+        if (sel) sel.onchange = function() { applySshOnlyVisibility(sel.value); loadSshKeyStatus(); };
+        // Wizard-Status laden, falls SSH-Mode aktiv
+        if (d.connection_mode === 'ssh') loadSshKeyStatus();
+    })
+    .catch(function(e) {
+        var banner = document.getElementById('app-status-banner');
+        if (banner) banner.innerHTML = '🔴 Konnte App-Config nicht laden: ' + e;
+    });
+}
+
+function collectAppPayload() {
+    var payload = {};
+    APP_FIELDS.forEach(function(k) {
+        var el = document.getElementById('app-' + k);
+        if (!el) return;
+        payload[k] = el.value;
+    });
+    payload.ssh_port = parseInt(payload.ssh_port, 10) || 22;
+    payload.rss_feeds = collectRssFeeds();
+    return payload;
+}
+
+function saveAppConfig() {
+    var payload = collectAppPayload();
+    fetch('/api/settings/app', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        ['app-save-feedback', 'app-save-feedback-bottom'].forEach(function(id) {
+            var fb = document.getElementById(id);
+            if (fb) { fb.classList.add('show'); setTimeout(function(){ fb.classList.remove('show'); }, 1800); }
+        });
+        if (d.client) renderAppStatus({client: d.client, has_paramiko: true});
+        if (d.message) console.log(d.message);
+    })
+    .catch(function(e) { alert('Speichern fehlgeschlagen: ' + e); });
+}
+
+function testAppConnection() {
+    var banner = document.getElementById('app-status-banner');
+    if (banner) banner.innerHTML = '⏳ Teste Verbindung…';
+    fetch('/api/settings/app/test', {method:'POST'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        renderAppStatus({client: d, has_paramiko: true});
+        if (d.hermes_check) {
+            var hc = d.hermes_check;
+            var extra = hc.ok
+                ? ' · hermes --version OK: ' + (hc.stdout || '').slice(0,80)
+                : ' · hermes-Test fehlgeschlagen (rc=' + hc.returncode + '): ' + ((hc.stderr || hc.stdout || '').slice(0,140));
+            if (banner) banner.innerHTML += extra;
+        }
+    })
+    .catch(function(e) { if (banner) banner.innerHTML = '🔴 Test fehlgeschlagen: ' + e; });
+}
+
+// ---- SSH-Key Wizard ---------------------------------------------------
+function loadSshKeyStatus() {
+    fetch('/api/settings/app/ssh/status', {cache:'no-store'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var st = document.getElementById('ssh-key-status');
+        var genBtn = document.getElementById('ssh-gen-btn');
+        var regenBtn = document.getElementById('ssh-regen-btn');
+        var box = document.getElementById('ssh-pub-box');
+        var pub = document.getElementById('ssh-pubkey');
+        var fp = document.getElementById('ssh-fingerprint');
+        var userEl = document.getElementById('ssh-user-display');
+        var cmdEl = document.getElementById('ssh-copy-cmd');
+
+        var userField = document.getElementById('app-ssh_user');
+        var hostField = document.getElementById('app-agent_host');
+        var sshUser = (userField && userField.value) || 'root';
+        var sshHost = (hostField && hostField.value) || '<host>';
+        if (userEl) userEl.textContent = sshUser;
+
+        if (d.key_exists) {
+            if (st) st.innerHTML = 'Key vorhanden: <code>' + d.key_path + '</code>';
+            if (genBtn) genBtn.style.display = 'none';
+            if (regenBtn) regenBtn.style.display = '';
+            if (box) box.style.display = '';
+            if (pub) pub.value = d.pubkey || '(Pubkey-Datei fehlt)';
+            if (fp) fp.textContent = d.fingerprint || '';
+            if (cmdEl) cmdEl.textContent = 'ssh-copy-id -i ' + d.key_path + ' ' + sshUser + '@' + sshHost;
+            // Hermes-Agent-Prompt mit aktuellem Pubkey + Settings füllen
+            var portField = document.getElementById('app-ssh_port');
+            var sshPort = (portField && portField.value) || '22';
+            renderAgentSetupPrompt(d.pubkey || '', sshUser, sshPort);
+        } else {
+            if (st) st.innerHTML = 'Noch kein Portal-eigener Key. Klicke „Key erzeugen", um einen ed25519-Schlüssel anzulegen.';
+            if (genBtn) genBtn.style.display = '';
+            if (regenBtn) regenBtn.style.display = 'none';
+            if (box) box.style.display = 'none';
+        }
+    })
+    .catch(function(e) {
+        var st = document.getElementById('ssh-key-status');
+        if (st) st.textContent = 'Status nicht abrufbar: ' + e;
+    });
+}
+
+function generateSshKey(overwrite) {
+    if (overwrite && !confirm('Existierenden SSH-Key wirklich überschreiben?\nVerbindungen, die diesen Key auf dem Hermes-Host hinterlegt haben, brechen ab.')) return;
+
+    var genBtn = document.getElementById('ssh-gen-btn');
+    var regenBtn = document.getElementById('ssh-regen-btn');
+    [genBtn, regenBtn].forEach(function(b) { if (b) b.disabled = true; });
+
+    var hostField = document.getElementById('app-agent_host');
+    var comment = 'hermes-portal@' + ((hostField && hostField.value) || 'local');
+
+    fetch('/api/settings/app/ssh/generate', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({overwrite: !!overwrite, comment: comment}),
+    })
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, body: d}; }); })
+    .then(function(res) {
+        [genBtn, regenBtn].forEach(function(b) { if (b) b.disabled = false; });
+        if (!res.ok && res.body && res.body.status === 'exists') {
+            alert('Key existiert bereits. „Neu erzeugen" überschreibt ihn.');
+            loadSshKeyStatus();
+            return;
+        }
+        if (res.body.status !== 'ok') {
+            alert('Fehler beim Erzeugen: ' + (res.body.error || 'unbekannt'));
+            return;
+        }
+        loadSshKeyStatus();
+        // Wenn die Generation den ssh_key_path in der Config gesetzt hat, im Formular nachziehen
+        var pathField = document.getElementById('app-ssh_key_path');
+        if (pathField && !pathField.value) pathField.value = res.body.key_path;
+    })
+    .catch(function(e) {
+        [genBtn, regenBtn].forEach(function(b) { if (b) b.disabled = false; });
+        alert('Fehler: ' + e);
+    });
+}
+
+function copySshPubkey() {
+    var pub = document.getElementById('ssh-pubkey');
+    var fb = document.getElementById('ssh-pub-feedback');
+    if (!pub) return;
+    pub.select();
+    var ok = false;
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(pub.value);
+            ok = true;
+        } else {
+            ok = document.execCommand('copy');
+        }
+    } catch (e) { ok = false; }
+    if (fb) {
+        fb.textContent = ok ? 'Kopiert!' : 'Kopieren fehlgeschlagen';
+        fb.style.opacity = '1';
+        setTimeout(function() { fb.style.opacity = '0'; }, 1500);
+    }
+}
+
+// --- Hermes-Agent-Prompt für automatisches SSH-Setup -----------------
+function renderAgentSetupPrompt(pubkey, sshUser, sshPort) {
+    var ta = document.getElementById('ssh-agent-prompt');
+    if (!ta) return;
+    sshUser = sshUser || 'root';
+    sshPort = sshPort || '22';
+    pubkey = (pubkey || '').trim();
+    var lines = [
+        'Hallo Hermes! Richte bitte SSH-Zugriff für das Hermes Portal ein.',
+        '',
+        'Ziel: Das Portal (läuft als Docker auf einem anderen Gerät im LAN) soll dich',
+        'via SSH erreichen. Bitte führe folgende Schritte aus und melde Probleme zurück.',
+        '',
+        '1) Stelle sicher, dass ein SSH-Server läuft:',
+        '   • Prüfe ob `sshd` installiert ist: `which sshd` oder `systemctl status ssh`.',
+        '   • Falls nicht installiert: `apt update && apt install -y openssh-server`',
+        '     (auf Debian/Ubuntu) oder die passende Variante für die Distro.',
+        '   • Aktiviere und starte den Dienst: `systemctl enable --now ssh`.',
+        '',
+        '2) Lege den Public-Key für User `' + sshUser + '` an:',
+        '   • Falls User nicht existiert, lege ihn an. Wir nutzen typischerweise `root`.',
+        '   • Erstelle ~/.ssh falls nicht da: `mkdir -p ~' + sshUser + '/.ssh && chmod 700 ~' + sshUser + '/.ssh`',
+        '   • Hänge folgenden Public-Key an `~' + sshUser + '/.ssh/authorized_keys` an',
+        '     (Datei anlegen falls nicht vorhanden, Mode 600 setzen):',
+        '',
+        '     ' + (pubkey || '<KEY HIER EINFÜGEN>'),
+        '',
+        '   • Permissions absichern: `chmod 600 ~' + sshUser + '/.ssh/authorized_keys`',
+        '   • Owner setzen: `chown -R ' + sshUser + ':' + sshUser + ' ~' + sshUser + '/.ssh`',
+        '',
+        '3) Stelle sicher, dass SSH-Port ' + sshPort + ' nach außen erreichbar ist:',
+        '   • Prüfe `sshd_config`: `Port ' + sshPort + '` und `PubkeyAuthentication yes`',
+        '     (passe an, falls geändert; danach `systemctl reload ssh`).',
+        '   • Firewall freischalten:',
+        '       – Bei UFW:  `ufw allow ' + sshPort + '/tcp`',
+        '       – Bei firewalld: `firewall-cmd --permanent --add-port=' + sshPort + '/tcp && firewall-cmd --reload`',
+        '       – Bei nftables/iptables: passende Regel hinzufügen.',
+        '   • Bei Cloud/VM: Sicherheitsgruppe oder Router-Portfreigabe entsprechend setzen.',
+        '',
+        '4) Teste lokal: `ssh -p ' + sshPort + ' ' + sshUser + '@localhost "echo ok"`',
+        '   sollte „ok" zurückgeben (mit Key-Auth, ohne Passwort-Prompt).',
+        '',
+        '5) Wenn alles funktioniert, sag mir kurz Bescheid mit:',
+        '   • OS/Distro + Version',
+        '   • SSH-Port',
+        '   • bekannte Firewall-Regeln',
+        '   • und ob der lokale Test-Connect erfolgreich war.',
+        '',
+        'Danke!'
+    ];
+    ta.value = lines.join('\n');
+}
+
+function copyAgentPrompt() {
+    var ta = document.getElementById('ssh-agent-prompt');
+    var fb = document.getElementById('ssh-agent-prompt-feedback');
+    if (!ta) return;
+    ta.select();
+    var ok = false;
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(ta.value);
+            ok = true;
+        } else {
+            ok = document.execCommand('copy');
+        }
+    } catch (e) { ok = false; }
+    if (fb) {
+        fb.textContent = ok ? 'Kopiert!' : 'Kopieren fehlgeschlagen';
+        fb.style.opacity = '1';
+        setTimeout(function() { fb.style.opacity = '0'; }, 1500);
+    }
+}
+
+// ---- RSS Feeds ---------------------------------------------------
+function renderRssFeeds(feeds) {
+    var list = document.getElementById('app-rss-list');
+    if (!list) return;
+    list.innerHTML = '';
+    if (!Array.isArray(feeds) || feeds.length === 0) {
+        list.appendChild(rssRow('', ''));
+        return;
+    }
+    feeds.forEach(function(f) { list.appendChild(rssRow(f.name || '', f.url || '')); });
+}
+function rssRow(name, url) {
+    var row = document.createElement('div');
+    row.className = 'app-rss-row';
+    row.innerHTML =
+        '<input class="app-input" placeholder="Name (z.B. Heise News)" value="' + (name || '').replace(/"/g,'&quot;') + '">' +
+        '<input class="app-input" placeholder="https://example.com/feed.xml" value="' + (url || '').replace(/"/g,'&quot;') + '">' +
+        '<button class="btn-sm btn-sm-danger btn-rm" type="button">✕</button>';
+    row.querySelector('.btn-rm').onclick = function() { row.remove(); };
+    return row;
+}
+function addRssRow() {
+    var list = document.getElementById('app-rss-list');
+    if (list) list.appendChild(rssRow('', ''));
+}
+function collectRssFeeds() {
+    var rows = document.querySelectorAll('#app-rss-list .app-rss-row');
+    var out = [];
+    rows.forEach(function(row) {
+        var inputs = row.querySelectorAll('input');
+        if (inputs.length < 2) return;
+        var name = inputs[0].value.trim();
+        var url = inputs[1].value.trim();
+        if (url) out.push({ name: name || url, url: url });
+    });
+    return out;
+}
+
+// ============================================================
+// CRONJOBS
+// ============================================================
+function loadCronjobs() {
+    fetch('/api/settings/tasks')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        renderCronjobs(d.jobs || []);
+        var badge = document.getElementById('cron-count');
+        if (badge) badge.textContent = (d.jobs || []).length;
+    })
+    .catch(function(e) {
+        console.error('Fehler beim Laden der Cronjobs:', e);
+        var container = document.getElementById('cron-list');
+        if (container) container.innerHTML = '<p style="color:var(--danger-color);">Fehler beim Laden.</p>';
+    });
+}
+
+function renderCronjobs(jobs) {
+    var container = document.getElementById('cron-list');
+    if (!container) return;
+    if (!jobs || jobs.length === 0) {
+        container.innerHTML = '<p style="color:var(--text-secondary); padding:1rem 0;">Keine Cronjobs eingerichtet.</p>';
+        return;
+    }
+
+    // Sortiere: Wiki-Jobs zuerst, dann Hermes
+    jobs.sort(function(a, b) {
+        var sa = (a.source || 'wiki') === 'wiki' ? 0 : 1;
+        var sb = (b.source || 'wiki') === 'wiki' ? 0 : 1;
+        return sa - sb;
+    });
+
+    var html = '<div class="cron-cards">';
+    jobs.forEach(function(j) {
+        var isHermes = j.source === 'hermes';
+        var statusClass = j.enabled ? 'enabled' : 'disabled';
+        var statusLabel = j.enabled ? 'Aktiv' : 'Deaktiviert';
+        var lastRun = j.last_run ? new Date(j.last_run.replace('+00:00', '')).toLocaleString('de-DE') : (j.last_run_at ? new Date(j.last_run_at.replace('+00:00', '')).toLocaleString('de-DE') : '—');
+        var nextRun = j.next_run ? new Date(j.next_run.replace('+00:00', '')).toLocaleString('de-DE') : (j.next_run_at ? new Date(j.next_run_at.replace('+00:00', '')).toLocaleString('de-DE') : '—');
+        var exitCode = j.last_exit_code !== null && j.last_exit_code !== undefined ? j.last_exit_code : (j.last_status === 'ok' ? '0' : (j.last_status === 'error' ? '✗' : '—'));
+        var exitStyle = '';
+        if (j.last_exit_code === 0 || j.last_status === 'ok') exitStyle = 'color:var(--success-color)';
+        else if (j.last_exit_code !== null && j.last_exit_code !== undefined || j.last_status === 'error') exitStyle = 'color:var(--danger-color)';
+
+        var displayName = escHtml(j.name || '');
+        var idForJs = escJs(j.id);
+        var cmdDisplay = j.command || (j.prompt ? j.prompt.substring(0, 100) + '…' : '');
+
+        html += '<div class="cron-card">';
+
+        // Zeile 1: Status · Name · Badge · Aktionen
+        html += '<div class="cron-card-row1">';
+        html += '<span class="status-dot ' + statusClass + '" title="' + statusLabel + '"></span>';
+        html += '<span class="cron-card-name">' + displayName + '</span>';
+        html += '<span class="source-badge ' + (isHermes ? 'hermes' : 'wiki') + '">' + (isHermes ? 'hermes' : 'wiki') + '</span>';
+        html += '<span style="font-size:0.8rem;color:var(--text-secondary);">' + statusLabel + '</span>';
+
+        // Aktionen (rechts)
+        html += '<div class="cron-card-actions">';
+        html += '<button class="btn-sm btn-sm-primary" onclick="editCronjob(\'' + idForJs + '\')" title="Bearbeiten">✏️</button>';
+        if (j.enabled) {
+            html += '<button class="btn-sm btn-sm-warning" onclick="toggleCronjob(\'' + idForJs + '\', true, ' + isHermes + ')" title="Pausieren">⏸</button>';
+        } else {
+            html += '<button class="btn-sm btn-sm-primary" onclick="toggleCronjob(\'' + idForJs + '\', false, ' + isHermes + ')" title="Fortsetzen">▶</button>';
+        }
+        html += '<button class="btn-sm btn-sm-warning" onclick="runCronjob(\'' + idForJs + '\', ' + isHermes + ')" title="Jetzt ausführen">▷ Run</button>';
+        html += '<button class="btn-sm btn-sm-danger" onclick="deleteCronjob(\'' + idForJs + '\', ' + isHermes + ')" title="Löschen">🗑️</button>';
+        html += '</div>'; // .cron-card-actions
+
+        html += '</div>'; // .cron-card-row1
+
+        // Zeile 2: Schedule · Befehl · Letzter Lauf · Nächster · Exit
+        html += '<div class="cron-card-row2">';
+        html += '<span title="Schedule">🕒 <code style="font-size:0.8rem;background:var(--bg-tertiary);padding:1px 5px;border-radius:4px;">' + escHtml(j.schedule || '') + '</code></span>';
+        html += '<span title="Befehl" class="cron-card-cmd">' + escHtml(cmdDisplay) + '</span>';
+        html += '<span title="Letzte Ausführung">▷ ' + lastRun + '</span>';
+        html += '<span title="Nächste Ausführung">⏭ ' + nextRun + '</span>';
+        if (exitCode !== '—') {
+            html += '<span title="Exit-Code" style="' + exitStyle + '">exit: ' + exitCode + '</span>';
+        }
+        html += '</div>'; // .cron-card-row2
+
+        html += '</div>'; // .cron-card
+    });
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function openCronModal(id) {
+    var title = document.getElementById('modal-title');
+    var editId = document.getElementById('cron-edit-id');
+    if (id) {
+        title.textContent = '✏️ Cronjob bearbeiten';
+        editId.value = id;
+        fetch('/api/settings/tasks?source=all&_=' + Date.now())
+        .then(function(r) {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(function(d) {
+            var cleanId = id.replace(/^hermes:/, '');
+            var job = d.jobs.find(function(j) { return j.id === id || j.id === cleanId; });
+            if (job) {
+                document.getElementById('cron-name').value = job.name || '';
+                document.getElementById('cron-schedule').value = job.schedule || '';
+                document.getElementById('cron-command').value = job.command || job.prompt || '';
+                document.getElementById('cron-enabled').checked = job.enabled !== false;
+            } else {
+                document.getElementById('cron-name').value = '';
+                document.getElementById('cron-schedule').value = '';
+                document.getElementById('cron-command').value = '';
+                document.getElementById('cron-enabled').checked = true;
+                console.warn('Cronjob mit ID ' + id + ' nicht gefunden');
+            }
+        })
+        .catch(function(e) {
+            console.error('Fehler beim Laden des Cronjobs:', e);
+            alert('Fehler beim Laden des Cronjobs: ' + e.message);
+        });
+    } else {
+        title.textContent = '➕ Neuer Cronjob';
+        editId.value = '';
+        document.getElementById('cron-name').value = '';
+        document.getElementById('cron-schedule').value = '';
+        document.getElementById('cron-command').value = '';
+        document.getElementById('cron-enabled').checked = true;
+    }
+    document.getElementById('cron-modal').classList.add('active');
+}
+
+function closeCronModal() {
+    document.getElementById('cron-modal').classList.remove('active');
+}
+
+function saveCronjob() {
+    var id = document.getElementById('cron-edit-id').value;
+    var name = document.getElementById('cron-name').value.trim();
+    var schedule = document.getElementById('cron-schedule').value.trim();
+    var command = document.getElementById('cron-command').value.trim();
+    var deliver = document.getElementById('cron-deliver') ? document.getElementById('cron-deliver').value : 'origin';
+
+    if (!name || !schedule || !command) {
+        alert('Bitte alle Felder ausfüllen!');
+        return;
+    }
+
+    var url = id ? '/api/settings/tasks/hermes:' + id : '/api/settings/tasks';
+    var method = id ? 'PUT' : 'POST';
+    var body = 'name=' + encodeURIComponent(name) +
+               '&schedule=' + encodeURIComponent(schedule) +
+               '&command=' + encodeURIComponent(command) +
+               '&deliver=' + encodeURIComponent(deliver);
+
+    fetch(url, { method: method, headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}, body: body })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.status === 'ok') {
+                closeCronModal();
+                setTimeout(loadCronjobs, 1500);
+            } else {
+                alert('Fehler: ' + (d.error || 'Unbekannt'));
+            }
+        }).catch(function(e) { alert('Netzwerkfehler: ' + e); });
+}
+
+function editCronjob(id) {
+    openCronModal(id);
+}
+
+function toggleCronjob(id, currentlyEnabled, isHermes) {
+    var idParam = isHermes ? 'hermes:' + id : id;
+    var url = '/api/settings/tasks/' + idParam;
+    fetch(url, {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+        body: 'enabled=' + (!currentlyEnabled)
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.status === 'ok') loadCronjobs();
+        else alert('Fehler: ' + (d.error || 'Unbekannt'));
+    }).catch(function(e) { console.error('Toggle-Fehler:', e); });
+}
+
+function runCronjob(id, isHermes) {
+    var idParam = isHermes ? 'hermes:' + id : id;
+    if (!confirm('Job jetzt sofort ausführen?')) return;
+    fetch('/api/settings/tasks/' + idParam + '/run', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.status === 'ok') {
+                alert('✅ ' + (d.message || 'Job gestartet!'));
+                setTimeout(loadCronjobs, 3000);
+            } else {
+                alert('❌ Fehler: ' + (d.error || 'Unbekannt'));
+            }
+        }).catch(function(e) { alert('Netzwerkfehler: ' + e); });
+}
+
+function deleteCronjob(id, isHermes) {
+    var msg = isHermes
+        ? 'Hermes-Agent Cronjob "' + id + '" wirklich löschen?\n\n⚠️ Der Job wird aus dem Hermes-Scheduler entfernt!'
+        : 'Wiki-Cronjob wirklich löschen?';
+    if (!confirm(msg)) return;
+    var idParam = isHermes ? 'hermes:' + id : id;
+    fetch('/api/settings/tasks/' + idParam, { method: 'DELETE' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.status === 'ok') loadCronjobs();
+            else alert('Fehler: ' + (d.error || 'Unbekannt'));
+        })
+        .catch(function(e) { alert('Fehler: ' + e); });
+}
+
+// ============================================================
+// USAGE
+// ============================================================
+var _usageCurrentDate = null;   // YYYY-MM-DD, gesetzt vom Server
+var _usageAvailableDates = [];  // [YYYY-MM-DD, ...] absteigend
+
+function _todayStr() {
+    var d = new Date();
+    return d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+}
+
+function loadUsage(date) {
+    var url = '/api/settings/usage' + (date ? '?date=' + encodeURIComponent(date) : '');
+    fetch(url)
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        _usageCurrentDate = d.date;
+        _usageAvailableDates = d.available_dates || [];
+
+        // Date-Selector mit aktuellem Wert befüllen
+        var di = document.getElementById('usage-date-input');
+        if (di && d.date) di.value = d.date;
+        var info = document.getElementById('usage-date-info');
+        if (info) {
+            info.textContent = d.is_today
+                ? '✓ heute'
+                : '(historische Daten — Requests-Stats nur für heute verfügbar)';
+        }
+
+        // Requests
+        var todayEl = document.getElementById('stat-today');
+        var hourEl = document.getElementById('stat-hour');
+        var peakEl = document.getElementById('stat-peak');
+        if (todayEl) {
+            todayEl.textContent = (d.total_requests == null)
+                ? '—'
+                : (d.total_requests || 0).toLocaleString();
+        }
+        if (hourEl) {
+            if (!d.is_today) {
+                hourEl.textContent = '—';
+            } else {
+                var now = new Date();
+                var currentHour = now.getHours().toString().padStart(2, '0') + ':00';
+                var curData = d.hourly && d.hourly[currentHour];
+                hourEl.textContent = curData ? (curData.count || 0).toLocaleString() : '0';
+            }
+        }
+        if (peakEl) {
+            if (!d.is_today) {
+                peakEl.textContent = '—';
+            } else {
+                var peak = 0, peakHour = '';
+                if (d.hourly) for (var h in d.hourly) {
+                    var c = (typeof d.hourly[h] === 'object') ? (d.hourly[h].count || 0) : (d.hourly[h] || 0);
+                    if (c > peak) { peak = c; peakHour = h; }
+                }
+                peakEl.innerHTML = peak.toLocaleString() +
+                    (peakHour ? ' <span style="font-size:0.5em;color:var(--text-secondary);">um ' + peakHour + '</span>' : '');
+            }
+        }
+
+        // Requests Bars — kompaktes 24-Spalten Mini-Chart
+        var bars = document.getElementById('usage-bars');
+        if (bars && d.hourly) {
+            var maxReq = 0;
+            for (var hr1 = 0; hr1 < 24; hr1++) {
+                var hk1 = hr1.toString().padStart(2,'0') + ':00';
+                var cc = (d.hourly[hk1] || {}).count || 0;
+                if (cc > maxReq) maxReq = cc;
+            }
+            if (maxReq < 1) maxReq = 1;
+            var barHtml = '';
+            for (var hr = 0; hr < 24; hr++) {
+                var hk = hr.toString().padStart(2, '0') + ':00';
+                var data = d.hourly[hk] || { count: 0 };
+                var cnt = data.count || 0;
+                var pct = (cnt / maxReq * 100);
+                var lbl = (hr % 4 === 0) ? ('<div class="mb-lbl">' + (hr < 10 ? '0' + hr : hr) + '</div>') : '';
+                barHtml += '<div class="mb-col" title="' + hk + ' — ' + cnt + ' Requests">';
+                barHtml += '<div class="mb-bar" style="height:' + pct + '%"></div>';
+                barHtml += lbl;
+                barHtml += '</div>';
+            }
+            bars.innerHTML = barHtml;
+        }
+
+        // Token-Karten
+        var tok = d.tokens || {};
+        var tokTotal = document.getElementById('stat-tok-total');
+        var tokIn = document.getElementById('stat-tok-in');
+        var tokOut = document.getElementById('stat-tok-out');
+        var tokCache = document.getElementById('stat-tok-cache');
+        var tokCalls = document.getElementById('stat-tok-calls');
+        if (tokTotal) tokTotal.textContent = fmtNum(tok.total);
+        if (tokIn) tokIn.textContent = fmtNum(tok.total_in);
+        if (tokOut) tokOut.textContent = fmtNum(tok.total_out);
+        if (tokCache) tokCache.textContent = fmtNum(tok.total_cache_hits);
+        if (tokCalls) tokCalls.textContent = fmtNum(tok.total_calls);
+
+        // Modell-Tabelle
+        var modelDiv = document.getElementById('usage-model-table');
+        if (modelDiv && tok.by_model && Object.keys(tok.by_model).length > 0) {
+            var models = Object.entries(tok.by_model).sort(function(a,b){ return b[1].total - a[1].total; });
+            var mtHtml = '<table class="cron-table"><thead><tr><th>Modell</th><th>Calls</th><th>Input</th><th>Output</th><th>Total</th></tr></thead><tbody>';
+            models.forEach(function(entry) {
+                var mn = entry[0], mv = entry[1];
+                mtHtml += '<tr><td><code>' + escHtml(mn) + '</code></td>';
+                mtHtml += '<td>' + mv.calls + '</td>';
+                mtHtml += '<td>' + fmtNum(mv.in) + '</td>';
+                mtHtml += '<td>' + fmtNum(mv.out) + '</td>';
+                mtHtml += '<td><strong>' + fmtNum(mv.total) + '</strong></td></tr>';
+            });
+            mtHtml += '</tbody></table>';
+            modelDiv.innerHTML = mtHtml;
+        } else if (modelDiv) {
+            modelDiv.innerHTML = '<p style="color:var(--text-secondary);font-size:0.85rem;">Noch keine Daten im Log für heute.</p>';
+        }
+
+        // Token-Verlauf: SVG-Linien-Chart (Total / Input / Output)
+        var tokChart = document.getElementById('usage-token-chart');
+        if (tokChart && tok.hourly) {
+            tokChart.innerHTML = renderTokenLineChart(tok.hourly);
+        }
+    })
+    .catch(function(e) {
+        console.error('Fehler beim Laden der Usage-Daten:', e);
+    });
+}
+
+// ============================================================
+//  Token-Line-Chart (SVG, dependency-free)
+// ============================================================
+function renderTokenLineChart(hourly) {
+    var W = 720, H = 200;
+    var pad = { top: 12, right: 12, bottom: 26, left: 56 };
+    var w = W - pad.left - pad.right;
+    var h = H - pad.top - pad.bottom;
+
+    // Werte je Stunde sammeln
+    var series = { total: [], in_: [], out: [] };
+    for (var i = 0; i < 24; i++) {
+        var hk = (i < 10 ? '0' + i : i) + ':00';
+        var d = hourly[hk] || { total: 0, in: 0, out: 0 };
+        series.total.push(d.total || 0);
+        series.in_.push(d.in    || 0);
+        series.out.push(d.out   || 0);
+    }
+    var maxVal = Math.max(1,
+        Math.max.apply(null, series.total),
+        Math.max.apply(null, series.in_),
+        Math.max.apply(null, series.out));
+
+    function xAt(i) { return pad.left + (i * w) / 23; }
+    function yAt(v) { return pad.top + h - (v / maxVal) * h; }
+
+    function polyPath(arr) {
+        return arr.map(function(v, i) { return xAt(i) + ',' + yAt(v); }).join(' ');
+    }
+    function areaPath(arr) {
+        var top = arr.map(function(v, i) { return (i === 0 ? 'M' : 'L') + xAt(i) + ',' + yAt(v); }).join(' ');
+        return top + ' L' + xAt(23) + ',' + (pad.top + h) + ' L' + xAt(0) + ',' + (pad.top + h) + ' Z';
+    }
+
+    function fmtTick(n) {
+        if (n >= 1e6) return (n/1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return (n/1e3).toFixed(0) + 'k';
+        return String(n);
+    }
+
+    // Y-Achsen-Gridlines + Labels (4 Linien)
+    var gridLines = '';
+    for (var g = 0; g <= 4; g++) {
+        var yy = pad.top + (h * g) / 4;
+        var val = Math.round(maxVal * (1 - g / 4));
+        gridLines += '<line x1="' + pad.left + '" y1="' + yy + '" x2="' + (pad.left + w) + '" y2="' + yy +
+            '" stroke="var(--border)" stroke-width="1" stroke-dasharray="2,3" opacity="0.4"/>';
+        gridLines += '<text x="' + (pad.left - 6) + '" y="' + (yy + 3) +
+            '" text-anchor="end" font-size="10" fill="var(--text-secondary)" font-family="var(--mono)">' +
+            fmtTick(val) + '</text>';
+    }
+
+    // X-Achsen-Labels (alle 4h)
+    var xLabels = '';
+    for (var xi = 0; xi < 24; xi += 4) {
+        xLabels += '<text x="' + xAt(xi) + '" y="' + (H - 8) +
+            '" text-anchor="middle" font-size="10" fill="var(--text-secondary)" font-family="var(--mono)">' +
+            (xi < 10 ? '0' + xi : xi) + ':00</text>';
+    }
+
+    var svg =
+        '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" ' +
+        'role="img" aria-label="Token-Verlauf heute">' +
+            gridLines + xLabels +
+            // Total: gefüllter Bereich + Linie (blau)
+            '<path d="' + areaPath(series.total) + '" fill="rgba(96,165,250,0.18)"/>' +
+            '<polyline points="' + polyPath(series.total) +
+                '" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linejoin="round"/>' +
+            // Input: grüne Linie
+            '<polyline points="' + polyPath(series.in_) +
+                '" fill="none" stroke="#22c55e" stroke-width="1.6" stroke-linejoin="round" opacity="0.85"/>' +
+            // Output: gelbe Linie
+            '<polyline points="' + polyPath(series.out) +
+                '" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-linejoin="round" opacity="0.85"/>' +
+        '</svg>';
+    return svg;
+}
+
+// --- Date-Navigation für Usage-Tab ---
+function usageOnDateChange() {
+    var di = document.getElementById('usage-date-input');
+    if (!di || !di.value) return;
+    loadUsage(di.value);
+}
+function usageShiftDate(delta) {
+    var base = _usageCurrentDate || _todayStr();
+    var d = new Date(base + 'T12:00:00');
+    d.setDate(d.getDate() + delta);
+    var y = d.getFullYear();
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    loadUsage(y + '-' + m + '-' + day);
+}
+function usageJumpToday() {
+    loadUsage(_todayStr());
+}
+
+// ============================================================
+// SKILLS – mit /api/settings/skill-content (url_key basiert)
+// ============================================================
+var _allSkills = [];
+var _currentSkillUrlKey = '';
+var _skillSourceFilter = 'all';
+
+function loadSkills() {
+    fetch('/api/settings/skills')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        _allSkills = d.skills || [];
+        var badge = document.getElementById('skills-count-badge');
+        if (badge) badge.textContent = _allSkills.length;
+        renderSkills(_allSkills);
+    })
+    .catch(function(e) {
+        console.error('Fehler beim Laden der Skills:', e);
+        var container = document.getElementById('skills-list');
+        if (container) container.innerHTML = '<p style="color:var(--danger-color);">Fehler beim Laden der Skills.</p>';
+    });
+}
+
+function setSourceFilter(source, el) {
+    _skillSourceFilter = source;
+    document.querySelectorAll('.filter-chip').forEach(function(c) { c.classList.remove('active'); });
+    if (el) el.classList.add('active');
+    filterSkills();
+}
+
+function filterSkills() {
+    var query = (document.getElementById('skills-search-input') || {}).value || '';
+    query = query.toLowerCase().trim();
+    var filtered = _allSkills.filter(function(s) {
+        var matchSource = _skillSourceFilter === 'all' || s.source === _skillSourceFilter;
+        var matchQuery = !query ||
+            (s.name || '').toLowerCase().includes(query) ||
+            (s.title || '').toLowerCase().includes(query) ||
+            (s.description || '').toLowerCase().includes(query) ||
+            (s.category || '').toLowerCase().includes(query);
+        return matchSource && matchQuery;
+    });
+    renderSkills(filtered);
+}
+
+function renderSkills(skills) {
+    var container = document.getElementById('skills-list');
+    if (!container) return;
+    var countEl = document.getElementById('skills-visible-count');
+    if (countEl) countEl.textContent = skills.length + ' Skills';
+
+    if (!skills || skills.length === 0) {
+        container.innerHTML = '<div style="padding:1rem;color:var(--text-secondary);font-size:0.85rem;">Keine Skills gefunden.</div>';
+        return;
+    }
+
+    var html = '';
+    skills.forEach(function(s) {
+        var urlKeyJs = escJs(s.url_key || '');
+        var nameJs = escJs(s.name || '');
+        var pathJs = escJs(s.path || '');
+        var catLabel = s.category && s.category !== s.source && s.category !== s.name ? escHtml(s.category) : '';
+
+        html += '<div class="split-item" id="skill-item-' + urlKeyJs.replace(/[^a-z0-9]/gi,'_') + '" onclick="selectSkill(\'' + urlKeyJs + '\', \'' + nameJs + '\', \'' + pathJs + '\', this)">';
+        html += '<div class="split-item-name">🛠️ ' + escHtml(s.title || s.name) + '</div>';
+        if (s.description) {
+            html += '<div class="split-item-meta">' + escHtml(s.description.substring(0, 70)) + (s.description.length > 70 ? '…' : '') + '</div>';
+        }
+        if (catLabel) {
+            html += '<div class="split-item-cat"><span style="font-size:0.72rem;color:var(--text-secondary);">' + catLabel + '</span></div>';
+        }
+        html += '</div>';
+    });
+    container.innerHTML = html;
+}
+
+function selectSkill(urlKey, skillName, skillPath, el) {
+    // Aktiven Eintrag markieren
+    document.querySelectorAll('#skills-list .split-item').forEach(function(i) { i.classList.remove('active'); });
+    if (el) el.classList.add('active');
+
+    _currentSkillUrlKey = urlKey;
+    var emptyPanel = document.getElementById('skills-editor-empty');
+    var activePanel = document.getElementById('skills-editor-active');
+    var titleEl = document.getElementById('skills-editor-title');
+    var pathEl = document.getElementById('skills-editor-path');
+    var badgeEl = document.getElementById('skills-editor-badge');
+    var textarea = document.getElementById('skills-editor-textarea');
+    var feedback = document.getElementById('skills-editor-feedback');
+
+    // Panels umschalten
+    if (emptyPanel) emptyPanel.style.display = 'none';
+    if (activePanel) { activePanel.style.display = 'flex'; activePanel.style.flexDirection = 'column'; }
+
+    // Header befüllen
+    if (titleEl) titleEl.textContent = '🛠️ ' + (skillName || urlKey);
+    if (pathEl) pathEl.textContent = skillPath ? '📁 ' + skillPath : '';
+    if (badgeEl) { badgeEl.className = ''; badgeEl.textContent = ''; }
+    if (feedback) feedback.classList.remove('show', 'error');
+    if (textarea) textarea.value = '⏳ Lade Skill-Inhalt…';
+
+    fetch('/api/settings/skill-content?url_key=' + encodeURIComponent(urlKey))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (textarea) textarea.value = d.content || '';
+        syncLineNumbers('skills');
+    })
+    .catch(function(e) {
+        if (textarea) textarea.value = '# Fehler beim Laden\\n' + e.message;
+        syncLineNumbers('skills');
+    });
+}
+
+function saveSkillInline() {
+    if (!_currentSkillUrlKey) return;
+    var textarea = document.getElementById('skills-editor-textarea');
+    var feedback = document.getElementById('skills-editor-feedback');
+    if (!textarea) return;
+
+    fetch('/api/settings/skill-content', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ url_key: _currentSkillUrlKey, content: textarea.value })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (feedback) {
+            feedback.classList.remove('error');
+            if (d.status === 'ok') {
+                feedback.textContent = '✓ Gespeichert!';
+                feedback.classList.add('show');
+            } else {
+                feedback.textContent = '✗ ' + (d.error || 'Fehler');
+                feedback.classList.add('show', 'error');
+            }
+            setTimeout(function() { feedback.classList.remove('show', 'error'); feedback.textContent = '✓ Gespeichert!'; }, 2500);
+        }
+    })
+    .catch(function(e) {
+        if (feedback) {
+            feedback.textContent = '✗ Netzwerkfehler';
+            feedback.classList.add('show', 'error');
+            setTimeout(function() { feedback.classList.remove('show', 'error'); feedback.textContent = '✓ Gespeichert!'; }, 2500);
+        }
+    });
+}
+
+// Compat-Wrapper (falls alte Referenzen im Modal noch existieren)
+function openSkillEditor(urlKey, skillName, skillPath) {
+    // Einfach inline öffnen
+    selectSkill(urlKey, skillName, skillPath, null);
+}
+function closeSkillEditor() { /* kein Modal mehr */ }
+function saveSkill() { saveSkillInline(); }
+
+// ============================================================
+// Line Numbers (Skills & References)
+// ============================================================
+function syncLineNumbers(editorType) {
+    var prefix = editorType === 'skills' ? 'skills' : 'ref';
+    var textarea = document.getElementById(prefix + '-editor-textarea');
+    var lineNumbers = document.getElementById(prefix + '-line-numbers');
+    if (!textarea || !lineNumbers) return;
+
+    var lineCount = textarea.value.split('\n').length;
+    var lines = [];
+    for (var i = 1; i <= lineCount; i++) {
+        lines.push(i);
+    }
+    lineNumbers.innerHTML = lines.join('\n');
+    // Scrolling sync
+    lineNumbers.scrollTop = textarea.scrollTop;
+}
+
+// ============================================================
+// REFERENCES – Split View
+// ============================================================
+var _allReferences = [];
+var _currentRefName = '';
+
+function loadReferences() {
+    fetch('/api/references')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        _allReferences = d.references || [];
+        renderReferenceList(_allReferences);
+    })
+    .catch(function(e) {
+        console.error('Fehler beim Laden der References:', e);
+        var container = document.getElementById('references-list');
+        if (container) container.innerHTML = '<div style="padding:1rem;color:var(--danger-color);">Fehler beim Laden.</div>';
+    });
+}
+
+function filterReferences() {
+    var query = (document.getElementById('ref-search-input') || {}).value || '';
+    query = query.toLowerCase().trim();
+    var filtered = _allReferences.filter(function(r) {
+        return !query || (r.name || '').toLowerCase().includes(query);
+    });
+    renderReferenceList(filtered);
+}
+
+function renderReferenceList(refs) {
+    var container = document.getElementById('references-list');
+    if (!container) return;
+
+    if (!refs || refs.length === 0) {
+        container.innerHTML = '<div style="padding:1rem;color:var(--text-secondary);font-size:0.85rem;">Keine Dateien gefunden.</div>';
+        return;
+    }
+
+    var html = '';
+    refs.forEach(function(ref) {
+        var nameJs = escJs(ref.name);
+        html += '<div class="split-item" id="ref-item-' + nameJs.replace(/[^a-z0-9]/gi,'_') + '" onclick="selectReference(\'' + nameJs + '\', this)">';
+        html += '<div class="split-item-name">📄 ' + escHtml(ref.name) + '</div>';
+        html += '<div class="split-item-meta">' + escHtml(ref.lines) + ' Zeilen · ' + escHtml(ref.size_human) + '</div>';
+        html += '<div class="split-item-cat" style="font-size:0.72rem;">' + escHtml(ref.mtime || '') + '</div>';
+        html += '</div>';
+    });
+    container.innerHTML = html;
+}
+
+function selectReference(name, el) {
+    // Aktiven Eintrag markieren
+    document.querySelectorAll('#references-list .split-item').forEach(function(i) { i.classList.remove('active'); });
+    if (el) el.classList.add('active');
+
+    _currentRefName = name;
+    var emptyPanel = document.getElementById('ref-editor-empty');
+    var activePanel = document.getElementById('ref-editor-active');
+    var titleEl = document.getElementById('ref-editor-title');
+    var metaEl = document.getElementById('ref-editor-meta');
+    var textarea = document.getElementById('ref-editor-textarea');
+    var feedback = document.getElementById('ref-editor-feedback');
+
+    if (emptyPanel) emptyPanel.style.display = 'none';
+    if (activePanel) { activePanel.style.display = 'flex'; activePanel.style.flexDirection = 'column'; }
+    if (titleEl) titleEl.textContent = '📄 ' + name;
+    if (feedback) feedback.classList.remove('show', 'error');
+    if (textarea) textarea.value = '⏳ Lade…';
+
+    // Inhalt aus gecachten refs holen
+    var ref = _allReferences.find(function(r) { return r.name === name; });
+    if (ref) {
+        if (metaEl) metaEl.textContent = ref.lines + ' Zeilen · ' + ref.size_human + ' · ' + (ref.mtime || '');
+        if (textarea) textarea.value = ref.content || '';
+    } else {
+        if (textarea) textarea.value = '';
+    }
+    syncLineNumbers('refs');
+}
+
+function saveReferenceInline() {
+    if (!_currentRefName) return;
+    var textarea = document.getElementById('ref-editor-textarea');
+    var feedback = document.getElementById('ref-editor-feedback');
+    if (!textarea) return;
+
+    fetch('/api/references/' + encodeURIComponent(_currentRefName), {
+        method: 'PUT',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+        body: 'content=' + encodeURIComponent(textarea.value)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (feedback) {
+            feedback.classList.remove('error');
+            if (d.status === 'ok') {
+                feedback.textContent = '✓ Gespeichert!';
+                feedback.classList.add('show');
+                // Cache aktualisieren
+                var ref = _allReferences.find(function(r) { return r.name === _currentRefName; });
+                if (ref) ref.content = textarea.value;
+            } else {
+                feedback.textContent = '✗ ' + (d.error || 'Fehler');
+                feedback.classList.add('show', 'error');
+            }
+            setTimeout(function() { feedback.classList.remove('show', 'error'); feedback.textContent = '✓ Gespeichert!'; }, 2500);
+        }
+    })
+    .catch(function(e) {
+        if (feedback) {
+            feedback.textContent = '✗ Netzwerkfehler';
+            feedback.classList.add('show', 'error');
+            setTimeout(function() { feedback.classList.remove('show', 'error'); feedback.textContent = '✓ Gespeichert!'; }, 2500);
+        }
+    });
+}
+
+function deleteReferenceInline() {
+    if (!_currentRefName) return;
+    if (!confirm('Datei wirklich löschen: ' + _currentRefName + '?')) return;
+    fetch('/api/references/' + encodeURIComponent(_currentRefName), { method: 'DELETE' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.status === 'ok') {
+            // Editor zurücksetzen
+            var emptyPanel = document.getElementById('ref-editor-empty');
+            var activePanel = document.getElementById('ref-editor-active');
+            if (emptyPanel) emptyPanel.style.display = 'flex';
+            if (activePanel) activePanel.style.display = 'none';
+            _currentRefName = '';
+            loadReferences();
+        } else {
+            alert('Fehler: ' + (d.error || 'Unbekannt'));
+        }
+    })
+    .catch(function(e) { alert('Fehler: ' + e); });
+}
+
+// Compat-Wrapper
+function deleteReference(name) { _currentRefName = name; deleteReferenceInline(); }
+function saveReference(name) { _currentRefName = name; saveReferenceInline(); }
+function toggleRefExpand(name) { /* nicht mehr nötig */ }
+
+// ============================================================
+// MEMORIES (Personality Tab)
+// ============================================================
+function saveMemory(key) {
+    var textarea = document.getElementById('mem-' + key);
+    if (!textarea) {
+        console.error('Textarea für ' + key + ' nicht gefunden');
+        return;
+    }
+    var content = textarea.value;
+    var feedback = document.getElementById('feedback-' + key);
+
+    fetch('/api/settings/memory', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+        body: 'name=' + encodeURIComponent(key) + '&content=' + encodeURIComponent(content)
+    })
+    .then(function(r) {
+        return r.text().then(function(text) {
+            try { return JSON.parse(text); } catch(e) { return {status:'error', error:text}; }
+        });
+    })
+    .then(function(d) {
+        if (feedback) {
+            feedback.classList.remove('error');
+            if (d.status === 'ok') {
+                feedback.textContent = '✓ Gespeichert!';
+                feedback.classList.add('show');
+            } else {
+                feedback.textContent = '✗ ' + (d.error || 'Unbekannter Fehler');
+                feedback.classList.add('show', 'error');
+            }
+            setTimeout(function() {
+                feedback.classList.remove('show', 'error');
+                feedback.textContent = '✓ Gespeichert!';
+            }, 2000);
+        }
+    })
+    .catch(function(e) {
+        if (feedback) {
+            feedback.textContent = '✗ Netzwerkfehler';
+            feedback.classList.add('show', 'error');
+            setTimeout(function() { feedback.classList.remove('show', 'error'); feedback.textContent = '✓ Gespeichert!'; }, 2000);
+        }
+    });
+}
+
+function openNewMemoryModal() {
+    document.getElementById('new-memory-modal').classList.add('active');
+    document.getElementById('new-memory-content').value = '';
+    document.getElementById('new-memory-feedback').classList.remove('show', 'error');
+}
+
+function closeNewMemoryModal() {
+    document.getElementById('new-memory-modal').classList.remove('active');
+}
+
+function saveNewMemory() {
+    var fileKey = document.getElementById('new-memory-file').value;
+    var content = document.getElementById('new-memory-content').value;
+    var feedback = document.getElementById('new-memory-feedback');
+
+    if (!content.trim()) {
+        alert('Bitte Inhalt eingeben!');
+        return;
+    }
+
+    fetch('/api/settings/memories/' + encodeURIComponent(fileKey), {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
+        body: 'content=' + encodeURIComponent(content)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.status === 'ok') {
+            if (feedback) { feedback.textContent = '✓ Gespeichert!'; feedback.classList.add('show'); }
+            setTimeout(function() { closeNewMemoryModal(); }, 600);
+        } else {
+            if (feedback) { feedback.textContent = '✗ ' + (d.error || 'Fehler'); feedback.classList.add('show', 'error'); }
+        }
+    })
+    .catch(function(e) {
+        if (feedback) { feedback.textContent = '✗ Netzwerkfehler'; feedback.classList.add('show', 'error'); }
+    });
+}
+
+// ============================================================
+// INITIAL LOAD  (App-Config wird beim Tab-Switch geladen)
+// ============================================================
+loadCronjobs();
+loadUsage();
+loadSkills();
+loadReferences();
+
+// Wenn die URL ein #tab-<name> Hash hat, direkt auf diesen Tab schalten.
+// Erlaubt direkte Deep-Links wie /settings/#tab-usage (vom Dashboard) oder
+// /settings/#tab-app, /settings/#tab-personality usw.
+(function() {
+    var hash = (window.location.hash || '').replace(/^#/, '');
+    var match = hash.match(/^tab-(.+)$/);
+    if (match) {
+        var tab = match[1];
+        // Whitelist gegen JS-Injection / unbekannte Tabs
+        var KNOWN_TABS = ['cronjobs', 'personality', 'skills', 'references', 'usage', 'app', 'support'];
+        if (KNOWN_TABS.indexOf(tab) >= 0) {
+            // Kleiner Delay, damit die Tab-Content-Divs sicher im DOM sind
+            setTimeout(function() { switchTab(tab); }, 0);
+        }
+    }
+})();
+</script>
+{% endblock %}

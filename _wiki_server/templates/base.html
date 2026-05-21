@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/portal/logo.png" type="image/png">
+    <link rel="apple-touch-icon" href="/static/portal/logo.png">
+    <title>{% block title %}{{ portal_name }}{% endblock %}</title>
+
+    {# Portal-Stylesheet — Cache-Buster via Asset-Version, damit Browser
+       nach Updates nicht an einer alten gecachten Version hängen bleibt. #}
+    <link rel="stylesheet" href="/static/portal/style.css?v={{ portal_asset_version }}">
+
+    {# Theme-Bootstrap (sofort, ohne FOUC) #}
+    <script>(function(){try{var t=localStorage.getItem('theme')||(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
+
+    {# Branding-Variablen für site-header.js (Brand-Name + Version aus Config) #}
+    <script>
+        window.HP_BRAND = {{ agent_name|tojson }};
+        window.HP_PORTAL_NAME = {{ portal_name|tojson }};
+        window.HP_VERSION = {{ portal_version|tojson }};
+    </script>
+
+    {# Geteilter Site-Header inkl. Theme-Toggle und Active-State #}
+    <script src="/static/portal/site-header.js?v={{ portal_asset_version }}" defer></script>
+
+    {# Seiten-spezifische extra Styles, falls nötig #}
+    {% block extra_head %}{% endblock %}
+</head>
+<body data-page="{% block page_key %}wiki{% endblock %}">
+
+    {# Placeholder – wird von site-header.js befüllt #}
+    <div id="site-header"></div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash">
+        {% for category, message in messages %}
+        <div class="{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    <script>setTimeout(function(){document.querySelectorAll('.flash > div').forEach(function(e){e.remove();});}, 5000);</script>
+    {% endif %}
+    {% endwith %}
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <footer class="footer">
+        <img src="/static/portal/logo.png" alt="" class="footer-logo" aria-hidden="true">
+        <span>{{ portal_name }} &copy; {{ current_year }}</span>
+    </footer>
+
+    {% block extra_body %}{% endblock %}
+
+</body>
+</html>

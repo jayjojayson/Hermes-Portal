@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Löschen: {{ title }}{% endblock %}
+{% block page_key %}wiki-delete{% endblock %}
+
+{% block content %}
+
+<style>
+.delete-confirm {
+    max-width: 600px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+}
+.delete-confirm h2 {
+    color: var(--danger);
+    margin: 0 0 1rem;
+}
+.delete-confirm p {
+    color: var(--text-dim);
+    margin: 0 0 1.5rem;
+}
+.delete-actions {
+    display: flex;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+</style>
+
+<div class="delete-confirm">
+    <h2>🗑️ Seite löschen</h2>
+    <p>Bist du sicher, dass du <strong>{{ title }}</strong> ({{ section }}) löschen möchtest?<br>Diese Aktion kann nicht rückgängig gemacht werden.</p>
+
+    <form action="{{ url_for('delete_page', section=section, page_id=page_id) }}" method="POST">
+        <div class="delete-actions">
+            <button type="submit" class="btn btn-danger">Ja, löschen</button>
+            <a href="{{ url_for('show_page', section=section, page_id=page_id) }}" class="btn">Abbrechen</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

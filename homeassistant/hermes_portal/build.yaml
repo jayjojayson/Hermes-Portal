@@ -1,0 +1,9 @@
+# Base-Images für die HA-Add-On Build-Matrix (multi-arch).
+build_from:
+  amd64: ghcr.io/home-assistant/amd64-base:3.19
+  aarch64: ghcr.io/home-assistant/aarch64-base:3.19
+labels:
+  org.opencontainers.image.title: "Hermes Portal"
+  org.opencontainers.image.description: "Webfrontend für den Hermes-Agent"
+  org.opencontainers.image.source: "https://github.com/USER/hermes-portal"
+  org.opencontainers.image.licenses: "MIT"

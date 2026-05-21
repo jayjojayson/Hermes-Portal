@@ -1,0 +1,53 @@
+# Hermes Portal – Docker Compose
+#
+# Drei Modi:
+#  1. STANDALONE (Default): Portal läuft alleine, verbindet sich via SSH zum Hermes-Agent.
+#  2. CO-LOCATED:           Portal läuft in derselben VM/Host wie Hermes; mountet austausch + .hermes.
+#  3. HOME ASSISTANT:       Wird als HA-Add-On installiert (siehe homeassistant/ Verzeichnis).
+#
+# Standard-Start:  docker compose up -d
+# Logs:            docker compose logs -f
+# Stop/Update:     docker compose pull && docker compose up -d
+
+services:
+  hermes-portal:
+    build: .
+    image: hermes-portal:latest
+    container_name: hermes-portal
+    restart: unless-stopped
+    ports:
+      - "${PORTAL_PORT:-8090}:8090"
+    environment:
+      # Identität & Verbindung können auch über die UI gesetzt werden, ENV ist nur initial.
+      HP_AGENT_NAME:     "${HP_AGENT_NAME:-Hermes}"
+      HP_USER_NAME:      "${HP_USER_NAME:-Du}"
+      HP_CONNECTION_MODE: "${HP_CONNECTION_MODE:-local}"   # local | ssh
+      HP_AGENT_HOST:     "${HP_AGENT_HOST:-127.0.0.1}"
+      HP_EXCHANGE_PATH:  "${HP_EXCHANGE_PATH:-/mnt/austausch}"
+      HP_HERMES_HOME:    "${HP_HERMES_HOME:-/root/.hermes}"
+      TZ:                "${TZ:-Europe/Berlin}"
+    volumes:
+      # Persistente Portal-Daten (config, chat-db, uploads)
+      - portal_data:/data
+
+      # --- CO-LOCATED MODE: nachfolgende Zeilen einkommentieren ---
+      # Austausch-Ordner (Wiki-Inhalte, Briefing-Output, etc.)
+      # - /mnt/austausch:/mnt/austausch
+      # Hermes-Konfig (SOUL.md, memories, cron, logs, hermes-CLI)
+      # - /root/.hermes:/root/.hermes
+      # Wenn dein Hermes-Binary außerhalb von /root/.hermes liegt, zusätzlich:
+      # - /usr/local/bin/hermes:/usr/local/bin/hermes:ro
+
+      # --- SSH-MODE: SSH-Keys einbinden ---
+      # - ./ssh:/data/.ssh:ro
+
+    # Optional: gemeinsamer Container-Netzwerk-Bereich mit anderen Services
+    networks:
+      - default
+
+volumes:
+  portal_data:
+
+networks:
+  default:
+    name: hermes-portal-net

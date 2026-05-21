@@ -1,0 +1,47 @@
+# Home Assistant Add-on: Hermes Portal
+# https://developers.home-assistant.io/docs/add-ons/configuration/
+
+name: Hermes Portal
+description: Webfrontend für den Hermes-Agent — Wiki, News, Briefing, Aufgaben, Explorer und Chat.
+version: "0.1.0"
+slug: hermes_portal
+init: false
+arch:
+  - amd64
+  - aarch64
+url: https://github.com/USER/hermes-portal
+panel_icon: mdi:satellite-uplink
+panel_admin: true
+ingress: true
+ingress_port: 8090
+ports:
+  "8090/tcp": 8090
+ports_description:
+  "8090/tcp": "Hermes Portal Web-UI (optional, Ingress reicht in HA)"
+
+# Persistenz – /data wird automatisch von HA zugewiesen.
+# Add-on legt config.json, chat.db, uploads/ darin an.
+map:
+  - addon_config:rw
+  - share:rw     # /share als optionaler Austausch-Ordner
+
+# Optionen, die der User in der HA-UI sieht
+options:
+  agent_name: "Hermes"
+  user_name: "Du"
+  connection_mode: "ssh"
+  agent_host: ""
+  ssh_user: "root"
+  ssh_port: 22
+  ssh_password: ""
+  exchange_path: "/share"
+
+schema:
+  agent_name: str
+  user_name: str
+  connection_mode: list(local|ssh)
+  agent_host: str?
+  ssh_user: str
+  ssh_port: port
+  ssh_password: password?
+  exchange_path: str

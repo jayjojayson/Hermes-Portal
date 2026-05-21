@@ -1,0 +1,39 @@
+{
+  "agent_name": "Hermes",
+  "agent_persona": "Du bist ein freundlicher, hilfsbereiter Assistent. Antworte locker auf Deutsch.",
+  "user_name": "Du",
+
+  "category_entity_label": "Entitäten",
+  "category_concept_label": "Konzepte",
+
+  "connection_mode": "local",
+  "agent_host": "127.0.0.1",
+  "ssh_user": "root",
+  "ssh_port": 22,
+  "ssh_key_path": "",
+  "ssh_password": "",
+
+  "exchange_path": "/mnt/austausch",
+  "wiki_subpath": "wiki",
+  "hermes_home": "/root/.hermes",
+  "hermes_bin": "hermes",
+  "briefing_script": "scripts/daily_briefing.py",
+  "briefing_output": "blog/briefing.html",
+
+  "briefing_github_user": "",
+  "briefing_weather_lat": "52.52",
+  "briefing_weather_lon": "13.40",
+  "briefing_weather_tz": "Europe/Berlin",
+  "briefing_forum_rss": "",
+  "briefing_bvg_stop": "",
+
+  "rss_feeds": [
+    { "name": "Heise News",       "url": "https://www.heise.de/rss/heise-atom.xml" },
+    { "name": "Heise KI",         "url": "https://www.heise.de/thema/Kuenstliche-Intelligenz?view=atom" },
+    { "name": "Heise Smart Home", "url": "https://www.heise.de/thema/Smart-Home?view=atom" }
+  ],
+
+  "bind_host": "0.0.0.0",
+  "bind_port": 8090,
+  "secret_key": ""
+}

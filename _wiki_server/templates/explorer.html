@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Explorer – {{ exchange_path }}{% endblock %}
+{% block page_key %}explorer{% endblock %}
+
+{% block content %}
+
+<div class="explorer-toolbar">
+    {# Up-Button #}
+    {% if parent_path is none %}
+        <button class="tb-btn" disabled title="Bereits im Wurzelverzeichnis">↑ Hoch</button>
+    {% else %}
+        <a class="tb-btn" href="{{ url_for('explorer_browse', subpath=parent_path) if parent_path else url_for('explorer_root') }}" title="Eine Ebene höher (Alt+Up)">↑ Hoch</a>
+    {% endif %}
+
+    {# Reload #}
+    <a class="tb-btn" href="{{ request.path }}" title="Neu laden (F5)">🔄 Aktualisieren</a>
+
+    <span class="tb-sep"></span>
+
+    {# Upload (versteckter file-input) #}
+    <button class="tb-btn" type="button" onclick="document.getElementById('explorer-file-input').click()" title="Datei(en) hochladen">📤 Hochladen</button>
+    <form id="explorer-upload-form" method="POST" enctype="multipart/form-data" action="{{ url_for('explorer_upload') }}" style="display:none;">
+        <input type="hidden" name="target" value="{{ current_path }}">
+        <input id="explorer-file-input" type="file" name="files" multiple onchange="document.getElementById('explorer-upload-form').submit()">
+    </form>
+
+    {# Neuer Ordner #}
+    <button class="tb-btn" type="button" onclick="explorerMkdir()" title="Neuen Ordner erstellen">📁 Neuer Ordner</button>
+    <form id="explorer-mkdir-form" method="POST" action="{{ url_for('explorer_mkdir') }}" style="display:none;">
+        <input type="hidden" name="parent" value="{{ current_path }}">
+        <input id="explorer-mkdir-name" type="text" name="name">
+    </form>
+
+    <span class="tb-sep"></span>
+
+    {# Adressleiste #}
+    <div class="explorer-address" title="{{ absolute_path or exchange_path }}">
+        <span>📂</span>
+        {% for label, href, current in crumbs %}
+            {% if not loop.first %}<span class="sep">›</span>{% endif %}
+            {% if current %}
+                <span class="crumb current">{{ label }}</span>
+            {% else %}
+                <a class="crumb" href="{{ href }}">{{ label }}</a>
+            {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+{% if missing %}
+    <div class="card" style="text-align:center; color:var(--danger);">
+        <p>⚠️ Der Austausch-Ordner <code>{{ exchange_path }}</code> ist nicht verfügbar.</p>
+    </div>
+{% else %}
+
+<div class="explorer-list" id="explorer-list">
+    {% if entries %}
+    <table>
+        <thead>
+            <tr>
+                <th style="width:40px;"></th>
+                <th>Name</th>
+                <th class="col-mtime" style="width:160px;">Geändert am</th>
+                <th class="col-type" style="width:130px;">Typ</th>
+                <th class="col-size" style="width:90px; text-align:right;">Größe</th>
+                <th style="width:130px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for e in entries %}
+            <tr data-name="{{ e.name }}">
+                <td><span class="icon">{{ e.icon }}</span></td>
+                <td>
+                    {% if e.is_dir %}
+                        <a class="name" href="{{ url_for('explorer_browse', subpath=(current_path + '/' + e.name).lstrip('/')) }}">{{ e.name }}</a>
+                    {% else %}
+                        <a class="name" href="{{ url_for('explorer_browse', subpath=(current_path + '/' + e.name).lstrip('/')) }}?inline=1" target="_blank">{{ e.name }}</a>
+                    {% endif %}
+                </td>
+                <td class="col-mtime">{{ e.mtime }}</td>
+                <td class="col-type">{{ e.type_label }}</td>
+                <td class="col-size" style="text-align:right;">{{ e.size_human }}</td>
+                <td class="row-actions">
+                    {% if not e.is_dir %}
+                    <a href="{{ url_for('explorer_browse', subpath=(current_path + '/' + e.name).lstrip('/')) }}" download title="Herunterladen">⬇️</a>
+                    {% endif %}
+                    <form method="POST" action="{{ url_for('explorer_delete') }}" style="display:inline;" onsubmit="return confirm('„{{ e.name }}“ wirklich löschen{% if e.is_dir %} (inkl. Inhalt){% endif %}?');">
+                        <input type="hidden" name="path" value="{{ (current_path + '/' + e.name).lstrip('/') }}">
+                        <input type="hidden" name="parent" value="{{ current_path }}">
+                        <button type="submit" class="danger" title="Löschen">🗑️</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="explorer-empty">
+        <p style="font-size:2em; margin-bottom:0.5rem;">📂</p>
+        <p>Dieser Ordner ist leer.</p>
+        <p style="font-size:0.85em; margin-top:0.5rem;">Ziehe Dateien per Drag &amp; Drop hierher oder nutze den Hochladen-Button.</p>
+    </div>
+    {% endif %}
+</div>
+
+<div class="explorer-status">
+    <span>{{ entries|length }} Element{{ '' if entries|length == 1 else 'e' }}</span>
+    <span title="{{ absolute_path }}">{{ absolute_path }}</span>
+</div>
+
+<div id="drop-overlay" class="drop-overlay">📤 Loslassen, um in diesen Ordner hochzuladen</div>
+
+<script>
+function explorerMkdir() {
+    var name = prompt('Name des neuen Ordners:');
+    if (!name) return;
+    document.getElementById('explorer-mkdir-name').value = name;
+    document.getElementById('explorer-mkdir-form').submit();
+}
+
+// Drag & Drop für Upload in den aktuellen Ordner
+(function() {
+    var overlay = document.getElementById('drop-overlay');
+    var fileInput = document.getElementById('explorer-file-input');
+    var form = document.getElementById('explorer-upload-form');
+    var dragCount = 0;
+
+    function show() { overlay.classList.add('active'); }
+    function hide() { overlay.classList.remove('active'); }
+
+    window.addEventListener('dragenter', function(e) {
+        if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+        dragCount++;
+        show();
+    });
+    window.addEventListener('dragover', function(e) {
+        if (!e.dataTransfer || !Array.from(e.dataTransfer.types).includes('Files')) return;
+        e.preventDefault();
+    });
+    window.addEventListener('dragleave', function(e) {
+        dragCount = Math.max(0, dragCount - 1);
+        if (dragCount === 0) hide();
+    });
+    window.addEventListener('drop', function(e) {
+        if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+        e.preventDefault();
+        dragCount = 0;
+        hide();
+        // FileList ist read-only -> wir nutzen DataTransfer für den input
+        try {
+            fileInput.files = e.dataTransfer.files;
+            form.submit();
+        } catch (err) {
+            // Fallback: per FormData posten
+            var fd = new FormData(form);
+            for (var i = 0; i < e.dataTransfer.files.length; i++) {
+                fd.append('files', e.dataTransfer.files[i]);
+            }
+            fetch(form.action, {
+                method: 'POST', body: fd,
+                headers: {'X-Requested-With': 'fetch'}
+            }).then(function(){ location.reload(); });
+        }
+    });
+})();
+
+// Tastatur: Backspace / Alt+Up = Up
+document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if ((e.key === 'Backspace' || (e.altKey && e.key === 'ArrowUp'))) {
+        var up = document.querySelector('.explorer-toolbar a.tb-btn[href]');
+        if (up && !up.hasAttribute('disabled')) {
+            e.preventDefault();
+            location.href = up.href;
+        }
+    }
+    if (e.key === 'F5') {
+        // Browser-Default reload, kein Override nötig
+    }
+});
+</script>
+
+{% endif %}
+
+{% endblock %}

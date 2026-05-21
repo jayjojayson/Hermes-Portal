@@ -1,0 +1,178 @@
+name: Release
+
+# Triggert auf Tag-Push (z.B. v0.5.0) oder manuell aus der Actions-UI.
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag (z.B. v0.5.0)'
+        required: true
+
+permissions:
+  contents: write   # für gh release create
+  packages: write   # für GHCR docker push
+
+jobs:
+  # =====================================================================
+  # 1) Native Binaries (PyInstaller) für macOS, Linux, Windows
+  # =====================================================================
+  binaries:
+    name: Build ${{ matrix.os }} binary
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: Hermes-Portal-Linux.tar.gz
+            pack: tar
+          - os: macos-latest
+            artifact: Hermes-Portal-macOS.zip
+            pack: zip
+          - os: windows-latest
+            artifact: Hermes-Portal-Windows.zip
+            pack: zip
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install build deps
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r _wiki_server/requirements.txt
+          pip install pyinstaller
+
+      - name: Fetch Monaco editor (vendored offline)
+        shell: bash
+        run: python _wiki_server/scripts/fetch_monaco.py
+
+      - name: Build with PyInstaller
+        shell: bash
+        working-directory: _wiki_server
+        run: pyinstaller --noconfirm hermes_portal.spec
+
+      - name: Pack (tar.gz / zip)
+        shell: bash
+        run: |
+          cd _wiki_server/dist
+          if [ "${{ matrix.pack }}" = "tar" ]; then
+            tar -czf "../../${{ matrix.artifact }}" hermes-portal
+          else
+            python -c "import shutil; shutil.make_archive('../../${{ matrix.artifact }}'.replace('.zip',''), 'zip', '.', 'hermes-portal')"
+          fi
+          ls -lh "../../${{ matrix.artifact }}"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+          retention-days: 14
+
+  # =====================================================================
+  # 2) Docker-Image (multi-arch) auf GHCR
+  # =====================================================================
+  docker:
+    name: Docker image (multi-arch)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive tag
+        id: tag
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            T="${{ github.event.inputs.tag }}"
+          else
+            T="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$T" >> "$GITHUB_OUTPUT"
+          echo "version=${T#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/hermes-portal:latest
+            ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.version }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.tag.outputs.version }}
+            org.opencontainers.image.licenses=MIT
+
+  # =====================================================================
+  # 3) GitHub-Release erstellen + alle Artefakte anhängen
+  # =====================================================================
+  release:
+    name: Publish GitHub Release
+    needs: [binaries, docker]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Derive tag
+        id: tag
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            T="${{ github.event.inputs.tag }}"
+          else
+            T="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$T" >> "$GITHUB_OUTPUT"
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+
+      - name: Flatten artifacts
+        shell: bash
+        run: |
+          mkdir -p out
+          find release-assets -type f -exec cp {} out/ \;
+          ls -lh out/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: ${{ steps.tag.outputs.tag }}
+          generate_release_notes: true
+          files: out/*
+          body: |
+            ## 🛰️ Hermes Portal ${{ steps.tag.outputs.tag }}
+
+            ### Installation
+
+            - **Docker** (empfohlen): `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}`
+            - **macOS**:   `Hermes-Portal-macOS.zip` herunterladen, entpacken, doppelklicken
+            - **Linux**:   `Hermes-Portal-Linux.tar.gz` herunterladen, entpacken, `./hermes-portal/hermes-portal`
+            - **Windows**: `Hermes-Portal-Windows.zip` herunterladen, entpacken, `hermes-portal.exe` starten
+
+            Vollständige Anleitung im [README](https://github.com/${{ github.repository }}#-installation).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

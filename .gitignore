@@ -1,0 +1,90 @@
+# =============================================================
+#  Hermes Portal — .gitignore
+#  Ziel: nur App-Code, Templates, Docker, HA-Addon, README & Logo
+#  werden committed. Persönliche Wiki-Inhalte und Build-Artefakte
+#  bleiben außen vor.
+# =============================================================
+
+# -------- OS / IDE --------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+.fleet/
+.cursor/
+.zed/
+
+# -------- Python --------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# venvs
+venv/
+.venv/
+env/
+.env
+
+# -------- Node / build (für die Zukunft) --------
+node_modules/
+dist/
+build/
+
+# -------- Persönliche Inhalte des Repo-Eigners (NICHT öffentlich) --------
+# Diese Ordner enthalten user-spezifische Wiki-Daten – nicht Portal-Code.
+# Anführendes "/" → matcht nur Root-Level, nicht z.B. _wiki_server/scripts.
+/blog/
+/concepts/
+/entities/
+/raw/
+/scripts/
+.claude/
+WELCOME.md
+SCHEMA.md
+FRITZ-Portal-Bug-Report.md
+opencode_cli.md
+log.md
+index.md
+*.bug-report.md
+
+# -------- Wiki-Server: lokale Runtime-Daten (werden im Container erzeugt) --------
+_wiki_server/data/config.json
+_wiki_server/data/settings.json
+_wiki_server/data/chat.db
+_wiki_server/data/chat.db-*
+_wiki_server/data/usage.json
+_wiki_server/data/tasks.json
+_wiki_server/data/uploads/
+_wiki_server/data/shared/
+_wiki_server/data/quick_prompts.jsonl
+_wiki_server/data/ssh/
+
+# Optional / personal
+_wiki_server/cert.pem
+_wiki_server/key.pem
+_wiki_server/take_dark_screenshots*.py
+
+# Vendored Monaco-Editor (~14 MB) wird beim Install via fetch_monaco.py geholt
+_wiki_server/static/vendor/
+
+# -------- HA Add-on Build-Output --------
+homeassistant/hermes_portal/rootfs/app/
+homeassistant/hermes_portal/rootfs/requirements.txt
+
+# -------- Logs / Test-Artefakte --------
+*.log
+.bytecode_compile_*
+
+# -------- Lokale Test-/Tool-Artefakte --------
+/tmp/
+hermes-portal-test/
+.env.local

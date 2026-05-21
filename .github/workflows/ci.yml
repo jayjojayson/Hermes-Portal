@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  smoke:
+    name: Import + Route-Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r _wiki_server/requirements.txt
+
+      - name: Bytecode compile
+        run: python -m compileall _wiki_server
+
+      - name: Import + Route smoke
+        run: |
+          cd _wiki_server
+          mkdir -p /tmp/hp-ci-data
+          HP_DATA_DIR=/tmp/hp-ci-data \
+          HP_EXCHANGE_PATH=/tmp/hp-ci-data \
+          python -c "
+          import wiki_app
+          n = len(list(wiki_app.app.url_map.iter_rules()))
+          assert n >= 70, f'Zu wenige Routen registriert: {n}'
+          print(f'OK — {n} Routen registriert')
+          "
+
+  docker-build:
+    name: Docker build (smoke)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build (no push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: false
+          load: true
+          tags: hermes-portal:ci

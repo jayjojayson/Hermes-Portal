@@ -1,0 +1,808 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – {{ portal_name }}{% endblock %}
+{% block page_key %}dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+/* ==== Dashboard-Layout ==== */
+.dash-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin: 0 0 1.25rem;
+    padding: 0;
+}
+.dash-hero h1 {
+    font-size: 1.55rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+}
+.dash-hero h1 .accent { color: var(--accent-2); font-family: var(--mono); font-weight: 500; font-size: 0.9em; }
+.dash-hero .now {
+    font-family: var(--mono);
+    color: var(--text-dim);
+    font-size: 0.85em;
+    letter-spacing: 0.02em;
+}
+
+/* Grid */
+.dash-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 1rem;
+}
+.dash-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+.dash-card:hover { border-color: var(--border-soft); box-shadow: 0 8px 32px var(--shadow-soft); }
+.dash-card.glow { box-shadow: 0 0 0 1px var(--border), 0 8px 32px var(--accent-glow); }
+.dash-card .head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 0 0.65rem;
+    gap: 0.5rem;
+}
+.dash-card .head h3 {
+    margin: 0;
+    font-size: 0.74em;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: var(--mono);
+}
+.dash-card .head .head-meta {
+    font-family: var(--mono);
+    font-size: 0.78em;
+    color: var(--text-dim);
+}
+.dash-card .head a.more {
+    font-family: var(--mono);
+    font-size: 0.78em;
+    color: var(--accent);
+    text-decoration: none;
+}
+.dash-card .head a.more:hover { color: var(--accent-hover); }
+
+/* Columns */
+.col-3  { grid-column: span 3; }
+.col-4  { grid-column: span 4; }
+.col-6  { grid-column: span 6; }
+.col-8  { grid-column: span 8; }
+.col-12 { grid-column: span 12; }
+@media (max-width: 1100px) {
+    .col-3, .col-4 { grid-column: span 6; }
+    .col-6, .col-8 { grid-column: span 12; }
+}
+@media (max-width: 640px) {
+    .col-3, .col-4, .col-6, .col-8 { grid-column: span 12; }
+}
+
+/* Hermes-Status */
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    font-size: 0.82em;
+    font-family: var(--mono);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+}
+.status-pill .dot {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    flex-shrink: 0;
+}
+.status-pill.online .dot { background: var(--accent-2); box-shadow: 0 0 8px var(--accent-2); animation: live-pulse 2.4s ease-in-out infinite; }
+.status-pill.idle .dot { background: var(--warning); }
+.status-pill.offline .dot { background: var(--danger); }
+.status-pill.unknown .dot { background: var(--text-dim); }
+.status-pill.online { border-color: rgba(94,234,212,0.4); color: var(--accent-2); }
+.status-pill.idle { border-color: rgba(251,191,36,0.4); color: var(--warning); }
+.status-pill.offline { border-color: rgba(248,113,113,0.4); color: var(--danger); }
+
+.hermes-block { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.hermes-block .label { color: var(--text-dim); font-size: 0.82em; }
+.hermes-block .stat-num {
+    font-family: var(--mono);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+}
+
+/* System-Stats */
+.sys-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem 1rem;
+    margin-top: 0.3rem;
+}
+.sys-row .item { display: flex; flex-direction: column; gap: 4px; }
+.sys-row .item .lbl {
+    font-size: 0.7em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--mono);
+}
+.sys-row .item .val {
+    font-family: var(--mono);
+    font-size: 1.05rem;
+    color: var(--text);
+}
+.sys-row .item .val .sub { color: var(--text-dim); font-size: 0.78em; margin-left: 4px; }
+.sys-bar {
+    height: 4px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.sys-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    width: 0%;
+    transition: width 0.4s ease;
+}
+.sys-bar.warn .fill { background: linear-gradient(90deg, var(--warning), var(--accent-3)); }
+.sys-bar.danger .fill { background: linear-gradient(90deg, var(--danger), var(--accent-3)); }
+
+/* Quick-Prompt */
+.qp-form { display: flex; flex-direction: column; gap: 0.55rem; }
+.qp-form input, .qp-form textarea {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    color: var(--text);
+    padding: 9px 12px;
+    font-family: var(--font);
+    font-size: 0.92em;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.qp-form input:focus, .qp-form textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.qp-form textarea { min-height: 80px; resize: vertical; font-family: var(--mono); font-size: 0.88em; }
+.qp-form .qp-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    justify-content: space-between;
+}
+.qp-form .qp-status {
+    font-family: var(--mono);
+    font-size: 0.78em;
+    color: var(--text-dim);
+    min-height: 1.2em;
+}
+.qp-form .qp-status.success { color: var(--accent-2); }
+.qp-form .qp-status.error { color: var(--danger); }
+
+/* Lists */
+.dash-list { list-style: none; padding: 0; margin: 0; }
+.dash-list li {
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-soft);
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+}
+.dash-list li:last-child { border-bottom: none; }
+.dash-list .ts {
+    font-family: var(--mono);
+    font-size: 0.78em;
+    color: var(--text-dim);
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 5px;
+}
+.dash-list .ts.pill {
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: var(--radius-pill);
+}
+.dash-list .ttl {
+    color: var(--text);
+    text-decoration: none;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dash-list a.ttl:hover { color: var(--accent); }
+.dash-list .tag-action {
+    font-family: var(--mono);
+    font-size: 0.72em;
+    color: var(--accent-2);
+    background: rgba(94,234,212,0.08);
+    padding: 1px 7px;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(94,234,212,0.15);
+    flex-shrink: 0;
+}
+
+/* Briefing card */
+.briefing-card .snippet {
+    color: var(--text);
+    font-size: 0.94em;
+    line-height: 1.6;
+    margin: 0.4rem 0 0.8rem;
+}
+
+/* Token Usage Widget */
+.usage-mini-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 42px;
+    margin: 0.6rem 0 0.9rem;
+}
+.usage-bar-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
+    justify-content: flex-end;
+}
+.usage-bar-col .bar {
+    width: 100%;
+    min-height: 2px;
+    border-radius: 2px 2px 0 0;
+    background: var(--accent);
+    opacity: 0.5;
+    transition: opacity 0.2s, height 0.3s;
+}
+.usage-bar-col.current .bar {
+    opacity: 1;
+    background: var(--accent);
+}
+.usage-bar-col .bar-lbl {
+    font-size: 0.58rem;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    white-space: nowrap;
+}
+.usage-kpi-row {
+    display: flex;
+    gap: 0.6rem;
+    align-items: stretch;
+}
+.usage-kpi {
+    flex: 1;
+    padding: 0.55rem 0.7rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.usage-kpi .u-num {
+    font-family: var(--mono);
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+}
+.usage-kpi .u-lbl {
+    font-size: 0.68em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    font-family: var(--mono);
+}
+
+/* Aufgaben counters */
+.kpi-row { display: flex; gap: 0.8rem; align-items: stretch; }
+.kpi {
+    flex: 1;
+    padding: 0.65rem 0.8rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-input);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.kpi .num {
+    font-family: var(--mono);
+    font-size: 1.7rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
+}
+.kpi .num.success { color: var(--accent-2); }
+.kpi .num.accent { color: var(--accent); }
+.kpi .lbl {
+    font-size: 0.72em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--mono);
+}
+
+/* News-Items in Dashboard */
+.news-mini { display: flex; flex-direction: column; gap: 0.5rem; }
+.news-mini .item {
+    display: flex; gap: 0.7rem; align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border-soft);
+}
+.news-mini .item:last-child { border-bottom: none; }
+.news-mini .item .date {
+    font-family: var(--mono);
+    font-size: 0.75em;
+    color: var(--text-dim);
+    min-width: 78px;
+    flex-shrink: 0;
+}
+.news-mini .item a { color: var(--text); flex: 1; }
+.news-mini .item a:hover { color: var(--accent); }
+
+/* Empty-States */
+.empty {
+    color: var(--text-dim);
+    font-size: 0.88em;
+    text-align: center;
+    padding: 1rem 0.5rem;
+    font-style: italic;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="dash-hero">
+    <div>
+        <h1 id="greeting-h1">—</h1>
+        <div class="now" id="dashClock">—</div>
+    </div>
+    <div id="hermesStatus" class="status-pill unknown" title="Hermes-Agent Status">
+        <span class="dot"></span>
+        <span class="txt">Hermes Status …</span>
+    </div>
+</div>
+
+<div class="dash-grid">
+
+    <!-- Hermes + System -->
+    <div class="dash-card col-6 glow" id="card-hermes">
+        <div class="head">
+            <h3>🧠 Hermes</h3>
+            <span class="head-meta" id="hermesActivity">–</span>
+        </div>
+        <div class="hermes-block" id="hermesBlock">
+            <div>
+                <div class="stat-num" id="hermesOpenTasks" style="color:var(--accent-2);">–</div>
+                <div class="label">Offene Aufgaben</div>
+            </div>
+            <div>
+                <div class="stat-num" id="hermesNextJobIn">–</div>
+                <div class="label" id="hermesNextJobLabel">Nächster Job</div>
+            </div>
+            <div>
+                <div class="stat-num" id="hermesDoneTasks" style="color:var(--accent);">–</div>
+                <div class="label">Erledigt</div>
+            </div>
+        </div>
+        <!-- Letzte 2 Aufgaben aus aufgaben.md -->
+        <ul class="dash-list" id="hermesNextJobs" style="margin-top:0.7rem;border-top:1px solid var(--border-soft);padding-top:0.6rem;"></ul>
+    </div>
+
+    <div class="dash-card col-6" id="card-system">
+        <div class="head">
+            <h3>📡 System</h3>
+            <span class="head-meta" id="sysUptime">uptime —</span>
+        </div>
+        <div class="sys-row">
+            <div class="item">
+                <div class="lbl">CPU</div>
+                <div class="val"><span id="sysCpu">–</span><span class="sub" id="sysLoad"></span></div>
+                <div class="sys-bar" id="sysCpuBar"><div class="fill"></div></div>
+            </div>
+            <div class="item">
+                <div class="lbl">RAM</div>
+                <div class="val"><span id="sysRam">–</span><span class="sub" id="sysRamGb"></span></div>
+                <div class="sys-bar" id="sysRamBar"><div class="fill"></div></div>
+            </div>
+            <div class="item">
+                <div class="lbl">Disk {{ exchange_path }}</div>
+                <div class="val"><span id="sysDisk">–</span><span class="sub" id="sysDiskGb"></span></div>
+                <div class="sys-bar" id="sysDiskBar"><div class="fill"></div></div>
+            </div>
+            <div class="item">
+                <div class="lbl">Logfile</div>
+                <div class="val" style="font-size:0.78em; color:var(--text-dim); word-break:break-all;" id="sysLogPath">–</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Prompt -->
+    <div class="dash-card col-6">
+        <div class="head">
+            <h3>⚡ Quick-Prompt an Hermes</h3>
+            <a class="more" href="/blog/aufgaben.html">alle Aufgaben →</a>
+        </div>
+        <form class="qp-form" id="qpForm">
+            <input type="text" id="qpTitle" placeholder="Kurztitel der Aufgabe (z. B. „Status-Bericht erstellen")" maxlength="200" required>
+            <textarea id="qpBody" placeholder="Optional: Details, Kontext, Anforderungen …"></textarea>
+            <div class="qp-actions">
+                <span class="qp-status" id="qpStatus"></span>
+                <button class="btn btn-primary" type="submit">→ An Hermes senden</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Cronjobs -->
+    <div class="dash-card col-6">
+        <div class="head">
+            <h3>⏰ Cronjobs</h3>
+            <a class="more" href="/settings/#tab-cronjobs">alle Jobs →</a>
+        </div>
+        <div class="kpi-row" style="margin-bottom:0.8rem;">
+            <div class="kpi">
+                <span class="num" id="kpiJobs">–</span>
+                <span class="lbl">aktive cronjobs</span>
+            </div>
+        </div>
+        <ul class="dash-list" id="nextJobsList" style="margin-bottom:0;"></ul>
+    </div>
+
+    <!-- Token Usage -->
+    <div class="dash-card col-6 briefing-card">
+        <div class="head">
+            <h3>⚡ Token Nutzung</h3>
+            <span class="head-meta" id="usageDate">–</span>
+            <a href="/settings/#tab-usage" class="more">Details →</a>
+        </div>
+        <!-- Mini Stunden-Chart -->
+        <div class="usage-mini-chart" id="usageMiniChart">
+            <div style="color:var(--text-dim);font-size:0.8rem;align-self:center;">Lade …</div>
+        </div>
+        <!-- KPI Zeile -->
+        <div class="usage-kpi-row">
+            <div class="usage-kpi">
+                <span class="u-num" id="usageTotalTokens">–</span>
+                <span class="u-lbl">Total Tokens</span>
+            </div>
+            <div class="usage-kpi">
+                <span class="u-num" id="usageOutTokens">–</span>
+                <span class="u-lbl">Output Tokens</span>
+            </div>
+            <div class="usage-kpi">
+                <span class="u-num" id="usageApiCalls">–</span>
+                <span class="u-lbl">API Calls</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Latest News -->
+    <div class="dash-card col-6">
+        <div class="head">
+            <h3>📰 Neueste News</h3>
+            <a class="more" href="/blog/">alle News →</a>
+        </div>
+        <div class="news-mini" id="newsList">
+            <div class="empty">Lade News …</div>
+        </div>
+    </div>
+
+    <!-- Wiki recent + Activity preview -->
+    <div class="dash-card col-6">
+        <div class="head">
+            <h3>📚 Zuletzt im Wiki</h3>
+            <a class="more" href="/wiki/">zum Wiki →</a>
+        </div>
+        <ul class="dash-list" id="wikiRecent">
+            <li class="empty">Lade Wiki-Log …</li>
+        </ul>
+    </div>
+
+    <div class="dash-card col-6">
+        <div class="head">
+            <h3>⚡ Hermes-Aktivität</h3>
+            <a class="more" href="/activity/">Live-Log öffnen →</a>
+        </div>
+        <ul class="dash-list" id="activityPreview">
+            <li class="empty">Lade aktuelle Aktivität …</li>
+        </ul>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    'use strict';
+
+    function $(sel) { return document.querySelector(sel); }
+    function fmtNum(x) {
+        if (x === null || x === undefined || x === '') return '–';
+        return x;
+    }
+    function setBar(barEl, pct) {
+        if (!barEl || pct === null || pct === undefined) return;
+        var fill = barEl.querySelector('.fill');
+        if (!fill) return;
+        var p = Math.max(0, Math.min(100, pct));
+        fill.style.width = p + '%';
+        barEl.classList.remove('warn', 'danger');
+        if (p >= 90) barEl.classList.add('danger');
+        else if (p >= 75) barEl.classList.add('warn');
+    }
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    function tick() {
+        var d = new Date();
+        var pad = function(n) { return n < 10 ? '0' + n : n; };
+        $('#dashClock').textContent =
+            pad(d.getDate()) + '.' + pad(d.getMonth()+1) + '.' + d.getFullYear() +
+            ' · ' + pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+
+    function setGreeting() {
+        var h = new Date().getHours();
+        var greeting;
+        if (h >= 5 && h < 11) {
+            greeting = 'Guten Morgen';
+        } else if (h >= 11 && h < 14) {
+            greeting = 'Mahlzeit';
+        } else if (h >= 14 && h < 18) {
+            greeting = 'Hallo';
+        } else {
+            greeting = 'Guten Abend';
+        }
+        var h1 = $('#greeting-h1');
+        if (h1) {
+            h1.innerHTML = '<span style="color:var(--accent-2);">' + greeting + ',</span> <span id="username-span">{{ user_name }}</span>';
+        }
+    }
+    setGreeting();
+
+    setInterval(tick, 1000); tick();
+
+    function renderStatus(data) {
+        // Hermes-Pill
+        var pill = $('#hermesStatus');
+        var st = (data.hermes && data.hermes.state) || 'unknown';
+        pill.className = 'status-pill ' + st;
+        var labels = { online: 'Hermes online', idle: 'Hermes idle', offline: 'Hermes offline', unknown: 'Hermes – kein Signal' };
+        pill.querySelector('.txt').textContent = labels[st] || 'Hermes';
+        if (data.hermes && data.hermes.last_activity_human) {
+            pill.title = 'Letzte Aktivität: ' + data.hermes.last_activity_human + ' (' + (data.hermes.source || '?') + ')';
+        }
+        $('#hermesActivity').textContent = (data.hermes && data.hermes.last_activity_human) || '–';
+
+        // Aufgaben-KPIs
+        var a = data.aufgaben || {};
+        var setEl = function(id, val) { var el = $('#'+id); if(el) el.textContent = val; };
+        setEl('hermesOpenTasks', fmtNum(a.open));
+        setEl('hermesDoneTasks', fmtNum(a.done));
+        setEl('kpiJobs', fmtNum(data.active_cronjobs || 0));
+
+        // Nächster Job
+        var nj = (data.next_jobs && data.next_jobs[0]) || null;
+        if (nj) {
+            $('#hermesNextJobIn').textContent = nj.next_run_human || '–';
+            $('#hermesNextJobLabel').textContent = '⏭ ' + (nj.name || 'Nächster Job');
+        } else {
+            $('#hermesNextJobIn').textContent = '–';
+            $('#hermesNextJobLabel').textContent = 'Kein anstehender Job';
+        }
+
+        // System
+        var s = data.system || {};
+        $('#sysCpu').textContent = (s.cpu_pct != null) ? s.cpu_pct.toFixed(1) + '%' : '–';
+        $('#sysLoad').textContent = (s.load_1m != null) ? ' (load ' + s.load_1m.toFixed(2) + ')' : '';
+        $('#sysRam').textContent = (s.ram_pct != null) ? s.ram_pct.toFixed(0) + '%' : '–';
+        $('#sysRamGb').textContent = (s.ram_used_gb != null && s.ram_total_gb != null) ? ' ' + s.ram_used_gb + '/' + s.ram_total_gb + ' GB' : '';
+        $('#sysDisk').textContent = (s.disk_pct != null) ? s.disk_pct.toFixed(0) + '%' : '–';
+        $('#sysDiskGb').textContent = (s.disk_free_gb != null) ? ' ' + s.disk_free_gb + ' GB frei' : '';
+        $('#sysUptime').textContent = (s.uptime_human != null) ? 'uptime ' + s.uptime_human : 'uptime —';
+        setBar($('#sysCpuBar'), s.cpu_pct);
+        setBar($('#sysRamBar'), s.ram_pct);
+        setBar($('#sysDiskBar'), s.disk_pct);
+        $('#sysLogPath').textContent = (data.hermes && data.hermes.log_path) || '— kein log gefunden —';
+
+        // Token Usage Widget
+        fetch('/api/settings/usage?_=' + Date.now())
+        .then(function(r){ return r.json(); })
+        .then(function(u) {
+            var tokens = u.tokens || {};
+            var hourly = tokens.hourly || {};
+            var hours = Object.keys(hourly).sort();
+            var now = new Date();
+            var currentHour = String(now.getHours()).padStart(2,'0') + ':00';
+
+            // KPIs
+            $('#usageDate').textContent = u.date || '';
+
+            var totalTok = tokens.total || 0;
+            var outTok = tokens.total_out || 0;
+            var apiCalls = tokens.total_calls || 0;
+
+            function fmtNum(n) {
+                if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+                if (n >= 1000) return (n/1000).toFixed(1) + 'k';
+                return String(n);
+            }
+            $('#usageTotalTokens').textContent = fmtNum(totalTok);
+            $('#usageOutTokens').textContent = fmtNum(outTok);
+            $('#usageApiCalls').textContent = fmtNum(apiCalls);
+
+            // Mini-Chart: nur Stunden 06–23 anzeigen
+            var chartEl = $('#usageMiniChart');
+            chartEl.innerHTML = '';
+            var visibleHours = hours.filter(function(h){ return parseInt(h) >= 6; });
+            var maxVal = visibleHours.reduce(function(m,h){ return Math.max(m, hourly[h].total||0); }, 1);
+
+            visibleHours.forEach(function(h) {
+                var d = hourly[h];
+                var pct = Math.max(2, Math.round(((d.total||0) / maxVal) * 100));
+                var isCurrent = h === currentHour;
+                var col = document.createElement('div');
+                col.className = 'usage-bar-col' + (isCurrent ? ' current' : '');
+                var bar = document.createElement('div');
+                bar.className = 'bar';
+                bar.style.height = pct + '%';
+                bar.title = h + ' — ' + fmtNum(d.total||0) + ' Tokens, ' + (d.calls||0) + ' Calls';
+                col.appendChild(bar);
+                // Nur die 4 fixen 4h-Marker: 08, 12, 16, 20
+                var hourNum = parseInt(h);
+                if (hourNum % 4 === 0 && hourNum >= 8 && hourNum <= 20) {
+                    var lbl = document.createElement('div');
+                    lbl.className = 'bar-lbl';
+                    lbl.textContent = h.replace(':00','');
+                    col.appendChild(lbl);
+                }
+                chartEl.appendChild(col);
+            });
+        })
+        .catch(function(){ $('#usageTotalTokens').textContent = '—'; });
+
+        // News
+        var nl = $('#newsList');
+        nl.innerHTML = '';
+        (data.news || []).forEach(function(n) {
+            var el = document.createElement('div');
+            el.className = 'item';
+            el.innerHTML = '<span class="date">' + esc(n.date || '') + '</span>' +
+                '<a href="' + esc(n.url) + '">' + esc(n.title) + '</a>';
+            nl.appendChild(el);
+        });
+        if (!nl.children.length) nl.innerHTML = '<div class="empty">Keine News verfügbar.</div>';
+
+        // Letzte 2 Aufgaben aus aufgaben.md in der Hermes-Box
+        var hjl = $('#hermesNextJobs');
+        hjl.innerHTML = '';
+        var recentTasks = (data.aufgaben || {}).recent_tasks || [];
+        recentTasks.forEach(function(t) {
+            var li = document.createElement('li');
+            var titleStyle = t.done ? 'text-decoration:line-through;opacity:0.5;' : '';
+            li.innerHTML = '<span class="ts pill" style="' + (t.done ? 'background:rgba(99,102,241,0.15);color:var(--accent);' : '') + '">' +
+                (t.done ? '✅' : '🔲') + '</span>' +
+                '<span class="ttl" style="' + titleStyle + '">' + esc(t.title) + '</span>';
+            hjl.appendChild(li);
+        });
+        if (!hjl.children.length) hjl.innerHTML = '<li class="empty">Keine Aufgaben gefunden.</li>';
+
+        // Nächste 3 Cronjobs in der Cronjobs-Box
+        var jl = $('#nextJobsList');
+        jl.innerHTML = '';
+        (data.next_jobs || []).slice(0, 3).forEach(function(j) {
+            var li = document.createElement('li');
+            li.innerHTML = '<span class="ts pill">' + esc(j.next_run_human) + '</span>' +
+                '<span class="ttl" title="' + esc(j.schedule || '') + '">' + esc(j.name) + '</span>';
+            jl.appendChild(li);
+        });
+        if (!jl.children.length) jl.innerHTML = '<li class="empty">Keine geplanten Jobs.</li>';
+
+        // Wiki Recent — letzte 5 Beiträge, Klick führt zur Beitragsseite
+        var wr = $('#wikiRecent');
+        wr.innerHTML = '';
+        (data.wiki_recent || []).forEach(function(w) {
+            var li = document.createElement('li');
+            var iconType = w.section === 'concept' ? '💡' : '📦';
+            li.innerHTML =
+                '<span class="ts">' + esc(w.date) + '</span>' +
+                '<a class="ttl" href="' + esc(w.url) + '">' + esc(w.title) + '</a>' +
+                '<span class="tag-action">' + iconType + ' ' + esc(w.section) + '</span>';
+            wr.appendChild(li);
+        });
+        if (!wr.children.length) wr.innerHTML = '<li class="empty">Noch keine Wiki-Beiträge vorhanden.</li>';
+    }
+
+    function renderActivityPreview(lines) {
+        var ap = $('#activityPreview');
+        ap.innerHTML = '';
+        var preview = (lines || []).slice(-8).reverse();
+        preview.forEach(function(line) {
+            // erkennt typische Log-Präfixe wie "2026-05-12 13:14:22 INFO …"
+            var m = line.match(/^(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})[\.\d]*\s+(.+)$/);
+            var ts = m ? m[1].split(/[ T]/)[1] : '';
+            var rest = m ? m[2] : line;
+            var li = document.createElement('li');
+            li.innerHTML = '<span class="ts">' + esc(ts || '·') + '</span>' +
+                '<span class="ttl" title="' + esc(line) + '" style="font-family:var(--mono); font-size:0.82em; color:var(--text-dim);">' + esc(rest.slice(0, 120)) + '</span>';
+            ap.appendChild(li);
+        });
+        if (!ap.children.length) ap.innerHTML = '<li class="empty">Kein Hermes-Logfile erreichbar. <a href="/activity/">Konfigurieren →</a></li>';
+    }
+
+    function loadAll() {
+        fetch('/api/dashboard/status', { cache: 'no-store' })
+            .then(function(r) { return r.json(); })
+            .then(renderStatus)
+            .catch(function() {});
+        fetch('/api/activity/log?n=30', { cache: 'no-store' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { renderActivityPreview(d.lines || []); })
+            .catch(function() {});
+    }
+    loadAll();
+    setInterval(loadAll, 30000);
+
+    // Quick-Prompt
+    $('#qpForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        var title = $('#qpTitle').value.trim();
+        var body = $('#qpBody').value.trim();
+        var status = $('#qpStatus');
+        if (!title) {
+            status.textContent = '⚠ Titel fehlt';
+            status.className = 'qp-status error';
+            return;
+        }
+        status.textContent = 'sende …';
+        status.className = 'qp-status';
+        fetch('/api/quick-prompt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title, body: body })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.ok) {
+                status.textContent = '✓ als Aufgabe gespeichert · ' + title;
+                status.className = 'qp-status success';
+                $('#qpTitle').value = '';
+                $('#qpBody').value = '';
+                // Refresh KPIs
+                setTimeout(loadAll, 400);
+            } else {
+                status.textContent = '✗ ' + (d.error || 'Fehler');
+                status.className = 'qp-status error';
+            }
+        })
+        .catch(function() {
+            status.textContent = '✗ Netzwerkfehler';
+            status.className = 'qp-status error';
+        });
+    });
+})();
+</script>
+{% endblock %}

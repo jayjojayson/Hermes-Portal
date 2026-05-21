@@ -1,0 +1,26 @@
+# /etc/systemd/system/hermes-portal.service
+# Beispiel-Unit für eine direkte Installation in der Hermes-VM.
+#
+# Setup:
+#   git clone https://github.com/USER/hermes-portal.git /opt/hermes-portal
+#   cd /opt/hermes-portal/_wiki_server
+#   python3 -m venv venv && venv/bin/pip install -r requirements.txt
+#   sudo cp /opt/hermes-portal/docs/systemd.service /etc/systemd/system/hermes-portal.service
+#   sudo systemctl daemon-reload && sudo systemctl enable --now hermes-portal
+
+[Unit]
+Description=Hermes Portal – Web-Frontend für den Hermes-Agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/hermes-portal/_wiki_server
+Environment=HP_DATA_DIR=/opt/hermes-portal/_wiki_server/data
+ExecStart=/opt/hermes-portal/_wiki_server/venv/bin/python wiki_app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

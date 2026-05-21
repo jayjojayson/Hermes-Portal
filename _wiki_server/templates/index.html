@@ -1,0 +1,531 @@
+{% extends "base.html" %}
+
+{% block title %}Home – {{ portal_name }}{% endblock %}
+{% block page_key %}wiki{% endblock %}
+
+{% block content %}
+<style>
+/* === View-Toggle (Pill) === */
+.view-toggle {
+    display: inline-flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 3px;
+    gap: 2px;
+}
+.view-toggle button {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    padding: 6px 14px;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.18s;
+    font-family: var(--font);
+}
+.view-toggle button.active {
+    background: var(--accent-glow);
+    color: var(--text);
+    box-shadow: inset 0 0 0 1px var(--border-soft);
+}
+.view-toggle button:hover:not(.active) {
+    color: var(--text);
+    background: var(--surface3);
+}
+
+/* === Grid-Ansicht (Standard) === */
+.grid-view .entity-grid,
+.grid-view .concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+.grid-view .entity-list,
+.grid-view .concept-list { display: none; }
+
+/* === Listen-Ansicht === */
+.list-view .entity-grid,
+.list-view .concept-grid { display: none; }
+.list-view .entity-list,
+.list-view .concept-list { display: table; width: 100%; }
+
+.entity-list,
+.concept-list {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin-bottom: 2rem;
+    background: var(--glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+}
+.entity-list th,
+.concept-list th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-weight: 600;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--mono);
+    border-bottom: 1px solid var(--border);
+}
+.entity-list td,
+.concept-list td {
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: middle;
+}
+.entity-list tr:last-child td,
+.concept-list tr:last-child td { border-bottom: none; }
+.entity-list tbody tr:hover,
+.concept-list tbody tr:hover { background: var(--surface3); }
+.entity-list .icon,
+.concept-list .icon {
+    font-size: 1.2rem;
+    width: 40px;
+    text-align: center;
+}
+.entity-list .name a,
+.concept-list .name a {
+    color: var(--text);
+    text-decoration: none;
+    font-weight: 600;
+}
+.entity-list .name a:hover,
+.concept-list .name a:hover {
+    color: var(--accent);
+}
+.entity-list .meta,
+.concept-list .meta {
+    font-family: var(--mono);
+    font-size: 0.78em;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+.entity-list .tags-cell,
+.concept-list .tags-cell {
+    font-size: 0.85rem;
+}
+.entity-list .tags-cell a,
+.concept-list .tags-cell a {
+    margin-right: 4px;
+}
+.entity-list .actions,
+.concept-list .actions {
+    white-space: nowrap;
+    text-align: right;
+}
+.entity-list .actions a,
+.concept-list .actions a {
+    margin-left: 4px;
+}
+
+/* === Card-Meta für Wiki-Cards === */
+.wiki-card .meta {
+    font-family: var(--mono);
+    font-size: 0.74em;
+    color: var(--text-dim);
+    margin: 6px 0 10px;
+}
+.wiki-card .card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+}
+
+/* Section header (Entitäten / Konzepte) */
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 2rem 0 1rem;
+}
+.section-header h3 { margin: 0; font-size: 1.15em; letter-spacing: -0.01em; }
+.section-header .count-badge {
+    font-family: var(--mono);
+    font-size: 0.72em;
+    color: var(--text-dim);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    padding: 1px 9px;
+    border-radius: 999px;
+}
+.section-header.entities h3 { color: var(--accent-2); }
+.section-header.concepts h3 { color: var(--accent-3); }
+
+/* Welcome header */
+.welcome-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.welcome-header h2 {
+    margin: 0;
+    font-size: 1.8rem;
+    color: var(--text);
+    letter-spacing: -0.02em;
+}
+.welcome-header h2 .accent { color: var(--accent-2); }
+
+/* Stats grid (3 cards on top) */
+.stats-grid {
+    display: grid;
+    /* Mobile: 1 Spalte */
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+/* Tablet: 2 Spalten — Karte 5 nimmt volle Breite */
+@media (min-width: 640px) and (max-width: 959px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .stats-grid > .card:nth-child(5):last-child { grid-column: 1 / -1; }
+}
+/* Desktop: 6-Spalten-Subgrid. Karten 1-3 je span 2 (Drittel), Karten 4+5 je span 3 (Hälfte). */
+@media (min-width: 960px) {
+    .stats-grid { grid-template-columns: repeat(6, 1fr); }
+    .stats-grid > .card { grid-column: span 2; }
+    .stats-grid > .card:nth-child(4),
+    .stats-grid > .card:nth-child(5) { grid-column: span 3; }
+}
+.stats-grid .card .stat-num {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -0.02em;
+}
+.stats-grid .card.entities .stat-num { color: var(--accent-2); }
+.stats-grid .card.concepts .stat-num { color: var(--accent-3); }
+.stats-grid .card h4 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.4rem;
+}
+.stats-grid .card .stat-desc {
+    color: var(--text-dim);
+    margin: 0.4rem 0 0.7rem;
+    font-size: 0.9em;
+}
+
+/* Wiki action card (4th box on wiki index) */
+.wiki-actions-card .stat-desc {
+    margin-bottom: 0.5rem;
+}
+.wiki-action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.wiki-search-form {
+    display: flex;
+    gap: 0.4rem;
+}
+.wiki-search-form input[type="text"] {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 10px;
+    border-radius: var(--radius-input);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 0.85em;
+    font-family: var(--font);
+    outline: none;
+    transition: border-color 0.15s;
+}
+.wiki-search-form input[type="text"]:focus {
+    border-color: var(--accent);
+}
+</style>
+
+<div class="welcome-header">
+    <h2>Willkommen <span class="accent">{</span> im Wiki <span class="accent">}</span></h2>
+    <div class="view-toggle" id="viewToggle">
+        <button id="btnGrid" class="active" type="button" title="Kachelansicht">▦ Grid</button>
+        <button id="btnList" type="button" title="Listenansicht">≡ Liste</button>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="card entities">
+        <h4>📦 {{ category_entity_label }}</h4>
+        <p class="stat-desc">Konkrete Dinge: Geräte, Systeme, Integrationen</p>
+        <div class="stat-num">{{ entities|length }}</div>
+    </div>
+    <div class="card concepts">
+        <h4>💡 {{ category_concept_label }}</h4>
+        <p class="stat-desc">Anleitungen, Tutorials, Ideen, Prozesse</p>
+        <div class="stat-num">{{ concepts|length }}</div>
+    </div>
+    <div class="card">
+        <h4>🏷️ <a href="/tags" style="color:inherit;text-decoration:none;">Tags</a></h4>
+        <p class="stat-desc">Kategorien zur einfachen Suche und Filterung</p>
+        <div class="tags">
+            {% for tag in tags[:5] %}
+            <a href="/search?q={{ tag|urlencode }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="card wiki-actions-card">
+        <h4>🔎 Wiki</h4>
+        <p class="stat-desc">Suche und neue Einträge</p>
+        <div class="wiki-action-buttons">
+            <form action="/search" method="get" class="wiki-search-form">
+                <input type="text" name="q" placeholder="Wiki durchsuchen…" aria-label="Wiki durchsuchen">
+                <button type="submit" class="btn btn-sm btn-primary">Suchen</button>
+            </form>
+            <a href="/new" class="btn btn-sm btn-accent" title="Neue Seite erstellen">+ Neuer Eintrag</a>
+        </div>
+    </div>
+
+    <div class="card wiki-io-card">
+        <h4>📦 Import &amp; Export</h4>
+        <p class="stat-desc">.md-Dateien hochladen oder das Wiki als ZIP sichern</p>
+        <div class="wiki-io-buttons">
+            <label class="btn btn-sm btn-primary" style="cursor:pointer;">
+                ⬆️ Import…
+                <input type="file" id="wiki-import-input" multiple accept=".md,.markdown,text/markdown"
+                       style="display:none;" onchange="wikiImport(event)">
+            </label>
+            <select id="wiki-import-section" class="wiki-io-select" title="Ziel-Bereich für Import">
+                <option value="concept">{{ category_concept_label }}</option>
+                <option value="entity">{{ category_entity_label }}</option>
+            </select>
+            <a href="/api/wiki/export" class="btn btn-sm btn-accent" title="Komplettes Wiki als ZIP">
+                ⬇️ Export ZIP
+            </a>
+        </div>
+        <div id="wiki-import-status" class="wiki-io-status"></div>
+    </div>
+</div>
+
+<style>
+.wiki-io-card .wiki-io-buttons {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px;
+}
+.wiki-io-card .wiki-io-select {
+    padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 0.85rem;
+}
+.wiki-io-card .wiki-io-status {
+    margin-top: 8px; font-size: 0.78rem; line-height: 1.5;
+    color: var(--text-dim); min-height: 1.2em;
+}
+.wiki-io-card .wiki-io-status.success { color: var(--accent); }
+.wiki-io-card .wiki-io-status.error   { color: var(--danger); }
+</style>
+
+<script>
+function wikiImport(ev) {
+    var input = ev.target;
+    var files = Array.from(input.files || []);
+    if (files.length === 0) return;
+    var section = (document.getElementById('wiki-import-section') || {}).value || 'concept';
+    var status = document.getElementById('wiki-import-status');
+    status.className = 'wiki-io-status';
+    status.textContent = '⏳ Importiere ' + files.length + ' Datei(en) …';
+    var fd = new FormData();
+    files.forEach(function(f) { fd.append('files', f, f.name); });
+    fd.append('section', section);
+    fetch('/api/wiki/import', { method: 'POST', body: fd })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+    .then(function(res) {
+        input.value = '';
+        if (!res.ok) {
+            status.className = 'wiki-io-status error';
+            status.textContent = '❌ ' + (res.body.error || 'Fehler beim Import');
+            return;
+        }
+        var c = res.body.counts || {};
+        var parts = [];
+        if (c.imported) parts.push('✓ ' + c.imported + ' importiert');
+        if (c.skipped)  parts.push('⏭ ' + c.skipped + ' übersprungen');
+        if (c.errors)   parts.push('❌ ' + c.errors + ' Fehler');
+        status.className = 'wiki-io-status ' + (c.errors ? 'error' : 'success');
+        status.innerHTML = parts.join(' · ') +
+            ((c.imported || 0) > 0 ? ' — <a href="javascript:location.reload()">Seite neu laden</a>' : '');
+    })
+    .catch(function(e) {
+        input.value = '';
+        status.className = 'wiki-io-status error';
+        status.textContent = '❌ ' + e;
+    });
+}
+</script>
+
+<!-- ============================================ -->
+<!-- ENTITÄTEN -->
+<!-- ============================================ -->
+<div class="section-header entities">
+    <h3 id="entities">📦 {{ category_entity_label }}</h3>
+    <span class="count-badge">{{ entities|length }}</span>
+</div>
+
+<!-- Grid-Ansicht -->
+<div class="entity-grid grid-view">
+    {% for entity in entities %}
+    <div class="card wiki-card">
+        <h4><a href="/{{ entity.section }}/{{ entity.id | urlencode }}">{{ entity.title }}</a></h4>
+        <div class="meta">
+            {{ entity.created | format_date }} · geändert {{ entity.updated | format_date }}
+        </div>
+        <div class="tags">
+            {% for tag in entity.tags[:3] %}
+            <a href="/search?q={{ tag|urlencode }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </div>
+        <div class="card-actions">
+            <a href="/{{ entity.section }}/{{ entity.id }}" class="btn btn-sm btn-primary">Lesen</a>
+            <a href="/edit/{{ entity.section }}/{{ entity.id | urlencode }}" class="btn btn-sm">Bearbeiten</a>
+            <a href="/delete/{{ entity.section }}/{{ entity.id }}" class="btn btn-sm btn-danger" onclick="return confirm('Möchtest du „{{ entity.title }}" wirklich löschen?')">🗑️</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Listen-Ansicht -->
+<table class="entity-list list-view">
+    <thead>
+        <tr>
+            <th style="width:40px;"></th>
+            <th>Name</th>
+            <th style="width:150px;">Erstellt</th>
+            <th style="width:150px;">Aktualisiert</th>
+            <th>Tags</th>
+            <th style="width:170px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for entity in entities %}
+        <tr>
+            <td class="icon">📦</td>
+            <td class="name"><a href="/{{ entity.section }}/{{ entity.id | urlencode }}">{{ entity.title }}</a></td>
+            <td class="meta">{{ entity.created | format_date }}</td>
+            <td class="meta">{{ entity.updated | format_date }}</td>
+            <td class="tags-cell">
+                {% for tag in entity.tags[:3] %}
+                <a href="/search?q={{ tag|urlencode }}" class="tag">{{ tag }}</a>
+                {% endfor %}
+            </td>
+            <td class="actions">
+                <a href="/{{ entity.section }}/{{ entity.id }}" class="btn btn-sm btn-primary">Lesen</a>
+                <a href="/edit/{{ entity.section }}/{{ entity.id | urlencode }}" class="btn btn-sm">Bearbeiten</a>
+                <a href="/delete/{{ entity.section }}/{{ entity.id }}" class="btn btn-sm btn-danger" onclick="return confirm('Möchtest du „{{ entity.title }}" wirklich löschen?')">🗑️</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<!-- ============================================ -->
+<!-- KONZEPTE -->
+<!-- ============================================ -->
+<div class="section-header concepts">
+    <h3 id="concepts">💡 {{ category_concept_label }}</h3>
+    <span class="count-badge">{{ concepts|length }}</span>
+</div>
+
+<!-- Grid-Ansicht -->
+<div class="concept-grid grid-view">
+    {% for concept in concepts %}
+    <div class="card wiki-card">
+        <h4><a href="/{{ concept.section }}/{{ concept.id | urlencode }}">{{ concept.title }}</a></h4>
+        <div class="meta">
+            {{ concept.created | format_date }} · geändert {{ concept.updated | format_date }}
+        </div>
+        <div class="tags">
+            {% for tag in concept.tags[:3] %}
+            <a href="/search?q={{ tag|urlencode }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </div>
+        <div class="card-actions">
+            <a href="/{{ concept.section }}/{{ concept.id }}" class="btn btn-sm btn-primary">Lesen</a>
+            <a href="/edit/{{ concept.section }}/{{ concept.id | urlencode }}" class="btn btn-sm">Bearbeiten</a>
+            <a href="/delete/{{ concept.section }}/{{ concept.id }}" class="btn btn-sm btn-danger" onclick="return confirm('Möchtest du „{{ concept.title }}" wirklich löschen?')">🗑️</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Listen-Ansicht -->
+<table class="concept-list list-view">
+    <thead>
+        <tr>
+            <th style="width:40px;"></th>
+            <th>Name</th>
+            <th style="width:150px;">Erstellt</th>
+            <th style="width:150px;">Aktualisiert</th>
+            <th>Tags</th>
+            <th style="width:170px;"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for concept in concepts %}
+        <tr>
+            <td class="icon">💡</td>
+            <td class="name"><a href="/{{ concept.section }}/{{ concept.id | urlencode }}">{{ concept.title }}</a></td>
+            <td class="meta">{{ concept.created | format_date }}</td>
+            <td class="meta">{{ concept.updated | format_date }}</td>
+            <td class="tags-cell">
+                {% for tag in concept.tags[:3] %}
+                <a href="/search?q={{ tag|urlencode }}" class="tag">{{ tag }}</a>
+                {% endfor %}
+            </td>
+            <td class="actions">
+                <a href="/{{ concept.section }}/{{ concept.id }}" class="btn btn-sm btn-primary">Lesen</a>
+                <a href="/edit/{{ concept.section }}/{{ concept.id | urlencode }}" class="btn btn-sm">Bearbeiten</a>
+                <a href="/delete/{{ concept.section }}/{{ concept.id }}" class="btn btn-sm btn-danger" onclick="return confirm('Möchtest du „{{ concept.title }}" wirklich löschen?')">🗑️</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+// View-Toggle mit localStorage-Persistenz
+(function() {
+    var STORAGE_KEY = 'wiki_view_mode';
+    var root = document.documentElement;
+    var toggle = document.getElementById('viewToggle');
+    var btnGrid = document.getElementById('btnGrid');
+    var btnList = document.getElementById('btnList');
+
+    function applyView(mode) {
+        if (mode === 'list') {
+            root.classList.add('list-view');
+            root.classList.remove('grid-view');
+            btnList.classList.add('active');
+            btnGrid.classList.remove('active');
+        } else {
+            root.classList.add('grid-view');
+            root.classList.remove('list-view');
+            btnGrid.classList.add('active');
+            btnList.classList.remove('active');
+        }
+        try { localStorage.setItem(STORAGE_KEY, mode); } catch(e) {}
+    }
+
+    // Gespeicherte Ansicht laden
+    var saved = 'grid';
+    try { saved = localStorage.getItem(STORAGE_KEY) || 'grid'; } catch(e) {}
+    applyView(saved);
+
+    // Toggle-Buttons
+    btnGrid.addEventListener('click', function() { applyView('grid'); });
+    btnList.addEventListener('click', function() { applyView('list'); });
+})();
+</script>
+{% endblock %}

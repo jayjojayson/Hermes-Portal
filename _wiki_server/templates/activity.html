@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Aktivität – Hermes Live-Log{% endblock %}
+{% block page_key %}activity{% endblock %}
+
+{% block extra_head %}
+<style>
+.act-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+}
+.act-hero h1 {
+    font-size: 1.4rem;
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.act-hero h1 .accent { color: var(--accent-2); font-family: var(--mono); font-weight: 500; font-size: 0.85em; }
+.act-hero .meta {
+    font-family: var(--mono);
+    font-size: 0.8em;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+.act-hero .meta .dot {
+    width: 8px; height: 8px;
+    background: var(--accent-2);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--accent-2);
+    animation: live-pulse 2.4s ease-in-out infinite;
+}
+
+.act-toolbar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 0.6rem 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.8rem;
+}
+.act-toolbar .tb-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: var(--radius-btn);
+    padding: 5px 12px;
+    cursor: pointer;
+    font-size: 0.84em;
+    font-family: var(--font);
+    transition: all 0.15s;
+}
+.act-toolbar .tb-btn:hover { border-color: var(--accent); background: var(--accent-glow); }
+.act-toolbar .tb-btn.active {
+    background: var(--accent-glow);
+    border-color: var(--accent);
+    color: var(--text);
+}
+.act-toolbar input[type="text"] {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: var(--radius-input);
+    font-family: var(--mono);
+    font-size: 0.84em;
+    outline: none;
+    min-width: 220px;
+    flex: 1;
+    max-width: 360px;
+}
+.act-toolbar input[type="text"]:focus { border-color: var(--accent); }
+.act-toolbar .spacer { flex: 1; }
+.act-toolbar .info {
+    font-family: var(--mono);
+    color: var(--text-dim);
+    font-size: 0.78em;
+    word-break: break-all;
+}
+
+.log-pane {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 0.7rem 0;
+    max-height: calc(100vh - 280px);
+    min-height: 380px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 0.84em;
+    line-height: 1.55;
+    position: relative;
+}
+.log-pane.empty-pane {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 2rem;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+.log-line {
+    padding: 1px 1rem;
+    display: flex;
+    gap: 0.8rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border-left: 2px solid transparent;
+}
+.log-line:hover { background: var(--surface2); }
+.log-line.lv-info { color: var(--text); }
+.log-line.lv-warn { color: var(--warning); border-left-color: var(--warning); background: rgba(251,191,36,0.03); }
+.log-line.lv-error { color: var(--danger); border-left-color: var(--danger); background: rgba(248,113,113,0.04); }
+.log-line.lv-debug { color: var(--text-dim); }
+.log-line.lv-mint { color: var(--accent-2); }
+.log-line .ts {
+    color: var(--text-dim);
+    flex-shrink: 0;
+    min-width: 90px;
+}
+.log-line .lvl {
+    flex-shrink: 0;
+    min-width: 55px;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    opacity: 0.8;
+}
+.log-line .msg { flex: 1; }
+.log-line.match { background: var(--accent-glow); border-left-color: var(--accent); }
+
+.log-status {
+    margin-top: 0.6rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.78em;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.candidates {
+    margin-top: 1rem;
+    font-family: var(--mono);
+    font-size: 0.8em;
+    color: var(--text-dim);
+}
+.candidates ul { margin: 0.4rem 0 0 1.2rem; padding: 0; }
+.candidates code { background: var(--surface2); padding: 1px 6px; border-radius: 4px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="act-hero">
+    <div>
+        <h1>Aktivität <span class="accent">// hermes log</span></h1>
+        <div class="meta">
+            {% if log_path %}
+            <span class="dot"></span>
+            <span>Live-Tail · <code>{{ log_path }}</code></span>
+            {% else %}
+            <span>⚠ kein Logfile gefunden</span>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="act-toolbar">
+    <button class="tb-btn active" id="btnAutoscroll" type="button" title="Bei neuen Zeilen ans Ende scrollen">⏬ Autoscroll</button>
+    <button class="tb-btn" id="btnPause" type="button" title="Polling pausieren">⏸ Pause</button>
+    <input type="text" id="filterInput" placeholder="Filter (z. B. ERROR, prompt, name)…">
+    <select id="levelSelect" class="tb-btn" style="padding:5px 10px;">
+        <option value="all">alle Level</option>
+        <option value="info">≥ info</option>
+        <option value="warn">≥ warn</option>
+        <option value="error">nur error</option>
+    </select>
+    <span class="spacer"></span>
+    <button class="tb-btn" id="btnClear" type="button" title="Sichtbare Zeilen leeren (kein Effekt auf Datei)">🧹 Clear View</button>
+    <span class="info" id="logInfo">–</span>
+</div>
+
+<div class="log-pane{% if not log_path %} empty-pane{% endif %}" id="logPane">
+    {% if not log_path %}
+    <div>⚠ Kein Hermes-Logfile gefunden.</div>
+    <div style="font-size:0.85em; max-width:560px; text-align:center;">
+        Setze die Umgebungsvariable <code>HERMES_LOG=/pfad/zum/log</code> beim Start des Wiki-Servers,
+        oder lege das Log unter einem der bekannten Pfade ab.
+    </div>
+    {% endif %}
+</div>
+
+<div class="log-status">
+    <span id="logSize">–</span>
+    <span id="lastUpdate">noch nicht aktualisiert</span>
+</div>
+
+{% if not log_path and candidates %}
+<div class="candidates">
+    Geprüfte Pfade:
+    <ul>
+    {% for c in candidates %}
+        <li><code>{{ c }}</code></li>
+    {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<script>
+(function() {
+    'use strict';
+    {% if not log_path %}
+    return; // nichts zu tun
+    {% endif %}
+
+    function $(sel) { return document.querySelector(sel); }
+    var pane = $('#logPane');
+    var info = $('#logInfo');
+    var sizeEl = $('#logSize');
+    var lastEl = $('#lastUpdate');
+    var filterEl = $('#filterInput');
+    var levelEl = $('#levelSelect');
+    var autoscrollBtn = $('#btnAutoscroll');
+    var pauseBtn = $('#btnPause');
+    var clearBtn = $('#btnClear');
+
+    var autoscroll = true;
+    var paused = false;
+    var lastOffset = 0;
+    var pollTimer = null;
+    var LEVEL_PRIORITY = { debug: 0, info: 1, warn: 2, error: 3 };
+
+    autoscrollBtn.addEventListener('click', function() {
+        autoscroll = !autoscroll;
+        autoscrollBtn.classList.toggle('active', autoscroll);
+    });
+    pauseBtn.addEventListener('click', function() {
+        paused = !paused;
+        pauseBtn.classList.toggle('active', paused);
+        pauseBtn.textContent = paused ? '▶ Resume' : '⏸ Pause';
+        if (!paused) schedulePoll(0);
+    });
+    clearBtn.addEventListener('click', function() {
+        pane.innerHTML = '';
+    });
+    filterEl.addEventListener('input', applyFilter);
+    levelEl.addEventListener('change', applyFilter);
+
+    function classifyLine(line) {
+        var lower = line.toLowerCase();
+        if (/\berror\b|\bfailed\b|exception|traceback/.test(lower)) return 'error';
+        if (/\bwarn(ing)?\b/.test(lower)) return 'warn';
+        if (/\bdebug\b/.test(lower)) return 'debug';
+        if (/\bprompt\b|hermes|chat|telegram/.test(lower)) return 'mint';
+        return 'info';
+    }
+
+    function parseLine(line) {
+        // 2026-05-12 13:14:22[,123] LEVEL message …
+        var m = line.match(/^(\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}:\d{2})[\.,]?\d*\s+([A-Z]+)?\s*(.*)$/);
+        if (m) {
+            var ts = m[1].split(/[ T]/)[1];
+            var lvl = (m[2] || '').toLowerCase();
+            return { ts: ts, lvl: lvl, msg: m[3] };
+        }
+        return { ts: '', lvl: '', msg: line };
+    }
+
+    function esc(s) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+        });
+    }
+
+    function appendLines(lines, replace) {
+        if (replace) {
+            pane.classList.remove('empty-pane');
+            pane.innerHTML = '';
+        }
+        var atBottom = (pane.scrollHeight - pane.scrollTop - pane.clientHeight) < 80;
+        var frag = document.createDocumentFragment();
+        lines.forEach(function(line) {
+            if (!line) return;
+            var p = parseLine(line);
+            var cls = classifyLine(line);
+            var div = document.createElement('div');
+            div.className = 'log-line lv-' + cls;
+            div.dataset.raw = line;
+            div.dataset.level = cls;
+            div.innerHTML =
+                '<span class="ts">' + esc(p.ts || '·') + '</span>' +
+                '<span class="lvl">' + esc(p.lvl) + '</span>' +
+                '<span class="msg">' + esc(p.msg) + '</span>';
+            frag.appendChild(div);
+        });
+        pane.appendChild(frag);
+        // Cap auf max 2000 Zeilen
+        while (pane.children.length > 2000) pane.removeChild(pane.firstChild);
+        applyFilter();
+        if (autoscroll && atBottom) pane.scrollTop = pane.scrollHeight;
+    }
+
+    function applyFilter() {
+        var q = filterEl.value.toLowerCase().trim();
+        var lvlFilter = levelEl.value;
+        var minPrio = lvlFilter === 'all' ? -1 : (LEVEL_PRIORITY[lvlFilter] !== undefined ? LEVEL_PRIORITY[lvlFilter] : -1);
+        if (lvlFilter === 'error') minPrio = 3;
+        Array.prototype.forEach.call(pane.children, function(el) {
+            if (!el.dataset) return;
+            var matchText = !q || (el.dataset.raw || '').toLowerCase().indexOf(q) !== -1;
+            var prio = LEVEL_PRIORITY[el.dataset.level];
+            var matchLvl = (minPrio < 0) || (prio !== undefined && prio >= minPrio);
+            el.style.display = (matchText && matchLvl) ? '' : 'none';
+            el.classList.toggle('match', !!(q && matchText));
+        });
+    }
+
+    function fetchUpdates() {
+        if (paused) return;
+        var url = '/api/activity/log?since=' + lastOffset;
+        fetch(url, { cache: 'no-store' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (!d.path) {
+                    pane.classList.add('empty-pane');
+                    pane.innerHTML = '<div>⚠ Logfile nicht erreichbar.</div>';
+                    return;
+                }
+                if (!d.incremental) {
+                    appendLines(d.lines || [], true);
+                } else if (d.lines && d.lines.length) {
+                    appendLines(d.lines, false);
+                }
+                lastOffset = d.size || 0;
+                sizeEl.textContent = (d.size != null) ? ((d.size/1024).toFixed(1) + ' KB log · ' + pane.children.length + ' Zeilen sichtbar') : '–';
+                var now = new Date();
+                lastEl.textContent = 'aktualisiert ' + now.toLocaleTimeString();
+                info.textContent = d.path;
+            })
+            .catch(function() {
+                lastEl.textContent = '⚠ Verbindungsfehler – warte …';
+            })
+            .finally(function() { schedulePoll(2500); });
+    }
+
+    function schedulePoll(delay) {
+        if (pollTimer) clearTimeout(pollTimer);
+        pollTimer = setTimeout(fetchUpdates, delay);
+    }
+
+    // Erstes Laden
+    fetch('/api/activity/log?n=400', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (!d.path) {
+                pane.classList.add('empty-pane');
+                pane.innerHTML = '<div>⚠ Kein Logfile gefunden.</div>';
+                return;
+            }
+            appendLines(d.lines || [], true);
+            lastOffset = d.size || 0;
+            sizeEl.textContent = (d.size/1024).toFixed(1) + ' KB log · ' + pane.children.length + ' Zeilen sichtbar';
+            info.textContent = d.path;
+            pane.scrollTop = pane.scrollHeight;
+        })
+        .finally(function() { schedulePoll(2500); });
+})();
+</script>
+{% endblock %}

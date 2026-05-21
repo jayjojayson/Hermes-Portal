@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Suche – {{ portal_name }}{% endblock %}
+{% block page_key %}wiki-search{% endblock %}
+
+{% block content %}
+<style>
+.search-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+}
+.search-empty {
+    text-align: center;
+    padding: 3rem 1.5rem;
+}
+.search-empty h4 { color: var(--text-dim); margin: 0; }
+.search-empty p { color: var(--text-dim); margin: 0.5rem 0 0; }
+.search-result-meta {
+    font-family: var(--mono);
+    font-size: 0.78em;
+    color: var(--text-dim);
+    margin: 6px 0 8px;
+}
+</style>
+
+<h2 style="color: var(--accent-2); margin: 0 0 1rem;">🔍 Suchergebnisse für „{{ query }}"</h2>
+
+<div class="search-form">
+    <form action="/search" method="get" style="display:flex; gap:0.5rem; width:100%;">
+        <input type="text" name="q" value="{{ query }}" placeholder="Suche im Wiki…" required>
+        <button type="submit" class="btn btn-primary">Suchen</button>
+    </form>
+</div>
+
+{% if results %}
+<div class="search-results-grid">
+    {% for result in results %}
+    <div class="card">
+        <h4><a href="/{{ result.section }}/{{ result.id }}">{{ result.title }}</a></h4>
+        <div class="search-result-meta">
+            {{ result.type.capitalize() }}
+        </div>
+        <div class="tags">
+            {% for tag in result.tags %}
+                <a href="/search?q={{ tag }}" class="tag">{{ tag }}</a>
+            {% endfor %}
+        </div>
+        <div style="margin-top:0.75rem;">
+            <a href="/{{ result.section }}/{{ result.id }}" class="btn btn-sm btn-primary">Ansehen</a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="card search-empty">
+    <h4>Keine Ergebnisse gefunden</h4>
+    <p>Versuche andere Suchbegriffe oder Tags.</p>
+</div>
+{% endif %}
+{% endblock %}

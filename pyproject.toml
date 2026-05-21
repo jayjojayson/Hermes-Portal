@@ -1,0 +1,46 @@
+[project]
+name = "hermes-portal"
+version = "0.5.0"
+description = "Modernes Web-Frontend für den Hermes-Agent (Wiki, Briefing, Chat, Settings, …)"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "Hermes Portal Contributors" }]
+requires-python = ">=3.11"
+keywords = ["hermes", "agent", "wiki", "portal", "dashboard", "flask"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Web Environment",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
+]
+
+dependencies = [
+    "Flask>=3.0,<4.0",
+    "Jinja2>=3.1",
+    "Werkzeug>=3.0",
+    "markdown>=3.5",
+    "PyYAML>=6.0",
+    "paramiko>=3.4",
+    "gunicorn>=21.2",
+    "waitress>=3.0",
+]
+
+[project.optional-dependencies]
+build = [
+    "pyinstaller>=6.0",
+]
+
+[project.urls]
+Homepage      = "https://github.com/jayjojayson/Hermes-Portal"
+Repository    = "https://github.com/jayjojayson/Hermes-Portal"
+Issues        = "https://github.com/jayjojayson/Hermes-Portal/issues"
+Discussions   = "https://github.com/jayjojayson/Hermes-Portal/discussions"
+Releases      = "https://github.com/jayjojayson/Hermes-Portal/releases"
+
+[project.scripts]
+hermes-portal = "wiki_app:main"

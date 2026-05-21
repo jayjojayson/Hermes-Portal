@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Neuer Eintrag – {{ portal_name }}{% endblock %}
+{% block page_key %}wiki-new{% endblock %}
+
+{% block content %}
+<style>
+.new-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.new-grid .form-group.full { grid-column: 1 / -1; }
+.new-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+    flex-wrap: wrap;
+}
+/* Bild-Vorschau mit Papierkorb */
+.image-preview {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.uploaded-image-item {
+    position: relative;
+}
+.delete-img-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.6);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    line-height: 1;
+}
+.delete-img-btn:hover {
+    background: rgba(255,60,60,0.8);
+}
+</style>
+
+<h2 style="color: var(--accent-2); margin: 0 0 1rem;">➕ Neuen Wiki-Eintrag erstellen</h2>
+
+<form method="POST" action="/new">
+    <div class="new-grid">
+        <div class="form-group">
+            <label for="title">Titel</label>
+            <input type="text" id="title" name="title" placeholder="z.B. Tasmota-Gerät einrichten" required>
+        </div>
+
+        <div class="form-group">
+            <label for="type">Typ</label>
+            <select id="type" name="section">
+                <option value="concept">💡 Konzept / Anleitung</option>
+                <option value="entity">📦 Entität / Gerät / System</option>
+            </select>
+        </div>
+
+        <div class="form-group full">
+            <label for="tags">Tags</label>
+            <input type="text" id="tags" name="tags" placeholder="z.B. tasmota, ki, mqtt">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="content">Inhalt (Markdown)</label>
+        {% include "_md_toolbar.html" %}
+        <textarea id="content" name="content" rows="15"
+                  placeholder="Schreibe hier deinen Wiki-Inhalt im Markdown-Format…"></textarea>
+    </div>
+
+    <div class="form-group full">
+        <label for="image-upload">📷 Bild hinzufügen</label>
+        <div class="image-upload-area">
+            <input type="file" id="image-upload" name="image" accept="image/*" style="display:none;" onchange="handleImageUpload(this)">
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('image-upload').click()">📷 Bild hochladen</button>
+            <div id="image-preview" class="image-preview"></div>
+        </div>
+    </div>
+
+    <div class="new-actions">
+        <button type="submit" class="btn btn-success">💾 Erstellen</button>
+        <a href="/" class="btn">Abbrechen</a>
+    </div>
+</form>
+
+<script>
+    // Image upload handling
+    function handleImageUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        fetch('/upload/image', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addImagePreview(data.url);
+                const textarea = document.getElementById('content');
+                const markdown = `\n![](${data.url})\n`;
+                textarea.value += markdown;
+            } else {
+                alert('Fehler beim Hochladen: ' + (data.error || 'Unbekannter Fehler'));
+            }
+        })
+        .catch(error => {
+            alert('Fehler beim Hochladen: ' + error);
+        });
+    }
+
+    function addImagePreview(url) {
+        const preview = document.getElementById('image-preview');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'uploaded-image-item';
+        wrapper.innerHTML = `
+            <div style="position:relative; display:inline-block;">
+                <img src="${url}" style="max-width: 300px; max-height: 200px; border-radius: 8px;">
+                <button type="button" class="delete-img-btn" onclick="deleteImage('${url}', this)" title="Bild löschen">
+                    🗑️
+                </button>
+            </div>
+            <div style="font-size: 0.85em; color: var(--text-dim); margin-top: 0.3rem;">
+                URL: <code>![](${url})</code>
+                <button type="button" onclick="insertImageMarkdown('${url}')" class="btn btn-sm btn-accent" style="margin-left:0.3rem; padding: 2px 8px;">Einfügen</button>
+            </div>
+        `;
+        preview.appendChild(wrapper);
+    }
+
+    function deleteImage(url, btn) {
+        if (!confirm('Bild wirklich löschen?')) return;
+
+        const textarea = document.getElementById('content');
+        textarea.value = textarea.value.replace(new RegExp(`!\\\\[\\\\]\\(${escapeRegex(url)}\\)\\s*`, 'g'), '');
+
+        const filename = url.split('/').pop();
+        fetch(`/api/uploads/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    btn.closest('.uploaded-image-item').remove();
+                } else {
+                    alert('Fehler beim Löschen: ' + (data.error || 'Unbekannter Fehler'));
+                }
+            })
+            .catch(err => alert('Fehler beim Löschen: ' + err));
+    }
+
+    function escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function insertImageMarkdown(url) {
+        const textarea = document.getElementById('content');
+        const pos = textarea.selectionStart;
+        const text = textarea.value;
+        const markdown = `\n![](${url})\n`;
+        textarea.value = text.slice(0, pos) + markdown + text.slice(pos);
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = pos + markdown.length;
+    }
+</script>
+{% endblock %}

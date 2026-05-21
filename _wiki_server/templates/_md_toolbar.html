@@ -1,0 +1,131 @@
+{# Wiederverwendbare Markdown-Toolbar – include über jedem Editor-Textarea #}
+<div class="md-toolbar" role="toolbar" aria-label="Markdown-Formatierung">
+    <button type="button" class="md-tb-btn" title="Überschrift 1"          onclick="mdToolbar('h1')">H1</button>
+    <button type="button" class="md-tb-btn" title="Überschrift 2"          onclick="mdToolbar('h2')">H2</button>
+    <button type="button" class="md-tb-btn" title="Überschrift 3"          onclick="mdToolbar('h3')">H3</button>
+    <button type="button" class="md-tb-btn" title="Überschrift 4"          onclick="mdToolbar('h4')">H4</button>
+    <span class="md-tb-sep"></span>
+    <button type="button" class="md-tb-btn" title="Fett (Cmd/Ctrl+B)"      onclick="mdToolbar('bold')"><b>B</b></button>
+    <button type="button" class="md-tb-btn" title="Kursiv (Cmd/Ctrl+I)"    onclick="mdToolbar('italic')"><i>I</i></button>
+    <button type="button" class="md-tb-btn" title="Code"                   onclick="mdToolbar('code')">&lt;/&gt;</button>
+    <span class="md-tb-sep"></span>
+    <button type="button" class="md-tb-btn" title="Aufzählung"             onclick="mdToolbar('ul')">•&nbsp;Liste</button>
+    <button type="button" class="md-tb-btn" title="Nummerierte Liste"      onclick="mdToolbar('ol')">1.&nbsp;Liste</button>
+    <span class="md-tb-sep"></span>
+    <button type="button" class="md-tb-btn" title="Link einfügen"          onclick="mdToolbar('link')">🔗 Link</button>
+</div>
+
+<style>
+.md-toolbar {
+    display: flex; flex-wrap: wrap; gap: 4px; align-items: center;
+    padding: 6px 8px; margin-bottom: 4px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px 8px 0 0; border-bottom: none;
+}
+.md-tb-btn {
+    background: transparent; border: 1px solid transparent;
+    color: var(--text); cursor: pointer;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 0.86rem; font-family: var(--font);
+    min-width: 32px; line-height: 1.2;
+}
+.md-tb-btn:hover { background: var(--surface3); border-color: var(--border); }
+.md-tb-btn:active { background: var(--accent-glow); }
+.md-tb-sep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+.md-toolbar + textarea {
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+}
+</style>
+
+<script>
+(function() {
+    // Doppelt-Include schadet nicht; window-Funktion ist nur 1× definiert.
+    if (typeof window.mdToolbar === 'function') return;
+
+    function _wrap(ta, before, after) {
+        var s = ta.selectionStart, e = ta.selectionEnd;
+        var sel = ta.value.slice(s, e);
+        var insert = before + sel + after;
+        ta.value = ta.value.slice(0, s) + insert + ta.value.slice(e);
+        // Cursor positionieren: wenn Selektion war, hinter Insertion. Sonst zwischen before/after.
+        if (sel) {
+            ta.selectionStart = s + before.length;
+            ta.selectionEnd = s + before.length + sel.length;
+        } else {
+            ta.selectionStart = ta.selectionEnd = s + before.length;
+        }
+        ta.focus();
+    }
+
+    function _linePrefix(ta, prefix) {
+        var s = ta.selectionStart, e = ta.selectionEnd;
+        // Auf Zeilenanfang/-ende ausweiten
+        var v = ta.value;
+        var lineStart = v.lastIndexOf('\n', s - 1) + 1;
+        var lineEnd = v.indexOf('\n', e);
+        if (lineEnd < 0) lineEnd = v.length;
+        var block = v.slice(lineStart, lineEnd);
+        var lines = block.split('\n');
+        var processed = lines.map(function(line, i) {
+            if (prefix === '__OL__') return (i + 1) + '. ' + line.replace(/^\s*\d+\.\s+/, '');
+            // Toggle: wenn schon prefixed, entfernen — sonst hinzufügen
+            var trimmed = line.replace(/^(#{1,6}\s+|-\s+|\d+\.\s+)/, '');
+            return prefix + trimmed;
+        });
+        var newBlock = processed.join('\n');
+        ta.value = v.slice(0, lineStart) + newBlock + v.slice(lineEnd);
+        ta.selectionStart = lineStart;
+        ta.selectionEnd = lineStart + newBlock.length;
+        ta.focus();
+    }
+
+    window.mdToolbar = function(action) {
+        var ta = document.getElementById('content');
+        if (!ta) return;
+        switch (action) {
+            case 'h1':     _linePrefix(ta, '# '); break;
+            case 'h2':     _linePrefix(ta, '## '); break;
+            case 'h3':     _linePrefix(ta, '### '); break;
+            case 'h4':     _linePrefix(ta, '#### '); break;
+            case 'bold':   _wrap(ta, '**', '**'); break;
+            case 'italic': _wrap(ta, '*', '*'); break;
+            case 'code': {
+                var s = ta.selectionStart, e = ta.selectionEnd;
+                var sel = ta.value.slice(s, e);
+                if (sel.indexOf('\n') >= 0) {
+                    // Mehrzeilig → Code-Block
+                    _wrap(ta, '```\n', '\n```');
+                } else {
+                    _wrap(ta, '`', '`');
+                }
+                break;
+            }
+            case 'ul':     _linePrefix(ta, '- '); break;
+            case 'ol':     _linePrefix(ta, '__OL__'); break;
+            case 'link': {
+                var url = window.prompt('URL eingeben:', 'https://');
+                if (!url) return;
+                var s = ta.selectionStart, e = ta.selectionEnd;
+                var sel = ta.value.slice(s, e) || 'Linktext';
+                var ins = '[' + sel + '](' + url + ')';
+                ta.value = ta.value.slice(0, s) + ins + ta.value.slice(e);
+                ta.selectionStart = s + 1;
+                ta.selectionEnd = s + 1 + sel.length;
+                ta.focus();
+                break;
+            }
+        }
+    };
+
+    // Tastaturkürzel auf textarea
+    document.addEventListener('keydown', function(ev) {
+        if (!ev.target || ev.target.id !== 'content') return;
+        if (!(ev.metaKey || ev.ctrlKey)) return;
+        var key = ev.key.toLowerCase();
+        if (key === 'b') { ev.preventDefault(); window.mdToolbar('bold'); }
+        else if (key === 'i') { ev.preventDefault(); window.mdToolbar('italic'); }
+        else if (key === 'k') { ev.preventDefault(); window.mdToolbar('link'); }
+    });
+})();
+</script>

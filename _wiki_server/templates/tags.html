@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Tags – Wiki{% endblock %}
+{% block content %}
+
+<div style="margin-bottom:20px;">
+    <h1 style="font-size:1.4em; margin-bottom:8px;">🏷️ Tag-Übersicht</h1>
+    <p style="color:var(--text-dim); font-size:0.9em;">{{ total_pages }} Seiten · {{ tags|length }} verschiedene Tags</p>
+</div>
+
+<div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(350px, 1fr)); gap:16px;">
+    {% for tag, pages in tags.items() %}
+    <div class="card">
+        <h2>
+            <a href="{{ url_for('search', tag=tag) }}">{{ tag }}</a>
+            <span class="count">{{ pages|length }}</span>
+        </h2>
+        <ul class="page-list">
+            {% for page in pages %}
+            <li style="padding:4px 8px;">
+                <a href="{{ url_for('show_page', page_id=page.id, section=page.section) }}" style="font-size:0.9em; color: var(--text-primary);">
+                    {{ page.title }}
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}

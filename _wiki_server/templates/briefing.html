@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}☕ Briefing – {{ portal_name }}{% endblock %}
+{% block page_key %}briefing{% endblock %}
+
+{% block content %}
+<style>
+.brf-wrap        { max-width: 1100px; margin: 0 auto; }
+.brf-header      { display:flex; align-items:center; justify-content:space-between;
+                   gap:1rem; flex-wrap:wrap; margin-bottom:1rem; }
+.brf-header h2   { margin:0; color:var(--accent-secondary); }
+.brf-meta        { font-size:0.86rem; color:var(--text-secondary); }
+.brf-toolbar     { display:flex; gap:8px; flex-wrap:wrap; }
+.brf-banner      { padding:10px 14px; border-radius:8px; background:var(--bg-tertiary);
+                   font-size:0.88rem; margin-bottom:1rem; }
+.brf-banner.ok   { border-left:4px solid #22c55e; }
+.brf-banner.err  { border-left:4px solid #ef4444; }
+.brf-iframe      { width:100%; min-height:70vh; border:1px solid var(--border-color);
+                   border-radius:12px; background:#0f0f0f; }
+.brf-settings    { margin-top:1.5rem; }
+.brf-settings details { background:var(--bg-secondary); border:1px solid var(--border-color);
+                       border-radius:10px; padding:1rem 1.25rem; }
+.brf-settings summary { cursor:pointer; font-weight:600; user-select:none; }
+.brf-grid        { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
+                   gap:1rem; margin-top:1rem; }
+.brf-field       { display:flex; flex-direction:column; gap:4px;
+                   font-size:0.86rem; color:var(--text-secondary); }
+.brf-field span  { font-weight:600; color:var(--text-primary); }
+.brf-input       { width:100%; padding:8px 10px; border:1px solid var(--border-color);
+                   border-radius:8px; background:var(--bg-primary); color:var(--text-primary);
+                   font-size:0.9rem; box-sizing:border-box; }
+.brf-input:focus { outline:none; border-color:var(--accent-primary); }
+.brf-output      { font-family: var(--mono); font-size:0.82rem; background:var(--bg-primary);
+                   border:1px solid var(--border-color); border-radius:8px; padding:0.75rem;
+                   white-space:pre-wrap; max-height:18rem; overflow:auto; margin-top:0.5rem; }
+</style>
+
+<div class="brf-wrap">
+    <div class="brf-header">
+        <div>
+            <h2>☕ Briefing</h2>
+            <div class="brf-meta" id="brf-meta">Lade Status…</div>
+        </div>
+        <div class="brf-toolbar">
+            <button class="btn-sm btn-sm-primary" onclick="runBriefing()" id="brf-run-btn">
+                ▶ Briefing jetzt erzeugen
+            </button>
+            <button class="btn-sm btn-sm-secondary" onclick="reloadFrame()">🔄 Vorschau neu laden</button>
+        </div>
+    </div>
+
+    <div class="brf-banner" id="brf-banner" style="display:none;"></div>
+
+    <iframe class="brf-iframe" id="brf-frame" src="/api/briefing/render" title="Briefing-Vorschau"></iframe>
+
+    <div class="brf-settings">
+        <details>
+            <summary>⚙️ Briefing-Einstellungen (GitHub, Wetter, RSS, BVG …)</summary>
+            <div class="brf-grid">
+                <label class="brf-field">
+                    <span>GitHub-User <em style="font-weight:normal;color:var(--text-secondary);">(leer = überspringen)</em></span>
+                    <input id="brf-github_user" class="brf-input" placeholder="z.B. octocat">
+                </label>
+                <label class="brf-field">
+                    <span>Wetter Breite</span>
+                    <input id="brf-weather_lat" class="brf-input" placeholder="52.52">
+                </label>
+                <label class="brf-field">
+                    <span>Wetter Länge</span>
+                    <input id="brf-weather_lon" class="brf-input" placeholder="13.40">
+                </label>
+                <label class="brf-field">
+                    <span>Zeitzone</span>
+                    <input id="brf-weather_tz" class="brf-input" placeholder="Europe/Berlin">
+                </label>
+                <label class="brf-field">
+                    <span>Forum-RSS <em style="font-weight:normal;color:var(--text-secondary);">(leer = aus)</em></span>
+                    <input id="brf-forum_rss" class="brf-input" placeholder="https://forum.example.com/latest.rss">
+                </label>
+                <label class="brf-field">
+                    <span>BVG/ÖPNV-Stop-ID <em style="font-weight:normal;color:var(--text-secondary);">(leer = aus)</em></span>
+                    <input id="brf-bvg_stop" class="brf-input" placeholder="z.B. 900100003">
+                </label>
+                <label class="brf-field" style="grid-column:1/-1;">
+                    <span>Briefing-Script-Pfad (relativ zu Wiki)</span>
+                    <input id="brf-script" class="brf-input" placeholder="scripts/daily_briefing.py">
+                </label>
+                <label class="brf-field" style="grid-column:1/-1;">
+                    <span>Output-HTML-Pfad (relativ zu Wiki)</span>
+                    <input id="brf-output" class="brf-input" placeholder="blog/briefing.html">
+                </label>
+            </div>
+            <div style="margin-top:0.75rem;">
+                <button class="btn-sm btn-sm-primary" onclick="saveBriefingConfig()">💾 Einstellungen speichern</button>
+                <span class="save-feedback" id="brf-save-feedback">✓ Gespeichert!</span>
+            </div>
+            <div id="brf-run-output" class="brf-output" style="display:none;"></div>
+        </details>
+    </div>
+</div>
+
+<script>
+function setBanner(msg, cls) {
+    var b = document.getElementById('brf-banner');
+    if (!b) return;
+    b.style.display = msg ? 'block' : 'none';
+    b.className = 'brf-banner' + (cls ? ' ' + cls : '');
+    b.innerHTML = msg || '';
+}
+
+function loadBriefingInfo() {
+    fetch('/api/briefing/info', {cache:'no-store'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var meta = document.getElementById('brf-meta');
+        if (!meta) return;
+        var parts = [];
+        parts.push('Modus: <strong>' + d.client_mode + '</strong>');
+        if (d.exists) {
+            parts.push('Zuletzt aktualisiert ' + d.last_modified_human);
+        } else {
+            parts.push('<em>noch nicht erzeugt</em>');
+        }
+        if (!d.script_exists) {
+            parts.push('⚠️ Script fehlt: <code>' + d.script_path + '</code>');
+        }
+        meta.innerHTML = parts.join(' · ');
+    })
+    .catch(function(e) {
+        var meta = document.getElementById('brf-meta');
+        if (meta) meta.textContent = 'Status nicht abrufbar: ' + e;
+    });
+}
+
+function reloadFrame() {
+    var f = document.getElementById('brf-frame');
+    if (f) f.src = '/api/briefing/render?_=' + Date.now();
+}
+
+function runBriefing() {
+    var btn = document.getElementById('brf-run-btn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Wird erzeugt …'; }
+    setBanner('⏳ Briefing-Script läuft … (kann bis zu 3 Minuten dauern)');
+    var outEl = document.getElementById('brf-run-output');
+
+    fetch('/api/briefing/run', {method:'POST'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (btn) { btn.disabled = false; btn.textContent = '▶ Briefing jetzt erzeugen'; }
+        if (d.status === 'ok') {
+            setBanner('✅ Briefing erfolgreich erzeugt (rc=' + d.returncode + ')', 'ok');
+        } else {
+            setBanner('❌ Briefing fehlgeschlagen (rc=' + d.returncode + '). Details unten.', 'err');
+        }
+        if (outEl) {
+            outEl.style.display = 'block';
+            outEl.textContent =
+                'STDOUT:\n' + (d.stdout || '(leer)') +
+                '\n\nSTDERR:\n' + (d.stderr || '(leer)');
+        }
+        // Vorschau + Status neu laden
+        setTimeout(function() { reloadFrame(); loadBriefingInfo(); }, 500);
+    })
+    .catch(function(e) {
+        if (btn) { btn.disabled = false; btn.textContent = '▶ Briefing jetzt erzeugen'; }
+        setBanner('❌ Fehler: ' + e, 'err');
+    });
+}
+
+var BRF_FIELDS = [
+    ['briefing_github_user', 'github_user'],
+    ['briefing_weather_lat', 'weather_lat'],
+    ['briefing_weather_lon', 'weather_lon'],
+    ['briefing_weather_tz',  'weather_tz'],
+    ['briefing_forum_rss',   'forum_rss'],
+    ['briefing_bvg_stop',    'bvg_stop'],
+    ['briefing_script',      'script'],
+    ['briefing_output',      'output'],
+];
+
+function loadBriefingConfig() {
+    fetch('/api/briefing/config', {cache:'no-store'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        BRF_FIELDS.forEach(function(p) {
+            var el = document.getElementById('brf-' + p[1]);
+            if (el) el.value = d[p[0]] || '';
+        });
+    });
+}
+
+function saveBriefingConfig() {
+    var payload = {};
+    BRF_FIELDS.forEach(function(p) {
+        var el = document.getElementById('brf-' + p[1]);
+        if (el) payload[p[0]] = el.value;
+    });
+    fetch('/api/briefing/config', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify(payload)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var fb = document.getElementById('brf-save-feedback');
+        if (fb) { fb.classList.add('show'); setTimeout(function() { fb.classList.remove('show'); }, 1800); }
+    })
+    .catch(function(e) { alert('Speichern fehlgeschlagen: ' + e); });
+}
+
+loadBriefingInfo();
+loadBriefingConfig();
+</script>
+{% endblock %}

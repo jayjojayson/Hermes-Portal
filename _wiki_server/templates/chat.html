@@ -1,0 +1,1880 @@
+{% extends "base.html" %}
+
+{% block title %}Chat – Jay&TecWorld{% endblock %}
+{% block page_key %}chat{% endblock %}
+
+{% block extra_head %}
+<style>
+/* Hide the Wiki navigation sidebar on chat page only (built by site-header.js) */
+body[data-page="chat"] .site-sidebar,
+body[data-page="chat"] .sidebar-toggle-btn,
+body[data-page="chat"] .sidebar-hover-strip,
+html body[data-page="chat"] .has-sidebar,
+body[data-page="chat"] #site-sidebar {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    min-width: 0 !important;
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+html, body[data-page="chat"] {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+body[data-page="chat"] > main,
+body[data-page="chat"] .main-content,
+body[data-page="chat"] .content-wrapper,
+body[data-page="chat"] .page-wrapper {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+/* Kill the global container gap on chat page */
+html body[data-page="chat"] > main > .container,
+html body[data-page="chat"] > .container {
+    max-width: none !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* === Chat Layout === */
+.chat-container {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - 56px);
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+    overflow: hidden;
+    position: relative;  /* Anker für Floating-Buttons (Files-Reopen) */
+}
+
+/* === Chat Session Sidebar === */
+.chat-sidebar {
+    width: 280px;
+    min-width: 32px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+    transition: width 0.18s ease;
+}
+.chat-sidebar.collapsed {
+    width: 32px;
+    min-width: 32px;
+}
+.chat-sidebar.collapsed .chat-search,
+.chat-sidebar.collapsed .chat-list,
+.chat-sidebar.collapsed .chat-sidebar-header h2,
+.chat-sidebar.collapsed .btn-new-chat {
+    display: none;
+}
+.chat-sidebar-collapse-btn {
+    background: none; border: none; cursor: pointer; color: var(--text-secondary);
+    font-size: 1rem; padding: 2px 8px;
+}
+.chat-sidebar-collapse-btn:hover { color: var(--text-primary); }
+
+/* (entfernt: chat-files-reopen — Toggle-Button bleibt jetzt im Header, analog
+   zur linken Session-Sidebar) */
+
+/* Splitter zwischen Chat und Editor */
+.chat-splitter {
+    width: 6px;
+    cursor: col-resize;
+    background: var(--border);
+    flex-shrink: 0;
+    transition: background 0.15s;
+    display: none;
+}
+.chat-splitter.visible { display: block; }
+.chat-splitter:hover { background: var(--accent-primary); }
+body.chat-splitter-dragging { cursor: col-resize !important; user-select: none !important; }
+body.chat-splitter-dragging * { user-select: none !important; }
+
+/* === Origimalbreite-Variablen für JS-Splitter === */
+.chat-area    { flex: var(--chat-flex, 1); }
+.chat-editor-col.open { flex: var(--editor-flex, 1.2); }
+
+.chat-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 12px;
+    flex-shrink: 0;
+}
+.chat-sidebar-header h2 { font-size: 1rem; font-weight: 700; margin: 0; }
+.btn-new-chat {
+    width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 1.1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+}
+.btn-new-chat:hover { border-color: var(--accent); color: var(--accent); }
+
+.chat-search {
+    padding: 0 10px 10px;
+    flex-shrink: 0;
+    position: relative;
+}
+.chat-search input {
+    width: 100%; padding: 7px 10px; border-radius: 6px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.82rem; outline: none;
+}
+.chat-search input:focus { border-color: var(--accent); }
+
+.chat-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 6px;
+}
+.chat-list-item {
+    display: flex;
+    flex-direction: column;
+    padding: 9px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 2px;
+    position: relative;
+}
+.chat-list-item:hover { background: var(--surface3); }
+.chat-list-item.active { background: var(--accent-glow); box-shadow: inset 0 0 0 1px var(--border-soft); }
+.chat-list-item.active .chat-list-title,
+.chat-list-item.active .chat-list-preview,
+.chat-list-item.active .chat-list-time { color: var(--text); }
+.chat-list-title { font-weight: 600; font-size: 0.85rem; color: var(--text); }
+.chat-list-preview {
+    font-size: 0.75rem; color: var(--text-dim); white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; margin-top: 2px; padding-right: 20px;
+}
+.chat-list-time { font-size: 0.65rem; color: var(--text-dim); margin-top: 3px; text-align: right; }
+.chat-del-btn {
+    font-size: 1rem; color: var(--text-dim); cursor: pointer; padding: 0 4px;
+    opacity: 0; transition: opacity 0.15s, color 0.15s; line-height: 1;
+    position: absolute; right: 6px; top: 8px;
+}
+.chat-list-item:hover .chat-del-btn { opacity: 1; }
+.chat-del-btn:hover { color: var(--danger); }
+
+/* === Chat Area === */
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+}
+
+/* === Editor-Spalte (4. Spalte – öffnet bei Klick auf Datei) === */
+.chat-editor-col {
+    flex: 1.2;
+    display: none;
+    flex-direction: column;
+    min-width: 0;
+    border-left: 1px solid var(--border);
+    background: var(--bg-primary);
+}
+.chat-editor-col.open { display: flex; }
+.chat-editor-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+}
+.chat-editor-title {
+    font-size: 0.88rem; font-weight: 600; flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chat-editor-path {
+    font-size: 0.75rem; color: var(--text-secondary);
+    font-family: var(--mono); margin-left: 6px;
+}
+.chat-editor-body { flex: 1; min-height: 0; position: relative; }
+.chat-editor-body #monaco-host { position: absolute; inset: 0; }
+.chat-editor-status {
+    padding: 4px 14px; font-size: 0.78rem; color: var(--text-secondary);
+    border-top: 1px solid var(--border); background: var(--bg-tertiary);
+    display: flex; align-items: center; gap: 8px;
+}
+
+/* === Files-Spalte (3. Spalte – ein/ausklappbarer Tree) === */
+.chat-files-col {
+    width: 280px;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+.chat-files-col.collapsed {
+    width: 32px;
+}
+.chat-files-col.collapsed .chat-files-body,
+.chat-files-col.collapsed .chat-files-title,
+.chat-files-col.collapsed .chat-files-refresh { display: none; }
+.chat-files-col.collapsed .chat-files-header {
+    padding: 10px 2px;
+    justify-content: center;
+}
+.chat-files-header {
+    display: flex; align-items: center; gap: 6px;
+    padding: 10px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.chat-files-title { font-size: 0.92rem; font-weight: 700; flex: 1; }
+.chat-files-toggle {
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary); font-size: 1rem; padding: 2px 6px;
+}
+.chat-files-toggle:hover { color: var(--text-primary); }
+.chat-files-body {
+    flex: 1; overflow: auto; padding: 4px;
+    font-size: 0.82rem;
+}
+.chat-files-empty {
+    padding: 1rem; text-align: center; color: var(--text-secondary);
+    font-size: 0.86rem; font-style: italic;
+}
+.chat-tree-node {
+    display: flex; align-items: center; gap: 4px;
+    padding: 3px 6px; cursor: pointer; border-radius: 4px;
+    user-select: none;
+}
+.chat-tree-node:hover { background: var(--bg-tertiary); }
+.chat-tree-node.active { background: var(--accent-glow); color: var(--accent-secondary); }
+.chat-tree-icon { width: 14px; text-align: center; font-size: 0.7rem; color: var(--text-secondary); }
+.chat-tree-emoji { width: 16px; text-align: center; }
+.chat-tree-label {
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.chat-tree-children { padding-left: 14px; }
+
+.chat-area-header {
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+}
+.chat-area-header h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+
+/* Empty state */
+.chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 40px 20px;
+}
+.chat-empty-icon { font-size: 3.5rem; margin-bottom: 16px; }
+.chat-empty h2 { font-size: 1.5rem; margin-bottom: 8px; }
+.chat-empty p { color: var(--text-dim); margin-bottom: 24px; line-height: 1.6; }
+
+.chat-empty-actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 360px; }
+.chat-empty-btn {
+    display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--text); font-size: 0.9rem;
+    cursor: pointer; transition: all 0.15s; text-align: left;
+}
+.chat-empty-btn:hover { border-color: var(--accent); background: var(--surface); }
+.chat-empty-btn .action-icon {
+    font-size: 1.5rem; width: 28px; text-align: center; flex-shrink: 0;
+}
+
+/* Messages */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.chat-messages.hidden { display: none; }
+.chat-input-section.hidden { display: none; }
+
+.message {
+    display: flex;
+    gap: 12px;
+    max-width: 75%;
+    animation: msgIn 0.2s ease;
+}
+@keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.message.user { align-self: flex-end; flex-direction: row-reverse; }
+.message.bot { align-self: flex-start; }
+
+.message-avatar {
+    width: 32px; height: 32px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 0.9rem;
+    flex-shrink: 0;
+}
+.message.user .message-avatar { background: var(--accent); }
+.message.bot .message-avatar { background: var(--accent-2); }
+
+.message-bubble {
+    padding: 12px 16px; border-radius: 16px; font-size: 0.9rem;
+    line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+}
+.message.user .message-bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.message.bot .message-bubble { background: var(--surface2); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+
+.message-time {
+    font-size: 0.7rem; color: var(--text-dim);
+    margin-top: 4px; text-align: right;
+}
+.message.bot .message-time { text-align: left; }
+
+/* Typing indicator */
+.typing-indicator {
+    display: none;
+    align-self: flex-start;
+    padding: 8px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+}
+.typing-indicator.visible { display: flex; align-items: center; gap: 6px; }
+.typing-dots { display: flex; gap: 3px; }
+.typing-dots span {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim);
+    animation: blink 1.4s infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,60%,100%{ opacity:0.3; } 30%{ opacity:1; } }
+
+/* Input Section */
+.chat-input-section {
+    padding: 12px 20px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+}
+.chat-input-box {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.chat-textarea {
+    width: 100%; min-height: 44px; max-height: 200px; resize: none;
+    background: transparent; border: none; color: var(--text);
+    font-size: 0.9rem; font-family: inherit; outline: none; line-height: 1.5;
+}
+.chat-textarea::placeholder { color: var(--text-dim); }
+
+.chat-tools {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.chat-tools-left { display: flex; gap: 8px; align-items: center; }
+.chat-tools-right { display: flex; gap: 8px; align-items: center; }
+
+.tool-btn {
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-dim); font-size: 1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0;
+}
+.tool-btn.tool-btn-text {
+    width: auto; padding: 0 10px; font-size: 0.85rem; gap: 4px;
+    max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.send-btn {
+    width: 38px; height: 38px; border-radius: 50%; border: none;
+    background: var(--accent); color: #fff; font-size: 1.1rem;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+}
+.send-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
+.send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+.send-btn.stopping { background: var(--danger, #ef4444); animation: send-pulse 1.6s ease-in-out infinite; }
+@keyframes send-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.6); } 50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); } }
+
+/* Icon-Toggle: zeige Pfeil im Idle, Quadrat im Stopping-State */
+.send-btn .send-icon-send { display: inline-block; }
+.send-btn .send-icon-stop { display: none; }
+.send-btn.stopping .send-icon-send { display: none; }
+.send-btn.stopping .send-icon-stop { display: inline-block; }
+
+/* Mikrofon-Button: roter Puls während aktiver Aufnahme */
+#mic-btn.recording {
+    color: var(--danger, #ef4444);
+    border-color: var(--danger, #ef4444);
+    background: rgba(239, 68, 68, 0.08);
+    animation: send-pulse 1.6s ease-in-out infinite;
+}
+
+.hidden { display: none !important; }
+
+/* Markdown in messages */
+.message-bubble code {
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+}
+.message-bubble pre {
+    background: rgba(0,0,0,0.3);
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+    margin: 8px 0;
+}
+.message-bubble pre code { background: none; padding: 0; }
+.message-bubble strong { font-weight: 600; }
+.message-bubble em { font-style: italic; }
+
+/* Chat page body overrides */
+body[data-page="chat"] {
+    background: var(--bg);
+    background-image: none;
+}
+body[data-page="chat"] .container {
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+}
+body[data-page="chat"] .footer {
+    display: none;
+}
+
+/* File preview area */
+.file-preview-area {
+    margin-top: 8px; background: var(--surface2); border-radius: 8px; padding: 8px 10px;
+    border: 1px dashed var(--border);
+}
+.file-preview-header {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.8rem; font-weight: 600; color: var(--text-dim); margin-bottom: 6px;
+}
+.file-preview-header .btn-clear-files {
+    background: none; border: none; cursor: pointer; font-size: 0.9rem; color: var(--text-dim);
+}
+.file-preview-header .btn-clear-files:hover { color: var(--danger); }
+.file-preview-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: 120px; overflow-y: auto; }
+.file-preview-item {
+    display: flex; align-items: center; gap: 6px; padding: 4px 8px;
+    background: var(--surface); border-radius: 6px; font-size: 0.75rem; color: var(--text);
+    max-width: 200px;
+}
+.file-preview-item .file-remove {
+    cursor: pointer; font-size: 0.85rem; color: var(--text-dim); flex-shrink: 0;
+}
+.file-preview-item .file-remove:hover { color: var(--danger); }
+.file-preview-item img { width: 32px; height: 32px; object-fit: cover; border-radius: 4px; }
+
+/* Drag overlay */
+.drag-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.7); z-index: 9999;
+    flex-direction: column; align-items: center; justify-content: center;
+}
+.drag-overlay.visible { display: flex; }
+.drag-overlay-icon { font-size: 4rem; }
+.drag-overlay-text { color: #fff; font-size: 1.2rem; margin-top: 12px; }
+
+/* Shared folder modal */
+.modal-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6); z-index: 10000;
+    align-items: center; justify-content: center;
+}
+.modal-overlay.visible { display: flex; }
+.modal-box {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; max-width: 480px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.modal-box h3 { margin: 0 0 16px; font-size: 1.1rem; }
+.modal-box label { font-size: 0.85rem; color: var(--text-dim); display: block; margin-bottom: 4px; }
+.modal-box input[type="text"] {
+    width: 100%; padding: 8px 12px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.9rem; outline: none;
+}
+.modal-box input[type="text"]:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal-btn {
+    padding: 8px 20px; border-radius: 8px; border: 1px solid var(--border);
+    font-size: 0.85rem; cursor: pointer; transition: all 0.15s;
+}
+.modal-btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+.modal-btn.primary:hover { background: var(--accent-hover); }
+.modal-btn.secondary { background: transparent; color: var(--text); }
+.modal-btn.secondary:hover { background: var(--surface2); }
+
+/* Shared folder status bar */
+.shared-folder-status {
+    font-size: 0.75rem; color: var(--accent); margin-top: 4px; padding: 4px 8px;
+    background: var(--accent-glow); border-radius: 4px; display: none;
+}
+.shared-folder-status.active { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <!-- Chat Session Sidebar -->
+    <div class="chat-sidebar" id="chat-sidebar">
+        <div class="chat-sidebar-header">
+            <button class="chat-sidebar-collapse-btn" onclick="toggleSessionSidebar()" id="chat-sidebar-toggle" title="Session-Liste ein-/ausklappen">‹</button>
+            <h2>Sessions</h2>
+            <button class="btn-new-chat" onclick="newChat()" title="Neuer Chat">+</button>
+        </div>
+        <div class="chat-search">
+            <input type="text" id="chat-search-input" placeholder="Sessions suchen..." oninput="filterChats(this.value)">
+        </div>
+        <div class="chat-list" id="chat-list"></div>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="chat-area" id="chat-area">
+        <div class="chat-area-header">
+            <h3 id="chat-area-title">Chat mit {{ agent_name }} 💬</h3>
+        </div>
+
+        <!-- Empty State -->
+        <div class="chat-empty" id="chat-empty">
+            <div class="chat-empty-icon">💬</div>
+            <h2>Hallo {{ user_name }}! </h2>
+            <p>Ich bin {{ agent_name }} – dein persönlicher Chat. Frag mich alles über Code, Smart Home, dein Wiki oder etwas ganz anderes.</p>
+            <div class="chat-empty-actions">
+                <button class="chat-empty-btn" onclick="quickPrompt('Erzähl mir was über das Wiki')">
+                    <span class="action-icon">📚</span>
+                    <div>
+                        <strong>Wiki erkunden</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">Was weißt du über unser Wiki?</div>
+                    </div>
+                </button>
+                <button class="chat-empty-btn" onclick="quickPrompt('Zeig mir die letzten Aktivitäten')">
+                    <span class="action-icon">⚡</span>
+                    <div>
+                        <strong>Aktivitäten ansehen</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">Was wurde zuletzt gemacht?</div>
+                    </div>
+                </button>
+                <button class="chat-empty-btn" onclick="quickPrompt('Was kann ich für dich tun?')">
+                    <span class="action-icon">✨</span>
+                    <div>
+                        <strong>Hilfe anbieten</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">Wobei kann ich dir helfen?</div>
+                    </div>
+                </button>
+                <button class="chat-empty-btn" onclick="startEmptyChat()">
+                    <span class="action-icon">📝</span>
+                    <div>
+                        <strong>Leerer Chat</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">Einfach neu anfangen, ohne Vorgabe</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        <div class="chat-messages hidden" id="chat-messages">
+            <div class="typing-indicator" id="typing-indicator">
+                <div class="typing-dots"><span></span><span></span><span></span></div>
+                <span>{{ agent_name }} schreibt...</span>
+            </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="chat-input-section hidden" id="chat-input-section">
+            <div class="chat-input-box">
+                <textarea class="chat-textarea" id="chat-textarea"
+                    placeholder="Schreib {{ agent_name }} eine Nachricht..."
+                    rows="1"
+                    oninput="autoResize(this)"
+                    onkeydown="handleKeyDown(event)"></textarea>
+                <div class="chat-tools">
+                    <div class="chat-tools-left">
+                        <button class="tool-btn" id="mic-btn" title="Spracheingabe starten (Web Speech API)"
+                                onclick="toggleMic()" aria-label="Spracheingabe">🎤</button>
+                        <button class="tool-btn" id="attach-btn" title="Datei(en) anhängen"
+                                onclick="document.getElementById('file-input').click()">📎</button>
+                        <button class="tool-btn" id="folder-btn"
+                                title="Ordner auf dem Hermes-Host freigeben (Datei-Picker)"
+                                onclick="openPickerModal()">📁</button>
+                        <button class="tool-btn tool-btn-text" id="exchange-btn"
+                                title="Konfigurierten Austausch-Ordner direkt freigeben"
+                                onclick="useExchangeFolder()">📂 {{ exchange_path.rsplit('/', 1)[-1] or exchange_path }}</button>
+                        <input type="file" id="file-input" class="hidden" multiple onchange="handleFileSelect(event)">
+                    </div>
+                    <div class="chat-tools-right">
+                        <span class="shared-folder-status" id="shared-folder-status"></span>
+                        <button class="send-btn" id="send-btn" onclick="handleSendOrStop()" title="Senden" aria-label="Senden">
+                            <!-- Idle: Pfeil hoch (Senden) -->
+                            <svg class="send-icon-send" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <line x1="12" y1="19" x2="12" y2="5"/>
+                                <polyline points="5 12 12 5 19 12"/>
+                            </svg>
+                            <!-- Sending: Quadrat (Stop) -->
+                            <svg class="send-icon-stop" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="4" y="4" width="16" height="16" rx="2" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <!-- Datei-Vorschau -->
+                <div class="file-preview-area hidden" id="file-preview-area">
+                    <div class="file-preview-header">
+                        <span>📎 Angehängte Dateien</span>
+                        <button class="btn-clear-files" onclick="clearFiles()">✕ Entfernen</button>
+                    </div>
+                    <div class="file-preview-list" id="file-preview-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Splitter (drag-bar zwischen Chat und Editor) -->
+    <div class="chat-splitter" id="chat-splitter" title="Ziehen zum Verschieben"></div>
+
+    <!-- Code-Editor (4. Spalte, öffnet bei Klick auf Datei im Tree) -->
+    <div class="chat-editor-col" id="chat-editor-col">
+        <div class="chat-editor-header">
+            <span class="chat-editor-title" id="chat-editor-title">—</span>
+            <span class="chat-editor-path" id="chat-editor-path"></span>
+            <button class="btn-sm btn-sm-primary" id="chat-editor-save-btn" onclick="saveEditorFile()" disabled>💾 Speichern</button>
+            <button class="btn-sm btn-sm-secondary" onclick="closeEditor()" title="Editor schließen">✕</button>
+        </div>
+        <div class="chat-editor-body">
+            <div id="monaco-host"></div>
+        </div>
+        <div class="chat-editor-status" id="chat-editor-status">Bereit.</div>
+    </div>
+
+    <!-- Datei-Tree (3. Spalte, ein-/ausklappbar) -->
+    <div class="chat-files-col" id="chat-files-col">
+        <div class="chat-files-header">
+            <button class="chat-files-toggle" onclick="toggleFilesCol()" title="Ein-/Ausklappen" id="chat-files-toggle-btn">›</button>
+            <span class="chat-files-title" id="chat-files-title">📂 Shared</span>
+            <button class="chat-files-toggle chat-files-refresh" onclick="refreshFileTree()" title="Aktualisieren">🔄</button>
+        </div>
+        <div class="chat-files-body" id="chat-files-body">
+            <div class="chat-files-empty">Kein Ordner freigegeben.<br><span style="font-size:0.78rem;">📁 Button im Chat-Input öffnet Dialog.</span></div>
+        </div>
+    </div>
+</div>
+
+<!-- Monaco-Loader (lokal aus static/vendor) -->
+<script src="/static/vendor/monaco/vs/loader.js" defer></script>
+
+<!-- Drag & Drop Overlay -->
+<div class="drag-overlay" id="drag-overlay">
+    <div class="drag-overlay-icon">📎</div>
+    <div class="drag-overlay-text">Dateien hier ablegen</div>
+</div>
+
+<!-- Shared Folder Picker (Server-side Browse, sandboxed auf Austausch-Ordner) -->
+<div class="modal-overlay" id="picker-modal">
+    <div class="modal-box" style="max-width:600px;">
+        <h3>📁 Ordner freigeben</h3>
+
+        <!-- Tab-Umschalter: Server-Browse vs. Manueller Pfad -->
+        <div class="picker-tabs">
+            <button class="picker-tab active" id="picker-tab-browse"
+                    onclick="pickerSwitchTab('browse')">📂 Auf der Hermes-VM</button>
+            <button class="picker-tab" id="picker-tab-manual"
+                    onclick="pickerSwitchTab('manual')">⌨️ Pfad eintragen (SMB/Mount)</button>
+        </div>
+
+        <!-- Tab 1: Server-Browse -->
+        <div class="picker-pane" id="picker-pane-browse">
+            <p style="font-size:0.83rem; color:var(--text-dim); margin:8px 0 12px 0;">
+                Navigiere durch die Ordner auf der Hermes-VM (sandboxed auf den Austausch-Bereich).
+                Der Agent kann dort direkt lesen und schreiben — keine Kopie, kein Upload.
+            </p>
+            <div id="picker-breadcrumb" style="display:flex; flex-wrap:wrap; gap:4px; font-size:0.82rem; padding:8px 10px; background:var(--bg-tertiary); border-radius:8px; margin-bottom:8px;"></div>
+            <div id="picker-list" style="max-height:300px; overflow:auto; border:1px solid var(--border); border-radius:8px; padding:4px;"></div>
+            <div id="picker-status" style="font-size:0.78rem; color:var(--text-secondary); margin-top:8px; min-height:1.2em;"></div>
+        </div>
+
+        <!-- Tab 2: Manueller Pfad mit Hinweis-Box -->
+        <div class="picker-pane" id="picker-pane-manual" style="display:none;">
+            <details style="margin:8px 0 12px 0;">
+                <summary style="cursor:pointer; font-size:0.86rem; font-weight:600;">
+                    ❓ Wie gebe ich einen Ordner von meinem Computer frei?
+                </summary>
+                <div style="font-size:0.82rem; line-height:1.5; color:var(--text-secondary); padding:8px 4px;">
+                    <p>Browser dürfen aus Sicherheitsgründen <strong>keinen lokalen Pfad</strong> direkt an
+                    Hermes weitergeben. Du musst den Ordner als Netzwerk-Share bereitstellen, damit die
+                    VM ihn mounten kann. Dann hat er auf der VM einen Pfad wie <code>/mnt/macshare</code>,
+                    den du hier einträgst.</p>
+
+                    <p><strong>3 typische Wege:</strong></p>
+                    <ul style="margin:4px 0 8px 18px; padding:0;">
+                        <li><strong>SMB (macOS):</strong> Systemeinstellungen → Allgemein → Freigabe → Dateifreigabe.<br>
+                            Auf VM: <code>mount -t cifs //&lt;mac-ip&gt;/&lt;share&gt; /mnt/macshare -o user=…</code></li>
+                        <li><strong>sshfs:</strong> Mac hat sshd built-in. Auf VM:<br>
+                            <code>sshfs user@&lt;mac-ip&gt;:/Users/user/projekt /mnt/macprojekt</code></li>
+                        <li><strong>NFS-Export</strong> vom Mac, dann <code>mount -t nfs &lt;mac-ip&gt;:/path /mnt/macnfs</code></li>
+                    </ul>
+                    <p style="color:var(--text-dim);">Nach dem Mount: hier den VM-seitigen Pfad eintragen.</p>
+                </div>
+            </details>
+
+            <label for="picker-manual-input" style="display:block; font-size:0.86rem; margin-bottom:4px;">
+                Pfad auf der Hermes-VM
+            </label>
+            <input type="text" id="picker-manual-input"
+                   placeholder="/mnt/macshare oder //rechner/freigabe"
+                   style="width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg-primary); color:var(--text); font-size:0.9rem; box-sizing:border-box; font-family:var(--mono);">
+            <div id="picker-manual-status" style="font-size:0.78rem; color:var(--text-secondary); margin-top:8px; min-height:1.2em;"></div>
+        </div>
+
+        <div class="modal-actions" style="margin-top:12px;">
+            <button class="modal-btn secondary" onclick="closePickerModal()">Abbrechen</button>
+            <button class="modal-btn" id="picker-select-btn" onclick="pickerSelectCurrent()">✓ Diesen Ordner wählen</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.picker-row {
+    display:flex; align-items:center; gap:8px;
+    padding:6px 10px; border-radius:6px; cursor:pointer; user-select:none;
+    font-size:0.88rem;
+}
+.picker-row:hover { background: var(--bg-tertiary); }
+.picker-row.up { color: var(--text-secondary); font-style: italic; }
+.picker-crumb {
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 2px 8px; border-radius: 6px; cursor: pointer; color: var(--text);
+}
+.picker-crumb.current { background: var(--accent-glow, var(--surface2)); cursor: default; }
+.picker-crumb-sep { color: var(--text-secondary); padding: 0 2px; }
+.picker-tabs { display:flex; gap:4px; margin-bottom:4px; border-bottom:1px solid var(--border); }
+.picker-tab {
+    background: none; border: none; padding: 8px 14px; cursor: pointer;
+    color: var(--text-secondary); font-size: 0.86rem; border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+}
+.picker-tab:hover { color: var(--text); }
+.picker-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block extra_body %}
+<script>
+// --- Chat State ---
+var currentChatId = null;
+var chats = [];
+var messages = [];
+var pendingFiles = [];
+
+// --- Initialize ---
+document.addEventListener('DOMContentLoaded', function() {
+    loadChats();
+    setupDragDrop();
+    loadSharedFolder();
+    refreshFileTree();
+    initMonaco();
+});
+
+function loadChats() {
+    fetch('/api/chat/list')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            chats = data || [];
+            renderChatList();
+            if (chats.length > 0 && !currentChatId) {
+                selectChat(chats[0].id);
+            }
+        })
+        .catch(function(e) { console.error('Chats laden fehlgeschlagen:', e); });
+}
+
+function renderChatList() {
+    var el = document.getElementById('chat-list');
+    if (!el) return;
+    if (chats.length === 0) {
+        el.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:0.82rem;">Noch keine Sessions.<br>Klicke + für eine neue!</div>';
+        return;
+    }
+    el.innerHTML = chats.map(function(c) {
+        var active = c.id === currentChatId ? ' active' : '';
+        var delBtn = '<span class="chat-del-btn" onclick="event.stopPropagation();deleteChat(' + c.id + ')" title="Löschen">×</span>';
+        return '<div class="chat-list-item' + active + '" onclick="selectChat(' + c.id + ')">' +
+            '<span class="chat-list-title">' + escapeHtml(c.title || 'Neuer Chat') + '</span>' +
+            '<span class="chat-list-preview">' + escapeHtml(c.preview || '') + '</span>' +
+            '<span class="chat-list-time">' + formatTime(c.updated) + '</span>' +
+            delBtn +
+            '</div>';
+    }).join('');
+}
+
+function selectChat(id) {
+    currentChatId = id;
+    var emptyEl = document.getElementById('chat-empty');
+    var msgsEl = document.getElementById('chat-messages');
+    var inputEl = document.getElementById('chat-input-section');
+    if (emptyEl) emptyEl.style.display = 'none';
+    if (msgsEl) msgsEl.classList.remove('hidden');
+    if (inputEl) inputEl.classList.remove('hidden');
+
+    var chat = chats.find(function(c) { return c.id === id; });
+    if (chat) {
+        document.getElementById('chat-area-title').textContent = chat.title || 'Chat mit {{ agent_name }} ';
+    }
+
+    renderChatList();
+
+    fetch('/api/chat/messages?chat_id=' + id)
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            messages = data || [];
+            renderMessages();
+        })
+        .catch(function(e) { console.error('Messages laden fehlgeschlagen:', e); });
+}
+
+function renderMessages() {
+    var el = document.getElementById('chat-messages');
+    if (!el) return;
+    var typing = document.getElementById('typing-indicator');
+    el.innerHTML = '';
+
+    if (messages.length === 0) {
+        el.innerHTML = '<div style="text-align:center;color:var(--text-dim);padding:40px;font-size:0.9rem;">Noch keine Nachrichten.</div>';
+    } else {
+        messages.forEach(function(m) {
+            var bubble = document.createElement('div');
+            bubble.className = 'message ' + (m.role === 'user' ? 'user' : 'bot');
+            bubble.innerHTML =
+                '<div class="message-avatar">' + (m.role === 'user' ? '👤' : '💜') + '</div>' +
+                '<div>' +
+                    '<div class="message-bubble">' + formatMessage(m.content) + '</div>' +
+                    '<div class="message-time">' + formatTime(m.created) + '</div>' +
+                '</div>';
+            el.appendChild(bubble);
+        });
+    }
+    el.appendChild(typing);
+    scrollToBottom();
+}
+
+function formatMessage(text) {
+    var html = escapeHtml(text);
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/`(.+?)`/g, '<code>$1</code>');
+    html = html.replace(/\n/g, '<br>');
+    return html;
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+function formatTime(iso) {
+    if (!iso) return '';
+    try {
+        var d = new Date(iso);
+        var pad = function(n) { return n < 10 ? '0' + n : n; };
+        return pad(d.getHours()) + ':' + pad(d.getMinutes());
+    } catch(e) { return ''; }
+}
+
+function scrollToBottom() {
+    var el = document.getElementById('chat-messages');
+    if (el) setTimeout(function() { el.scrollTop = el.scrollHeight; }, 50);
+}
+
+function autoResize(ta) {
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 200) + 'px';
+}
+
+function handleKeyDown(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+}
+
+// === SEND MESSAGE + STOP ===
+// State: aktive Sende-Request (AbortController), damit der Send-Button im
+// laufenden Zustand zum Stop-Button werden kann.
+var _activeSendAbort = null;
+var _activeSendChatId = null;
+
+function _setSendButtonState(state) {
+    // state: 'idle' | 'sending'
+    // Achtung: textContent NICHT setzen — die SVG-Icons (Pfeil/Quadrat) liegen
+    // im Button und werden per CSS via .stopping-Class umgeschaltet.
+    var btn = document.getElementById('send-btn');
+    if (!btn) return;
+    btn.disabled = false;
+    if (state === 'sending') {
+        btn.classList.add('stopping');
+        btn.title = 'Antwort abbrechen (/stop)';
+        btn.setAttribute('aria-label', 'Stop');
+    } else {
+        btn.classList.remove('stopping');
+        btn.title = 'Senden';
+        btn.setAttribute('aria-label', 'Senden');
+    }
+}
+
+function handleSendOrStop() {
+    if (_activeSendAbort) {
+        stopMessage();
+    } else {
+        sendMessage();
+    }
+}
+
+function sendMessage() {
+    var ta = document.getElementById('chat-textarea');
+    var text = ta.value.trim();
+    if (!text && pendingFiles.length === 0) return;
+
+    document.getElementById('typing-indicator').classList.add('visible');
+    scrollToBottom();
+    _setSendButtonState('sending');
+
+    var chatId = currentChatId;
+    var filesToSend = pendingFiles.slice();
+    clearFiles();
+
+    if (filesToSend.length === 0) {
+        doSend(chatId, text);
+    } else {
+        var uploadPromises = filesToSend.map(function(file) {
+            var fd = new FormData();
+            fd.append('file', file);
+            return fetch('/api/chat/upload', { method: 'POST', body: fd })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.status === 'ok') {
+                        return data.file_name + ' (' + data.file_url + ')';
+                    }
+                    return null;
+                });
+        });
+
+        Promise.all(uploadPromises).then(function(results) {
+            var fileInfo = results.filter(Boolean).join('\n');
+            var fullMsg = text ? (fileInfo ? fileInfo + '\n\n' + text : text) : fileInfo;
+            ta.value = '';
+            ta.style.height = 'auto';
+            doSend(chatId, fullMsg);
+        });
+    }
+}
+
+function doSend(chatId, text) {
+    if (!chatId) {
+        document.getElementById('typing-indicator').classList.remove('visible');
+        _setSendButtonState('idle');
+        return;
+    }
+
+    var ctrl = new AbortController();
+    _activeSendAbort = ctrl;
+    _activeSendChatId = chatId;
+
+    fetch('/api/chat/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, message: text }),
+        signal: ctrl.signal,
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        document.getElementById('typing-indicator').classList.remove('visible');
+        _activeSendAbort = null;
+        _setSendButtonState('idle');
+
+        messages.push({ role: 'user', content: text, created: new Date().toISOString() });
+        if (data.reply) {
+            messages.push({ role: 'bot', content: data.reply, created: new Date().toISOString() });
+        }
+        renderMessages();
+        loadChats();
+    })
+    .catch(function(e) {
+        document.getElementById('typing-indicator').classList.remove('visible');
+        _activeSendAbort = null;
+        _setSendButtonState('idle');
+        if (e && e.name === 'AbortError') {
+            messages.push({ role: 'user',  content: text,    created: new Date().toISOString() });
+            messages.push({ role: 'bot',   content: '⏹ Antwort abgebrochen (/stop gesendet)', created: new Date().toISOString() });
+        } else {
+            messages.push({ role: 'bot', content: '⚠️ Fehler beim Senden: ' + (e.message || e), created: new Date().toISOString() });
+        }
+        renderMessages();
+    });
+}
+
+function stopMessage() {
+    // 1. Lokal: laufenden fetch abbrechen (Browser wartet nicht mehr)
+    var chatId = _activeSendChatId;
+    if (_activeSendAbort) {
+        try { _activeSendAbort.abort(); } catch (e) {}
+    }
+    _activeSendAbort = null;
+    document.getElementById('typing-indicator').classList.remove('visible');
+    _setSendButtonState('idle');
+    // 2. Server: sende "/stop" als regulären Hermes-Befehl, damit der Agent
+    //    seine aktuelle Aufgabe beendet. Wir feuern und vergessen — Antwort
+    //    landet bei nächstem loadMessages().
+    if (chatId) {
+        fetch('/api/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, message: '/stop' }),
+        }).catch(function() { /* ignore */ });
+    }
+}
+
+// === QUICK PROMPTS ===
+// Directly opens a new chat and sends the message
+function quickPrompt(text) {
+    // Always create a NEW chat for quick prompts
+    createAndSend(text);
+}
+
+function startEmptyChat() {
+    fetch('/api/chat/new', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        currentChatId = data.chat_id;
+        messages = [];
+        var emptyEl = document.getElementById('chat-empty');
+        var msgsEl = document.getElementById('chat-messages');
+        var inputEl = document.getElementById('chat-input-section');
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (msgsEl) msgsEl.classList.remove('hidden');
+        if (inputEl) inputEl.classList.remove('hidden');
+        // Clear the chat area so it just shows the text input
+        var chatMsgs = document.getElementById('chat-messages');
+        chatMsgs.innerHTML = '<div class="typing-indicator" id="typing-indicator">' +
+            '<div class="typing-dots"><span></span><span></span><span></span></div>' +
+            '<span>{{ agent_name }} schreibt...</span>' +
+            '</div>';
+        loadChats();
+    });
+}
+
+function createAndSend(text) {
+    fetch('/api/chat/new', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        currentChatId = data.chat_id;
+        messages = [];
+        var emptyEl = document.getElementById('chat-empty');
+        var msgsEl = document.getElementById('chat-messages');
+        var inputEl = document.getElementById('chat-input-section');
+        if (emptyEl) emptyEl.style.display = 'none';
+        if (msgsEl) msgsEl.classList.remove('hidden');
+        if (inputEl) inputEl.classList.remove('hidden');
+
+        loadChats();
+
+        setTimeout(function() {
+            fetch('/api/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: currentChatId, message: text })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                messages.push({ role: 'user', content: text, created: new Date().toISOString() });
+                if (data.reply) {
+                    messages.push({ role: 'bot', content: data.reply, created: new Date().toISOString() });
+                }
+                renderMessages();
+                loadChats();
+            })
+            .catch(function(e) {
+                messages.push({ role: 'bot', content: '⚠️ Fehler: ' + e.message, created: new Date().toISOString() });
+                renderMessages();
+            });
+        }, 400);
+    });
+}
+
+function newChat() {
+    fetch('/api/chat/new', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        currentChatId = data.chat_id;
+        messages = [];
+        var emptyEl = document.getElementById('chat-empty');
+        var msgsEl = document.getElementById('chat-messages');
+        var inputEl = document.getElementById('chat-input-section');
+        if (emptyEl) emptyEl.style.display = 'block';
+        if (msgsEl) msgsEl.classList.add('hidden');
+        if (inputEl) inputEl.classList.add('hidden');
+        loadChats();
+    });
+}
+
+function deleteChat(id) {
+    if (!confirm('Chat wirklich löschen?')) return;
+    fetch('/api/chat/delete/' + id, { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function() {
+            if (currentChatId === id) {
+                currentChatId = null;
+                messages = [];
+                messages = [];
+                var emptyEl = document.getElementById('chat-empty');
+                var msgsEl = document.getElementById('chat-messages');
+                var inputEl = document.getElementById('chat-input-section');
+                if (emptyEl) emptyEl.style.display = 'flex';
+                if (msgsEl) msgsEl.classList.add('hidden');
+                if (inputEl) inputEl.classList.add('hidden');
+            }
+            loadChats();
+        });
+}
+
+function filterChats(query) {
+    var items = document.querySelectorAll('.chat-list-item');
+    var q = query.toLowerCase();
+    items.forEach(function(el) {
+        var title = el.querySelector('.chat-list-title');
+        var preview = el.querySelector('.chat-list-preview');
+        var match = title.textContent.toLowerCase().includes(q) || preview.textContent.toLowerCase().includes(q);
+        el.style.display = match ? '' : 'none';
+    });
+}
+
+// === FILE HANDLING ===
+function handleFileSelect(e) {
+    var files = Array.from(e.target.files);
+    pendingFiles = pendingFiles.concat(files);
+    renderFilePreviews();
+    e.target.value = '';
+}
+
+function renderFilePreviews() {
+    var area = document.getElementById('file-preview-area');
+    var list = document.getElementById('file-preview-list');
+    if (pendingFiles.length === 0) {
+        area.classList.add('hidden');
+        return;
+    }
+    area.classList.remove('hidden');
+    list.innerHTML = pendingFiles.map(function(f, i) {
+        var isImg = f.type.startsWith('image/');
+        var thumb = isImg ? '<img src="' + URL.createObjectURL(f) + '">' : '📄';
+        return '<div class="file-preview-item">' + thumb +
+            '<span>' + escapeHtml(f.name) + '</span>' +
+            '<span class="file-remove" onclick="removeFile(' + i + ')">✕</span>' +
+            '</div>';
+    }).join('');
+}
+
+function removeFile(index) {
+    pendingFiles.splice(index, 1);
+    renderFilePreviews();
+}
+
+function clearFiles() {
+    pendingFiles = [];
+    var area = document.getElementById('file-preview-area');
+    if (area) area.classList.add('hidden');
+}
+
+// === DRAG & DROP ===
+function setupDragDrop() {
+    var chatContainer = document.querySelector('.chat-container');
+    var overlay = document.getElementById('drag-overlay');
+    var dragCounter = 0;
+
+    chatContainer.addEventListener('dragenter', function(e) {
+        e.preventDefault();
+        dragCounter++;
+        overlay.classList.add('visible');
+    });
+    chatContainer.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        dragCounter--;
+        if (dragCounter === 0) overlay.classList.remove('visible');
+    });
+    chatContainer.addEventListener('dragover', function(e) { e.preventDefault(); });
+    chatContainer.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dragCounter = 0;
+        overlay.classList.remove('visible');
+        var files = Array.from(e.dataTransfer.files);
+        if (files.length > 0) {
+            pendingFiles = pendingFiles.concat(files);
+            renderFilePreviews();
+        }
+    });
+}
+
+// NOTE: das alte ✏️-Text-Modal wurde durch den 📁-Server-Picker abgelöst.
+// Falls Helper-Code (z.B. /api/chat/shared/folder direkt) andernorts noch
+// gerufen wird, kann setSharedFolder() weiter als interne Hilfsfunktion dienen.
+function setSharedFolder(path) {
+    path = (path || '').trim();
+    if (!path) return Promise.resolve(null);
+    return fetch('/api/chat/shared/folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: path })
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+    .then(function(res) {
+        if (!res.ok) throw new Error(res.body.error || 'Ungültiger Pfad');
+        _afterSharedFolderSet(res.body.folder);
+        return res.body;
+    });
+}
+
+function _afterSharedFolderSet(folder) {
+    var statusBar = document.getElementById('shared-folder-status');
+    if (statusBar) {
+        statusBar.textContent = '📁 ' + folder.split('/').pop();
+        statusBar.classList.add('active');
+    }
+    if (typeof loadSharedFolderBrowse === 'function') loadSharedFolderBrowse();
+    if (typeof refreshFileTree === 'function') refreshFileTree();
+}
+
+// ============================================================
+//  Spracheingabe (Web Speech API, Browser-seitig)
+// ============================================================
+// Phase 1: Browser nimmt auf + erkennt direkt (Chrome/Safari, deutsch).
+// Phase 2 (optional, später): Audio an Hermes uploaden für Whisper-STT.
+var _speechRec = null;
+var _speechActive = false;
+var _speechBaseText = '';  // Was schon im Textfeld stand, bevor Mic an wurde
+
+function _hasSpeechRecognition() {
+    return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
+
+function toggleMic() {
+    if (_speechActive) { stopMic(); }
+    else { startMic(); }
+}
+
+function startMic() {
+    if (!_hasSpeechRecognition()) {
+        alert('Spracheingabe wird vom Browser nicht unterstützt.\n\n' +
+              'Chrome, Edge und Safari können das. Firefox aktuell noch nicht.');
+        return;
+    }
+    var ta = document.getElementById('chat-textarea');
+    if (!ta) return;
+    var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    _speechRec = new SR();
+    _speechRec.lang = 'de-DE';
+    _speechRec.continuous = true;    // mehrere Sätze hintereinander
+    _speechRec.interimResults = true; // Live-Vorschau während des Sprechens
+    _speechBaseText = ta.value;
+    var finalText = '';
+
+    _speechRec.onresult = function(ev) {
+        var interim = '';
+        for (var i = ev.resultIndex; i < ev.results.length; i++) {
+            var t = ev.results[i][0].transcript;
+            if (ev.results[i].isFinal) finalText += t + ' ';
+            else interim += t;
+        }
+        var sep = (_speechBaseText && !_speechBaseText.endsWith(' ')) ? ' ' : '';
+        ta.value = _speechBaseText + sep + finalText + interim;
+        if (typeof autoResize === 'function') autoResize(ta);
+    };
+    _speechRec.onerror = function(e) {
+        console.error('SpeechRecognition error:', e);
+        var msg = (e && e.error) ? e.error : 'unbekannt';
+        if (msg === 'not-allowed' || msg === 'service-not-allowed') {
+            alert('Mikrofon-Zugriff verweigert.\n\n' +
+                  'Erlaube den Zugriff in den Browser-Einstellungen für ' + location.host + '.');
+        } else if (msg !== 'no-speech' && msg !== 'aborted') {
+            // Nur bei echten Fehlern, nicht bei Stille/Stop
+            alert('Spracheingabe-Fehler: ' + msg);
+        }
+        _stopMicCleanup();
+    };
+    _speechRec.onend = function() { _stopMicCleanup(); };
+
+    try {
+        _speechRec.start();
+        _speechActive = true;
+        var btn = document.getElementById('mic-btn');
+        if (btn) {
+            btn.classList.add('recording');
+            btn.title = 'Spracheingabe stoppen (klicken oder Pause)';
+        }
+    } catch (e) {
+        console.error('Mic start failed:', e);
+        _stopMicCleanup();
+    }
+}
+
+function stopMic() {
+    if (_speechRec) {
+        try { _speechRec.stop(); } catch (e) {}
+    }
+    // Echtes Aufräumen passiert in _stopMicCleanup() via .onend
+}
+
+function _stopMicCleanup() {
+    _speechActive = false;
+    _speechRec = null;
+    var btn = document.getElementById('mic-btn');
+    if (btn) {
+        btn.classList.remove('recording');
+        btn.title = 'Spracheingabe starten (Web Speech API)';
+    }
+}
+
+// ============================================================
+//  Server-side Folder-Picker (Modal hinter 📁-Button)
+// ============================================================
+var _pickerCurrentPath = null;
+var _pickerActiveTab = 'browse';  // 'browse' oder 'manual'
+
+function openPickerModal() {
+    var modal = document.getElementById('picker-modal');
+    if (!modal) return;
+    modal.classList.add('visible');
+    pickerSwitchTab('browse');
+    pickerLoad('');  // leer = Server liefert SHARED_ROOT
+}
+
+function pickerSwitchTab(tab) {
+    _pickerActiveTab = tab;
+    ['browse', 'manual'].forEach(function(t) {
+        var btn = document.getElementById('picker-tab-' + t);
+        var pane = document.getElementById('picker-pane-' + t);
+        if (btn) btn.classList.toggle('active', t === tab);
+        if (pane) pane.style.display = (t === tab) ? '' : 'none';
+    });
+}
+
+function closePickerModal() {
+    var modal = document.getElementById('picker-modal');
+    if (modal) modal.classList.remove('visible');
+}
+
+function pickerLoad(path) {
+    var statusEl = document.getElementById('picker-status');
+    if (statusEl) statusEl.textContent = '⏳ Lade …';
+    var url = '/api/chat/picker/browse' + (path ? '?path=' + encodeURIComponent(path) : '');
+    fetch(url, { cache: 'no-store' })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+    .then(function(res) {
+        if (!res.ok) {
+            if (statusEl) statusEl.textContent = '❌ ' + (res.body.error || 'Pfad nicht erreichbar');
+            return;
+        }
+        _pickerCurrentPath = res.body.path;
+        renderPickerBreadcrumb(res.body.crumbs || []);
+        renderPickerList(res.body.entries || [], res.body.path, res.body.root);
+        if (statusEl) statusEl.textContent = res.body.entries.length + ' Unterordner';
+    })
+    .catch(function(e) { if (statusEl) statusEl.textContent = '❌ ' + e; });
+}
+
+function renderPickerBreadcrumb(crumbs) {
+    var bc = document.getElementById('picker-breadcrumb');
+    if (!bc) return;
+    bc.innerHTML = '';
+    crumbs.forEach(function(c, i) {
+        if (i > 0) {
+            var sep = document.createElement('span');
+            sep.className = 'picker-crumb-sep';
+            sep.textContent = '›';
+            bc.appendChild(sep);
+        }
+        var span = document.createElement('span');
+        span.className = 'picker-crumb' + (i === crumbs.length - 1 ? ' current' : '');
+        span.textContent = c.label;
+        if (i < crumbs.length - 1) {
+            span.onclick = function() { pickerLoad(c.path); };
+        }
+        bc.appendChild(span);
+    });
+}
+
+function renderPickerList(entries, currentPath, rootPath) {
+    var list = document.getElementById('picker-list');
+    if (!list) return;
+    list.innerHTML = '';
+    // "Hoch"-Eintrag wenn nicht am Root
+    if (currentPath !== rootPath) {
+        var up = document.createElement('div');
+        up.className = 'picker-row up';
+        up.innerHTML = '<span>↑</span><span>(zur übergeordneten Ebene)</span>';
+        var parent = currentPath.replace(/\/[^\/]+$/, '') || rootPath;
+        up.onclick = function() { pickerLoad(parent); };
+        list.appendChild(up);
+    }
+    if (entries.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'picker-row';
+        empty.style.color = 'var(--text-secondary)';
+        empty.style.fontStyle = 'italic';
+        empty.textContent = 'Keine Unterordner hier.';
+        list.appendChild(empty);
+    }
+    entries.forEach(function(e) {
+        var row = document.createElement('div');
+        row.className = 'picker-row';
+        row.innerHTML = '<span>📁</span><span>' + e.name + '</span>';
+        row.onclick = function() { pickerLoad(e.path); };
+        list.appendChild(row);
+    });
+}
+
+function pickerSelectCurrent() {
+    // Bestimme den Pfad je nach aktivem Tab
+    var path = null;
+    var statusEl = null;
+    if (_pickerActiveTab === 'manual') {
+        var inp = document.getElementById('picker-manual-input');
+        path = (inp && inp.value || '').trim();
+        statusEl = document.getElementById('picker-manual-status');
+        if (!path) {
+            if (statusEl) statusEl.textContent = '⚠️ Bitte einen Pfad eintragen.';
+            return;
+        }
+    } else {
+        path = _pickerCurrentPath;
+        statusEl = document.getElementById('picker-status');
+        if (!path) return;
+    }
+
+    if (statusEl) statusEl.textContent = '⏳ Setze …';
+    fetch('/api/chat/shared/folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: path }),
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+    .then(function(res) {
+        if (!res.ok) {
+            // Bei manuellem Pfad: gib einen klareren Hinweis (Pfad muss auf der VM existieren).
+            var hint = (_pickerActiveTab === 'manual')
+                ? ' — der Pfad muss AUF DER HERMES-VM existieren (also vorher dort mounten).'
+                : '';
+            if (statusEl) statusEl.textContent = '❌ ' + (res.body.error || 'Fehler') + hint;
+            return;
+        }
+        _afterSharedFolderSet(res.body.folder);
+        closePickerModal();
+    })
+    .catch(function(e) { if (statusEl) statusEl.textContent = '❌ ' + e; });
+}
+
+// Ein-Klick: konfigurierten Austausch-Ordner als Shared-Folder setzen
+function useExchangeFolder() {
+    fetch('/api/chat/shared/folder/exchange', { method: 'POST' })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+    .then(function(res) {
+        if (!res.ok) return alert(res.body.error || 'Austausch-Ordner nicht erreichbar');
+        _afterSharedFolderSet(res.body.folder);
+    })
+    .catch(function(e) { alert('Fehler: ' + e); });
+}
+
+// (entfernt: handleFolderUpload – webkitdirectory-Upload wird durch den
+// Server-side Picker abgelöst, weil dieser direkt im Austausch-Ordner navigiert
+// statt eine Snapshot-Kopie hochzuladen.)
+
+function loadSharedFolder() {
+    fetch('/api/chat/shared/browse')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.exists && data.folder) {
+                var statusBar = document.getElementById('shared-folder-status');
+                statusBar.textContent = '📁 ' + data.folder.split('/').pop();
+                statusBar.classList.add('active');
+            }
+        });
+}
+
+function loadSharedFolderBrowse() {
+    // Load and show shared folder contents in chat
+    fetch('/api/chat/shared/browse')
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.exists || !data.entries.length) return;
+            var fileNames = data.entries.map(function(e) { return (e.type === 'folder' ? '📂/' : '📄') + e.name + ' (' + e.modified + ')'; }).join('\n');
+            var chatId = currentChatId;
+            if (!chatId) return;
+            // Just acknowledge - don't auto-send to avoid spam
+        });
+}
+
+// Close picker modal on outside click
+(function() {
+    var pm = document.getElementById('picker-modal');
+    if (pm) pm.addEventListener('click', function(e) { if (e.target === this) closePickerModal(); });
+})();
+
+// ============================================================
+//  FILE-TREE (3. Spalte) + MONACO-EDITOR (4. Spalte)
+// ============================================================
+var TREE_CACHE = {};   // subpath → { entries, fetched, expanded }
+var MONACO_READY = null;
+var MONACO_EDITOR = null;
+var EDITOR_FILE = null;       // { path, content_original }
+var EDITOR_DIRTY = false;
+
+// --- Monaco-Init (AMD-Loader, lokal aus /static/vendor/monaco) ---
+function initMonaco() {
+    if (typeof require === 'undefined' || !require.config) {
+        // loader.js noch nicht geladen — re-try in 150ms
+        setTimeout(initMonaco, 150);
+        return;
+    }
+    require.config({ paths: { vs: '/static/vendor/monaco/vs' } });
+    MONACO_READY = new Promise(function(resolve) {
+        require(['vs/editor/editor.main'], function() {
+            // Theme an Portal-Dark anpassen
+            try {
+                monaco.editor.defineTheme('hermes-dark', {
+                    base: 'vs-dark', inherit: true, rules: [],
+                    colors: { 'editor.background': '#0f1115' }
+                });
+            } catch (e) {}
+            resolve();
+        });
+    });
+}
+
+function ensureMonacoEditor(language) {
+    return MONACO_READY.then(function() {
+        var host = document.getElementById('monaco-host');
+        if (!MONACO_EDITOR) {
+            MONACO_EDITOR = monaco.editor.create(host, {
+                value: '', language: language || 'plaintext',
+                theme: (document.documentElement.getAttribute('data-theme') === 'light') ? 'vs' : 'hermes-dark',
+                automaticLayout: true, minimap: { enabled: false },
+                fontSize: 13, lineNumbers: 'on', tabSize: 2,
+                scrollBeyondLastLine: false, renderWhitespace: 'selection',
+            });
+            MONACO_EDITOR.onDidChangeModelContent(function() {
+                if (!EDITOR_FILE) return;
+                var dirty = MONACO_EDITOR.getValue() !== EDITOR_FILE.content_original;
+                if (dirty !== EDITOR_DIRTY) {
+                    EDITOR_DIRTY = dirty;
+                    document.getElementById('chat-editor-save-btn').disabled = !dirty;
+                    document.getElementById('chat-editor-status').textContent = dirty ? '● Ungespeicherte Änderungen' : 'Bereit.';
+                }
+            });
+        } else {
+            monaco.editor.setModelLanguage(MONACO_EDITOR.getModel(), language || 'plaintext');
+        }
+        return MONACO_EDITOR;
+    });
+}
+
+function _detectLanguage(filename) {
+    var ext = (filename || '').split('.').pop().toLowerCase();
+    var map = {
+        py: 'python', js: 'javascript', mjs: 'javascript', ts: 'typescript', tsx: 'typescript',
+        jsx: 'javascript', json: 'json', yaml: 'yaml', yml: 'yaml', md: 'markdown',
+        html: 'html', htm: 'html', css: 'css', sh: 'shell', bash: 'shell',
+        sql: 'sql', toml: 'ini', ini: 'ini', cfg: 'ini', conf: 'ini',
+        xml: 'xml', dockerfile: 'dockerfile',
+    };
+    if (filename.toLowerCase() === 'dockerfile') return 'dockerfile';
+    return map[ext] || 'plaintext';
+}
+
+function openEditorForPath(path) {
+    var col = document.getElementById('chat-editor-col');
+    var titleEl = document.getElementById('chat-editor-title');
+    var pathEl = document.getElementById('chat-editor-path');
+    var statusEl = document.getElementById('chat-editor-status');
+    col.classList.add('open');
+    titleEl.textContent = '⏳ ' + (path.split('/').pop() || path);
+    pathEl.textContent = path;
+    statusEl.textContent = 'Lade …';
+
+    fetch('/api/chat/shared/read?path=' + encodeURIComponent(path), { cache: 'no-store' })
+        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+        .then(function(res) {
+            if (!res.ok) {
+                statusEl.textContent = '❌ ' + (res.body.error || 'Fehler beim Laden');
+                titleEl.textContent = '❌ ' + path;
+                return;
+            }
+            var d = res.body;
+            return ensureMonacoEditor(_detectLanguage(d.name)).then(function(ed) {
+                EDITOR_FILE = { path: d.path, content_original: d.content };
+                EDITOR_DIRTY = false;
+                ed.setValue(d.content);
+                titleEl.textContent = '📄 ' + d.name;
+                statusEl.textContent = (d.size || 0) + ' Bytes · ' + (d.modified || '');
+                document.getElementById('chat-editor-save-btn').disabled = true;
+            });
+        })
+        .catch(function(e) {
+            statusEl.textContent = '❌ ' + e;
+        });
+}
+
+function saveEditorFile() {
+    if (!EDITOR_FILE || !MONACO_EDITOR) return;
+    var statusEl = document.getElementById('chat-editor-status');
+    var content = MONACO_EDITOR.getValue();
+    statusEl.textContent = '⏳ Speichere …';
+    fetch('/api/chat/shared/write', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: EDITOR_FILE.path, content: content })
+    })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+    .then(function(res) {
+        if (!res.ok) {
+            statusEl.textContent = '❌ ' + (res.body.error || 'Speichern fehlgeschlagen');
+            return;
+        }
+        EDITOR_FILE.content_original = content;
+        EDITOR_DIRTY = false;
+        document.getElementById('chat-editor-save-btn').disabled = true;
+        statusEl.textContent = '✓ Gespeichert (' + (res.body.bytes || 0) + ' Bytes)';
+    })
+    .catch(function(e) { statusEl.textContent = '❌ ' + e; });
+}
+
+function closeEditor() {
+    if (EDITOR_DIRTY && !confirm('Ungespeicherte Änderungen verwerfen?')) return;
+    var editorCol = document.getElementById('chat-editor-col');
+    var chatArea = document.querySelector('.chat-area');
+    editorCol.classList.remove('open');
+    // Inline-Flex-Styles vom Splitter-Drag zurücksetzen, damit Chat wieder
+    // die volle verfügbare Breite einnimmt (und der File-Tree rechts fix bleibt).
+    editorCol.style.flex = '';
+    if (chatArea) chatArea.style.flex = '';
+    EDITOR_FILE = null;
+    EDITOR_DIRTY = false;
+    document.querySelectorAll('.chat-tree-node.active').forEach(function(n) { n.classList.remove('active'); });
+}
+
+// --- Session-Sidebar (links) einklappen ------------------------------
+function toggleSessionSidebar() {
+    var sb = document.getElementById('chat-sidebar');
+    sb.classList.toggle('collapsed');
+    document.getElementById('chat-sidebar-toggle').textContent =
+        sb.classList.contains('collapsed') ? '›' : '‹';
+    // Splitter neu positionieren falls sichtbar
+    if (window.MONACO_EDITOR) MONACO_EDITOR.layout();
+}
+
+// --- Files-Tree (rechts) einklappen ---------------------------------
+function toggleFilesCol() {
+    var col = document.getElementById('chat-files-col');
+    col.classList.toggle('collapsed');
+    var collapsed = col.classList.contains('collapsed');
+    // Pfeil-Richtung: ‹ = öffnen (zeigt nach links, Klick klappt auf nach links),
+    // › = einklappen (zeigt nach rechts).
+    document.getElementById('chat-files-toggle-btn').textContent = collapsed ? '‹' : '›';
+    if (window.MONACO_EDITOR) MONACO_EDITOR.layout();
+}
+
+// --- Splitter zwischen Chat-Area und Editor -------------------------
+(function initChatSplitter() {
+    var splitter = document.getElementById('chat-splitter');
+    var container = document.querySelector('.chat-container');
+    if (!splitter || !container) return;
+
+    function syncVisibility() {
+        var editor = document.getElementById('chat-editor-col');
+        if (editor && editor.classList.contains('open')) {
+            splitter.classList.add('visible');
+        } else {
+            splitter.classList.remove('visible');
+        }
+    }
+    // Beobachte den Editor-Open-State (durch MutationObserver auf den Class-Attr)
+    var editorCol = document.getElementById('chat-editor-col');
+    if (editorCol) {
+        new MutationObserver(syncVisibility).observe(editorCol, { attributes: true, attributeFilter: ['class'] });
+        syncVisibility();
+    }
+
+    var dragging = false;
+    splitter.addEventListener('mousedown', function(ev) {
+        dragging = true;
+        document.body.classList.add('chat-splitter-dragging');
+        ev.preventDefault();
+    });
+    document.addEventListener('mousemove', function(ev) {
+        if (!dragging) return;
+        // Speichere CHAT/EDITOR als Verhältnis (flex-grow-Werte), NICHT als feste
+        // Pixel. So passt sich das Layout bei files-toggle automatisch an.
+        var rect = container.getBoundingClientRect();
+        var chatArea = document.querySelector('.chat-area');
+        var editorCol = document.getElementById('chat-editor-col');
+        var sidebar = document.getElementById('chat-sidebar');
+        var sidebarW = sidebar ? sidebar.getBoundingClientRect().width : 0;
+        var filesCol = document.getElementById('chat-files-col');
+        var filesW = filesCol ? filesCol.getBoundingClientRect().width : 0;
+        var splitterW = 6;
+        var availW = Math.max(400, rect.width - sidebarW - splitterW - filesW);
+        // Splitter-Mitte: 200 …(avail-200) Pixel vom verfügbaren Bereich
+        var chatPx = Math.max(200, Math.min(availW - 200, ev.clientX - rect.left - sidebarW));
+        var editorPx = Math.max(200, availW - chatPx);
+        var chatRatio = chatPx / (chatPx + editorPx);
+        var editorRatio = 1 - chatRatio;
+        // flex-grow + flex-shrink=1 + basis=0 → wachsen/schrumpfen frei
+        chatArea.style.flex = chatRatio.toFixed(3) + ' 1 0';
+        editorCol.style.flex = editorRatio.toFixed(3) + ' 1 0';
+        if (window.MONACO_EDITOR) MONACO_EDITOR.layout();
+    });
+    document.addEventListener('mouseup', function() {
+        if (dragging) {
+            dragging = false;
+            document.body.classList.remove('chat-splitter-dragging');
+        }
+    });
+})();
+
+function refreshFileTree() {
+    TREE_CACHE = {};
+    loadTreeNode('', document.getElementById('chat-files-body'), true);
+}
+
+function loadTreeNode(subpath, container, isRoot) {
+    fetch('/api/chat/shared/browse?path=' + encodeURIComponent(subpath || ''), { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (!d.exists) {
+                if (isRoot) {
+                    container.innerHTML = '<div class="chat-files-empty">' +
+                        'Kein Ordner freigegeben.<br>' +
+                        '<span style="font-size:0.78rem;">📁 Button im Chat-Input öffnet Dialog.</span></div>';
+                }
+                return;
+            }
+            if (isRoot) {
+                document.getElementById('chat-files-title').textContent = '📂 ' + (d.folder.split('/').pop() || d.folder);
+                container.innerHTML = '';
+            }
+            TREE_CACHE[subpath || ''] = { entries: d.entries };
+            d.entries.forEach(function(e) {
+                container.appendChild(renderTreeNode(e));
+            });
+            if (d.entries.length === 0 && isRoot) {
+                container.innerHTML = '<div class="chat-files-empty">Ordner ist leer.</div>';
+            }
+        })
+        .catch(function(err) {
+            if (isRoot) container.innerHTML = '<div class="chat-files-empty">Fehler: ' + err + '</div>';
+        });
+}
+
+function renderTreeNode(entry) {
+    var wrap = document.createElement('div');
+    wrap.className = 'chat-tree-wrap';
+    wrap.dataset.path = entry.path;
+
+    var node = document.createElement('div');
+    node.className = 'chat-tree-node';
+    node.dataset.path = entry.path;
+
+    if (entry.is_dir) {
+        var caret = document.createElement('span');
+        caret.className = 'chat-tree-icon';
+        caret.textContent = '▸';
+        node.appendChild(caret);
+        var emoji = document.createElement('span');
+        emoji.className = 'chat-tree-emoji';
+        emoji.textContent = '📁';
+        node.appendChild(emoji);
+        var label = document.createElement('span');
+        label.className = 'chat-tree-label';
+        label.textContent = entry.name;
+        node.appendChild(label);
+
+        var children = document.createElement('div');
+        children.className = 'chat-tree-children';
+        children.style.display = 'none';
+
+        node.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            var open = children.style.display !== 'none';
+            if (open) {
+                children.style.display = 'none';
+                caret.textContent = '▸';
+                emoji.textContent = '📁';
+            } else {
+                children.style.display = 'block';
+                caret.textContent = '▾';
+                emoji.textContent = '📂';
+                if (!children.dataset.loaded) {
+                    children.innerHTML = '<div class="chat-files-empty" style="padding:4px;">…</div>';
+                    fetch('/api/chat/shared/browse?path=' + encodeURIComponent(entry.path), { cache: 'no-store' })
+                        .then(function(r) { return r.json(); })
+                        .then(function(d) {
+                            children.innerHTML = '';
+                            (d.entries || []).forEach(function(c) { children.appendChild(renderTreeNode(c)); });
+                            children.dataset.loaded = '1';
+                        });
+                }
+            }
+        });
+        wrap.appendChild(node);
+        wrap.appendChild(children);
+    } else {
+        node.appendChild(Object.assign(document.createElement('span'), { className: 'chat-tree-icon', textContent: ''}));
+        var emoji = document.createElement('span');
+        emoji.className = 'chat-tree-emoji';
+        emoji.textContent = _emojiForType(entry.type);
+        node.appendChild(emoji);
+        var label = document.createElement('span');
+        label.className = 'chat-tree-label';
+        label.textContent = entry.name;
+        node.appendChild(label);
+        node.addEventListener('click', function(ev) {
+            ev.stopPropagation();
+            document.querySelectorAll('.chat-tree-node.active').forEach(function(n) { n.classList.remove('active'); });
+            node.classList.add('active');
+            openEditorForPath(entry.path);
+        });
+        wrap.appendChild(node);
+    }
+    return wrap;
+}
+
+function _emojiForType(t) {
+    return { folder: '📁', image: '🖼️', document: '📕', text: '📝', code: '📜',
+             video: '🎬', audio: '🎵' }[t] || '📄';
+}
+
+// Wenn der User den Shared-Folder über den Dialog ändert, Tree aktualisieren
+var _origSetSharedFolder = (typeof setSharedFolder === 'function') ? setSharedFolder : null;
+if (_origSetSharedFolder) {
+    window.setSharedFolder = function() {
+        var r = _origSetSharedFolder.apply(this, arguments);
+        setTimeout(refreshFileTree, 300);
+        return r;
+    };
+}
+</script>
+{% endblock %}

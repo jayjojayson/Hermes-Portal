@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Bearbeiten – {{ portal_name }}{% endblock %}
+{% block page_key %}wiki-edit{% endblock %}
+
+{% block content %}
+<style>
+.edit-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.edit-grid .form-group.full { grid-column: 1 / -1; }
+.tags-list-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+    min-height: 44px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: var(--radius-input);
+}
+.tags-input-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.tags-input-row input { flex: 1; min-width: 150px; }
+.tag-btn {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-family: var(--mono);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    font-weight: 500;
+    transition: all 0.15s;
+    background: var(--surface2);
+    color: var(--text-dim);
+}
+.tag-btn.selected {
+    background: var(--accent-glow-2);
+    color: var(--accent-2);
+    border-color: var(--accent-2);
+}
+.tag-btn:hover { color: var(--text); border-color: var(--accent); }
+.form-actions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1.2rem;
+    flex-wrap: wrap;
+}
+/* Bild-Vorschau mit Papierkorb */
+.image-preview {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.uploaded-image-item {
+    position: relative;
+}
+.delete-img-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.6);
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    line-height: 1;
+}
+.delete-img-btn:hover {
+    background: rgba(255,60,60,0.8);
+}
+</style>
+
+<h2 style="color: var(--accent-2); margin: 0 0 1rem;">✏️ Bearbeiten: {{ title }}</h2>
+
+<form action="/edit/{{ section }}/{{ page_id }}" method="POST">
+    <div class="edit-grid">
+        <div class="form-group">
+            <label for="title">Titel</label>
+            <input type="text" id="title" name="title" value="{{ title }}">
+        </div>
+
+        <div class="form-group">
+            <label for="section">Abschnitt</label>
+            <select id="section" name="section" disabled>
+                <option value="concept" {% if section == 'concept' %}selected{% endif %}>💡 Konzept / Anleitung</option>
+                <option value="entity" {% if section == 'entity' %}selected{% endif %}>📦 Entität / Gerät / System</option>
+            </select>
+        </div>
+
+        <div class="form-group full">
+            <label for="tags-input-field">Tags</label>
+            <div id="tags-list" class="tags-list-container"></div>
+            <div class="tags-input-row">
+                <input type="text" id="tags-input-field" list="tags-suggestions" placeholder="Neue Tag eingeben…">
+                <button type="button" onclick="addTagFromInput()" class="btn btn-primary" title="Tag hinzufügen">+ Add</button>
+            </div>
+            <!-- Hidden field to send tags to backend -->
+            <input type="hidden" id="tags" name="tags">
+            <datalist id="tags-suggestions">
+                {% for tag in all_tags_list %}
+                <option value="{{ tag }}">
+                {% endfor %}
+            </datalist>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="content">Inhalt (Markdown)</label>
+        {% include "_md_toolbar.html" %}
+        <textarea id="content" name="content" rows="15"
+                  placeholder="Schreibe hier deinen Wiki-Inhalt im Markdown-Format…">{{ raw_content|safe }}</textarea>
+    </div>
+
+    <div class="form-group full">
+        <label for="image-upload">📷 Bild hinzufügen</label>
+        <div class="image-upload-area">
+            <input type="file" id="image-upload" name="image" accept="image/*" style="display:none;" onchange="handleImageUpload(this)">
+            <button type="button" class="btn btn-primary" onclick="document.getElementById('image-upload').click()">📷 Bild hochladen</button>
+            <div id="image-preview" class="image-preview"></div>
+        </div>
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn-success">💾 Speichern</button>
+        <a href="{{ url_for('show_page', page_id=page_id, section=section) }}" class="btn">Abbrechen</a>
+    </div>
+</form>
+
+<script>
+    // Initialize with current tags from server
+    let currentTags = {{ current_tags_list | default([]) | tojson }};
+
+    function addTagFromInput() {
+        const input = document.getElementById('tags-input-field');
+        const text = input.value.trim().toLowerCase();
+        if (text && !currentTags.includes(text)) {
+            currentTags = [...currentTags, text];
+            updateTagButtons();
+            updateHiddenField();
+            input.value = "";
+            input.focus();
+        } else if (currentTags.includes(text)) {
+            alert("Dieser Tag existiert bereits!");
+        }
+    }
+
+    function removeTag(tag) {
+        currentTags = currentTags.filter(t => t !== tag);
+        updateTagButtons();
+        updateHiddenField();
+    }
+
+    function toggleTag(tag) {
+        if (currentTags.includes(tag)) {
+            removeTag(tag);
+        } else {
+            currentTags = [...currentTags, tag];
+        }
+        updateTagButtons();
+        updateHiddenField();
+    }
+
+    function updateHiddenField() {
+        // Update the hidden input field before form submission
+        document.getElementById('tags').value = currentTags.join(',');
+    }
+
+    function updateTagButtons() {
+        const newTagsList = document.getElementById('tags-list');
+        newTagsList.innerHTML = '';
+
+        // Selected tags (mint, with check)
+        currentTags.forEach(tag => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.onclick = () => toggleTag(tag);
+            btn.className = 'tag-btn selected';
+            btn.textContent = '✓ ' + tag;
+            newTagsList.appendChild(btn);
+        });
+
+        // Available tags (not selected) - from datalist
+        const datalist = document.getElementById('tags-suggestions');
+        const displayedOptions = new Set(currentTags.map(t => t.toLowerCase()));
+
+        Array.from(datalist.options).forEach(option => {
+            const tag = option.value.toLowerCase();
+            if (!displayedOptions.has(tag)) {
+                displayedOptions.add(tag);
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.onclick = () => toggleTag(tag);
+                btn.className = 'tag-btn';
+                btn.textContent = tag;
+                newTagsList.appendChild(btn);
+            }
+        });
+    }
+
+    // Image upload handling
+    function handleImageUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        fetch('/upload/image', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                addImagePreview(data.url, data.url.replace('/static/uploads/', '').split('_').slice(0, -2).join('_') + '*' );
+                // Insert markdown into content
+                const textarea = document.getElementById('content');
+                const markdown = `\n![](${data.url})\n`;
+                textarea.value += markdown;
+            } else {
+                alert('Fehler beim Hochladen: ' + (data.error || 'Unbekannter Fehler'));
+            }
+        })
+        .catch(error => {
+            alert('Fehler beim Hochladen: ' + error);
+        });
+    }
+
+    function addImagePreview(url, filenameMatch) {
+        const preview = document.getElementById('image-preview');
+        const wrapper = document.createElement('div');
+        wrapper.className = 'uploaded-image-item';
+        wrapper.dataset.filenameMatch = filenameMatch;
+        wrapper.innerHTML = `
+            <div style="position:relative; display:inline-block;">
+                <img src="${url}" style="max-width: 300px; max-height: 200px; border-radius: 8px;">
+                <button type="button" class="delete-img-btn" onclick="deleteImage('${url}', '${filenameMatch}', this)" title="Bild löschen">
+                    🗑️
+                </button>
+            </div>
+            <div style="font-size: 0.85em; color: var(--text-dim); margin-top: 0.3rem;">
+                URL: <code>![](${url})</code>
+                <button type="button" onclick="insertImageMarkdown('${url}')" class="btn btn-sm btn-accent" style="margin-left:0.3rem; padding: 2px 8px;">Einfügen</button>
+            </div>
+        `;
+        preview.appendChild(wrapper);
+    }
+
+    function deleteImage(url, filenameMatch, btn) {
+        if (!confirm('Bild wirklich löschen? Es wird auch aus dem Content entfernt.')) return;
+
+        // Aus dem Content-Textarea entfernen
+        const textarea = document.getElementById('content');
+        textarea.value = textarea.value.replace(new RegExp(`!\\[\\]\\(${escapeRegex(url)}\\)\\s*`, 'g'), '');
+
+        // Server löschen
+        const filename = url.split('/').pop();
+        fetch(`/api/uploads/${encodeURIComponent(filename)}`, { method: 'DELETE' })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    btn.closest('.uploaded-image-item').remove();
+                } else {
+                    alert('Fehler beim Löschen: ' + (data.error || 'Unbekannter Fehler'));
+                }
+            })
+            .catch(err => alert('Fehler beim Löschen: ' + err));
+    }
+
+    function escapeRegex(str) {
+        return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    function insertImageMarkdown(url) {
+        const textarea = document.getElementById('content');
+        const pos = textarea.selectionStart;
+        const text = textarea.value;
+        const markdown = `\n![](${url})\n`;
+        textarea.value = text.slice(0, pos) + markdown + text.slice(pos);
+        textarea.focus();
+        textarea.selectionStart = textarea.selectionEnd = pos + markdown.length;
+    }
+
+    // Bestehende Bilder im Content beim Laden erkennen und Vorschau anzeigen
+    function loadExistingImages() {
+        const textarea = document.getElementById('content');
+        const content = textarea.value;
+        const imgPattern = /!\[\]\((\/static\/uploads\/[^)]+)\)/g;
+        let match;
+        const seen = new Set();
+        while ((match = imgPattern.exec(content)) !== null) {
+            const url = match[1];
+            if (!seen.has(url)) {
+                seen.add(url);
+                addImagePreview(url, '');
+            }
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        updateTagButtons();
+        updateHiddenField(); // Set initial value
+        loadExistingImages(); // Bestehende Bilder laden
+    });
+
+    // Also update on form submit (safety)
+    document.querySelector('form').addEventListener('submit', function() {
+        updateHiddenField();
+    });
+</script>
+{% endblock %}
