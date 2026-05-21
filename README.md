@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-# Hermes-Portal
-Hermes Portal GUI for Hermes Agent
-=======
-<!-- markdownlint-disable MD033 MD041 -->
+
 <p align="center">
   <img src="hermes-portal-logo.png" alt="Hermes Portal Logo" width="180">
 </p>
@@ -500,4 +496,3 @@ Wenn dir das Projekt gefällt:
 ## 📄 Lizenz
 
 [Creative Commons Legal Code](LICENSE) — Creative Commons Legal Code
->>>>>>> c76e577 (v0.5.0)
