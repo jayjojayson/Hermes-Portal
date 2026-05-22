@@ -3,7 +3,7 @@
 # Drei Modi:
 #  1. STANDALONE (Default): Portal läuft alleine, verbindet sich via SSH zum Hermes-Agent.
 #  2. CO-LOCATED:           Portal läuft in derselben VM/Host wie Hermes; mountet austausch + .hermes.
-#  3. HOME ASSISTANT:       Wird als HA-Add-On installiert (siehe homeassistant/ Verzeichnis).
+#  3. HOME ASSISTANT:       Wird als HA-Add-On installiert (siehe hermes_portal/ Verzeichnis).
 #
 # Standard-Start:  docker compose up -d
 # Logs:            docker compose logs -f

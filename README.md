@@ -207,8 +207,10 @@ Firewall fragt einmal nach Netzwerk-Zugriff → erlauben.
 <summary><strong>🔌 Hermes Portal — Home Assistant Add-on</strong></summary>
 Installation
 In Home Assistant: Einstellungen → Add-ons → Add-on Store → ⋮ → Repositories.  
-URL deines Forks/Repos eintragen, z.B. https://github.com/USER/hermes-portal.  
-Add-on Hermes Portal auswählen und installieren.  
+URL eintragen: `https://github.com/jayjojayson/Hermes-Portal`  
+(Das Repo ist seit v0.6.0 eine gültige HA-Add-on-Quelle: `repository.yaml`
+im Root, Add-on-Folder `hermes_portal/` auf Root-Ebene.)  
+Add-on **Hermes Portal** auswählen und installieren.  
 Konfiguration setzen (siehe Optionen unten), dann starten.  
 Öffne den Reiter über die Sidebar (Ingress) oder direkt http://<ha-ip>:8090.  
 Konfiguration:  

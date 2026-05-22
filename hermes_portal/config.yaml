@@ -3,13 +3,13 @@
 
 name: Hermes Portal
 description: Webfrontend für den Hermes-Agent — Wiki, News, Briefing, Aufgaben, Explorer und Chat.
-version: "0.1.0"
+version: "0.6.0"
 slug: hermes_portal
 init: false
 arch:
   - amd64
   - aarch64
-url: https://github.com/USER/hermes-portal
+url: https://github.com/jayjojayson/Hermes-Portal
 panel_icon: mdi:satellite-uplink
 panel_admin: true
 ingress: true

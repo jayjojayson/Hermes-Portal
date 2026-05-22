@@ -14,6 +14,54 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [0.6.0] — 2026-05-22
+
+Erstes Wartungs-Release nach dem öffentlichen Launch. Lizenz-Wechsel,
+neue UI-Toggles und projektweite Changelog-Dokumentation.
+
+### Added
+- **CHANGELOG.md** im Keep-a-Changelog-Format — ab jetzt werden alle
+  Releases hier dokumentiert.
+- **Nav-Toggles** im Settings → App-Tab — neue Sektion „📑 Menü-Punkte
+  sichtbar" mit Checkboxen für **News** und **Briefing**. Wer diese
+  Features nicht nutzt, kann sie aus Header und Sidebar ausblenden.
+  - Neue Config-Keys `show_news` / `show_briefing` (Default `true`),
+    sowohl in `config.py` als auch in `config.defaults.json`.
+  - Frontend-Filter via `window.HP_NAV_HIDE` in `base.html`,
+    `site-header.js` rendert Header **und** Sidebar dynamisch.
+- **Docker-Workflow** (`.github/workflows/docker.yml`) — rollender
+  Multi-Arch-Build auf jeden `main`-Push, der Docker-relevante Dateien
+  betrifft. Tags: `:main` (HEAD) + `:sha-<short>` (Rollback-Anker).
+- **`repository.yaml`** im Repo-Root + Add-on-Folder auf `hermes_portal/`
+  verschoben → Repo kann jetzt direkt als Home-Assistant-Add-on-Quelle
+  hinzugefügt werden.
+
+### Changed
+- **Lizenz** auf **Apache License 2.0** umgestellt (vorher gemischt
+  zwischen MIT lokal und CC BY-NC-SA 3.0 auf GitHub). Alle Referenzen
+  konsistent aktualisiert: `LICENSE`, `README.md`, `pyproject.toml`
+  (Classifier), `.github/workflows/release.yml` (OCI-Label),
+  `hermes_portal/build.yaml` (OCI-Label).
+- **HA-Add-on-Pfad**: `homeassistant/hermes_portal/` → `hermes_portal/`
+  (HA-Supervisor scannt nur Repo-Root nach Add-on-Foldern).
+- **HA-Add-on-Version** in `hermes_portal/config.yaml` von `0.1.0` auf
+  `0.6.0` synchronisiert.
+
+### Fixed
+- **Type-Import-Reihenfolge** in `_wiki_server/wiki_app.py`:
+  `from typing import Optional` an den Datei-Anfang verschoben (vorher
+  Zeile 3292 → CI-Smoke-Import-Fehler bei Annotation in Zeile 3120).
+- **Windows-Unicode-Crash** in `_wiki_server/scripts/fetch_monaco.py`:
+  Stdout/Stderr explizit auf UTF-8 reconfiguriert, damit der
+  PyInstaller-Build auf `windows-latest` nicht an `cp1252`-Encoding
+  von Unicode-Pfeilen/Häkchen scheitert.
+- **PyInstaller-Icon-Konvertierung**: `pillow` als Build-Dep ergänzt,
+  damit das PNG-Logo auf Windows automatisch zu `.ico` konvertiert wird
+  (vorher: `ValueError: Received icon image … which is not in the
+  correct format`).
+
+---
+
 ## [0.5.0] — 2026-05-22
 
 Erstes öffentliches Release. Das Hermes Portal ist als komplettes Web-Frontend
@@ -119,5 +167,6 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jayjojayson/Hermes-Portal/releases/tag/v0.5.0

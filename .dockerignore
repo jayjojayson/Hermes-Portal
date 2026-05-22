@@ -25,7 +25,7 @@ _wiki_server/data/shared/
 _wiki_server/data/config.json
 
 # Build-Artefakte HA-Add-on
-homeassistant/hermes_portal/rootfs/app/
+hermes_portal/rootfs/app/
 
 # OS / IDE
 .git/

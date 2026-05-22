@@ -17,6 +17,7 @@ import random
 import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
+from typing import Optional
 
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, jsonify,
@@ -3287,9 +3288,6 @@ def api_chat_set_shared_folder_upload():
         "skipped": skipped,
         "top_dir": safe_top,
     })
-
-
-from typing import Optional  # noqa: E402  (lokaler Import zur Typannotation oben)
 
 
 @app.route("/api/chat/shared/browse", methods=["GET"])

@@ -77,8 +77,8 @@ _wiki_server/take_dark_screenshots*.py
 _wiki_server/static/vendor/
 
 # -------- HA Add-on Build-Output --------
-homeassistant/hermes_portal/rootfs/app/
-homeassistant/hermes_portal/rootfs/requirements.txt
+hermes_portal/rootfs/app/
+hermes_portal/rootfs/requirements.txt
 
 # -------- Logs / Test-Artefakte --------
 *.log

@@ -15,6 +15,15 @@ import tarfile
 import urllib.request
 from pathlib import Path
 
+# Windows-Default-Shell nutzt cp1252 → Unicode-Pfeile/Häkchen in Prints sprengen
+# den Build. Hier explizit UTF-8 erzwingen (mit ASCII-Fallback), damit der
+# Release-Workflow auf windows-latest sauber durchläuft.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 MONACO_VERSION = "0.50.0"
 NPM_TARBALL_URL = f"https://registry.npmjs.org/monaco-editor/-/monaco-editor-{MONACO_VERSION}.tgz"
 
