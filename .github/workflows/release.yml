@@ -131,50 +131,11 @@ jobs:
           # Alle xattrs strippen (quarantine, finder-flags, etc.)
           xattr -cr "$APP"
 
-          # ──────────────────────────────────────────────────────────────
-          # Ad-hoc signieren (Identity "-" = ohne kostenpflichtigen Apple
-          # Developer-Cert).
-          #
-          # WICHTIG: Wir können NICHT `codesign --deep` benutzen — das würde
-          # Python-Metadaten-Ordner wie `flask-3.1.3.dist-info` als nested
-          # Bundles interpretieren und mit „bundle format unrecognized"
-          # abbrechen.
-          #
-          # Wir können auch NICHT nur per Extension filtern (`.dylib`/`.so`)
-          # — PyInstaller bündelt das Python-Framework ohne Extension
-          # (z.B. `_internal/Python`), die wären sonst unsigned und auf
-          # Apple Silicon hart abgelehnt → „App ist beschädigt".
-          #
-          # Lösung: jedes File per `file`-Magic-Check identifizieren, alle
-          # Mach-O-Treffer signieren. Bei ~1500 Files in ~30 s durch.
-          # ──────────────────────────────────────────────────────────────
-          echo "→ Identifiziere alle Mach-O-Files im Bundle…"
-          MACHO_LIST="$(mktemp)"
-          find "$APP/Contents/MacOS" -type f -print0 | \
-            xargs -0 file 2>/dev/null | \
-            awk -F: '/Mach-O/ {print substr($0, 1, length($0)-length($NF)-1)}' | \
-            sed 's/:[[:space:]]*$//' > "$MACHO_LIST"
-          MACHO_COUNT=$(wc -l < "$MACHO_LIST" | tr -d ' ')
-          echo "  → $MACHO_COUNT Mach-O-Files gefunden"
-
-          echo "→ Signiere alle Mach-O-Files (inner-most zuerst)…"
-          # Sortiert nach Tiefe absteigend → innere Files vor ihren Parents
-          SIGN_FAIL=0
-          while IFS= read -r f; do
-            [ -z "$f" ] && continue
-            if ! codesign --force --sign - --timestamp=none "$f" 2>&1 | grep -v "replacing existing signature" | head -3; then
-              SIGN_FAIL=$((SIGN_FAIL+1))
-            fi
-          done < <(awk '{print gsub(/\//,"&"), $0}' "$MACHO_LIST" | sort -rn | cut -d' ' -f2-)
-          rm -f "$MACHO_LIST"
-          echo "  → fertig (Fehler: $SIGN_FAIL)"
-
-          echo "→ Signiere Bundle als Ganzes…"
-          codesign --force --sign - --timestamp=none "$APP" 2>&1 | tail -5 || true
-
-          echo "→ Verifikation (informativ):"
-          codesign --verify --verbose=2 "$APP" 2>&1 | head -20 || \
-            echo "(Verify zeigt Warnungen — bei ad-hoc Sign normal)"
+          # Ad-hoc signieren via Python-Script (siehe Datei für Details).
+          # In v1.0.1 hatte das ein kaputtes awk-Pipe ersetzt, das de facto
+          # nichts signiert hatte → DMG-„beschädigt"-Bug. Das Python-Script
+          # ist robust und gibt verifizierbare Counts aus.
+          python3 _wiki_server/scripts/sign_macos_app.py "$APP"
 
           # .dmg bauen
           rm -f "${{ matrix.installer }}"

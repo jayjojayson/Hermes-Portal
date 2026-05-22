@@ -3,6 +3,14 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.2
+
+- Keine HA-spezifischen Änderungen — Release ist primär ein mac-Sign-Fix.
+- **Hinweis zum Panel-Icon:** falls `mdi:robot-happy` nach diesem Update
+  immer noch nicht erscheint, einmal Add-on deinstallieren + neu
+  installieren (HA-Supervisor cached die Panel-Registration vom
+  Install-Zeitpunkt; Add-on-Daten in `/data/` bleiben erhalten).
+
 ## 1.0.1
 
 - **Logo im Header** wird wieder angezeigt (Ingress-Prefix-Fix in

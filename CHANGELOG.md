@@ -14,6 +14,36 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.2] — 2026-05-22
+
+Bugfix für den Bugfix: der macOS-Sign-Loop aus v1.0.1 hatte selbst einen
+Bug und hat de facto NICHTS signiert.
+
+### Fixed
+- **macOS-DMG „beschädigt" — endgültiger Fix.** Das `awk` in v1.0.1
+  zur Pfad-Extraktion aus der `file`-Ausgabe hat fundamental falsch
+  geschnitten (entfernte das letzte Wort statt nur die Type-Description),
+  so dass `codesign` mit Phantasie-Pfaden aufgerufen wurde und **kein
+  einziges Mach-O-File tatsächlich signiert** wurde. Das Python-Framework
+  blieb damit weiterhin unsigned → Apple-Silicon-Gatekeeper hart
+  abgelehnt. Komplett neu in Python (`_wiki_server/scripts/sign_macos_app.py`)
+  mit lesbarem Code und verifizierbaren Counts im Build-Log.
+
+### Changed
+- **`_wiki_server/scripts/sign_macos_app.py`** als wartbares Tool im
+  Repo statt fragiler Bash-Pipe im Workflow. Findet alle Mach-O-Files
+  per `file`-Magic-Check, sortiert nach Pfad-Tiefe (innerste zuerst),
+  signiert ad-hoc, gibt Statistik aus.
+
+### Notes
+- **HA-Panel-Icon `mdi:robot-happy`** wird oft nicht direkt nach einem
+  Update sichtbar — HA-Supervisor cached die Panel-Registration vom
+  Installationszeitpunkt. Workaround: Add-on **einmal deinstallieren
+  und neu installieren** (oder `ha core restart`). Die Add-on-Daten
+  in `/data/` bleiben dabei erhalten.
+
+---
+
 ## [1.0.1] — 2026-05-22
 
 Hotfix-Welle nach den ersten produktiven 1.0-Installationen.
@@ -343,7 +373,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.8.0...v0.9.0
