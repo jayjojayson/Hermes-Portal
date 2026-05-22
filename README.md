@@ -109,13 +109,25 @@ python _wiki_server/wiki_app.py
 <details>
 <summary><strong>Alternative: fertiges .dmg-Installer-Image</strong> (kein Python nötig)</summary>
 
-Lade die neueste `Hermes-Portal-macOS.dmg` aus den
-[Releases](https://github.com/jayjojayson/Hermes-Portal/releases),
-öffne sie und ziehe `Hermes Portal.app` in den Programme-Ordner.
-Beim ersten Start ggf. Sicherheits-Dialog: **Rechtsklick → Öffnen**.
+Aus den [Releases](https://github.com/jayjojayson/Hermes-Portal/releases) das
+zur eigenen CPU passende DMG laden:
 
-Wer lieber portable bleibt: `Hermes-Portal-macOS.zip` aus demselben Release
-entpacken und `Hermes Portal.app` direkt starten.
+- **Apple Silicon (M1/M2/M3/M4)** → `Hermes-Portal-macOS-AppleSilicon.dmg`
+- **Intel (älter, vor 2020)**     → `Hermes-Portal-macOS-Intel.dmg`
+
+DMG öffnen → `Hermes Portal.app` in den Programme-Ordner ziehen.
+
+**Wichtig — Erster Start (Gatekeeper-Workaround):**
+Die App ist ad-hoc-signiert, **nicht** von Apple notarisiert (das würde
+einen kostenpflichtigen Apple-Developer-Account voraussetzen). Beim ersten
+Doppelklick erscheint daher die Meldung „Hermes Portal.app ist beschädigt".
+Einmalig im Terminal ausführen:
+
+```bash
+xattr -dr com.apple.quarantine "/Applications/Hermes Portal.app"
+```
+
+Danach startet die App per Doppelklick ganz normal.
 
 </details>
 

@@ -14,6 +14,50 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [0.8.0] — 2026-05-22
+
+Release-Streamlining und macOS-Härten.
+
+### Added
+- **Zwei separate macOS-DMGs** statt einer universellen Datei:
+  - `Hermes-Portal-macOS-AppleSilicon.dmg` (arm64, native Build auf
+    `macos-14`).
+  - `Hermes-Portal-macOS-Intel.dmg` (x86_64, native Build auf `macos-13`).
+- **Ad-hoc-Codesignatur** für die macOS-App (Identity `-`): alle nested
+  Mach-O-Binaries werden signiert, anschließend das Bundle als Ganzes.
+  Anschließend werden xattrs vollständig gestrippt.
+- **Quarantine-Workaround** im Release-Body und README dokumentiert
+  (`xattr -dr com.apple.quarantine …`) — nötig, weil ohne kostenpflichtigen
+  Apple-Developer-Account keine Notarisierung möglich ist.
+
+### Changed
+- **GitHub-Release enthält ab v0.8.0 nur noch native Installer**
+  (`.dmg` × 2, `.exe`, `.AppImage`). Die portablen Archive
+  (`.zip` / `.tar.gz`) entfallen — wer den rohen Build-Ordner braucht,
+  baut selbst per `pyinstaller` (Spec liegt unverändert im Repo).
+- **HA-Add-on `build.yaml`** auf das Nötigste reduziert: nur noch
+  `build_from:` mit den HA-Base-Images für `amd64` + `aarch64`. Die
+  deprecated Felder `labels:` und `args:` sind raus — Labels liegen jetzt
+  als `LABEL`-Direktiven direkt in `hermes_portal/Dockerfile`.
+
+### Fixed
+- **macOS „App ist beschädigt"-Fehler** beim Öffnen des heruntergeladenen
+  DMG: ursache war fehlende Code-Signatur + Chrome-Quarantine-Flag. Mit
+  ad-hoc-Sign + xattr-strip + dokumentiertem User-Workaround ist die App
+  jetzt startfähig.
+- **macOS-Sign-Build-Fehler** „bundle format unrecognized … flask-X.Y.Z
+  .dist-info": `codesign --deep` versucht jeden Unterordner als nested
+  Bundle zu signieren und scheitert an Python-Metadaten-Folders. Fix:
+  alle Mach-O-Files (Binary, `.dylib`, `.so`) einzeln signieren, das
+  Bundle als Ganzes **ohne** `--deep`.
+- **HA-Add-on-Build-Fehler** „base name ($BUILD_FROM) should not be
+  blank": entstand durch komplettes Entfernen der `build.yaml`. Der
+  HA-Supervisor liefert `BUILD_FROM` nur dann als Build-Arg, wenn
+  `build.yaml` mit `build_from:` vorhanden ist. Datei wieder da, in
+  minimaler Form.
+
+---
+
 ## [0.7.0] — 2026-05-22
 
 Hotfix- und Distribution-Release. Macht das Home-Assistant-Add-on installierbar
@@ -203,7 +247,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jayjojayson/Hermes-Portal/releases/tag/v0.5.0

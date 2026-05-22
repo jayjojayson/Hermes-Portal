@@ -10,6 +10,12 @@ FROM $BUILD_FROM
 
 ARG BUILD_VERSION
 
+# OCI-Labels (vorher in der seit HA 2024 deprecated build.yaml)
+LABEL org.opencontainers.image.title="Hermes Portal" \
+      org.opencontainers.image.description="Webfrontend für den Hermes-Agent" \
+      org.opencontainers.image.source="https://github.com/jayjojayson/Hermes-Portal" \
+      org.opencontainers.image.licenses="Apache-2.0"
+
 RUN apk add --no-cache python3 py3-pip openssh-client tzdata curl tini git
 
 WORKDIR /app

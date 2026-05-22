@@ -1,6 +1,6 @@
 name: Release
 
-# Triggert auf Tag-Push (z.B. v0.7.0) oder manuell aus der Actions-UI.
+# Triggert auf Tag-Push (z.B. v0.8.0) oder manuell aus der Actions-UI.
 on:
   push:
     tags:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag (z.B. v0.7.0)'
+        description: 'Tag (z.B. v0.8.0)'
         required: true
 
 permissions:
@@ -17,23 +17,34 @@ permissions:
 
 jobs:
   # =====================================================================
-  # 1) Native Installer für macOS (.dmg), Linux (.AppImage), Windows (.exe)
+  # 1) Native Installer:
+  #    - macOS Intel    (.dmg, x86_64,  Runner: macos-13)
+  #    - macOS Silicon  (.dmg, arm64,   Runner: macos-14)
+  #    - Linux          (.AppImage, x86_64, Runner: ubuntu-latest)
+  #    - Windows        (.exe Setup,        Runner: windows-latest)
   # =====================================================================
   binaries:
-    name: Build ${{ matrix.os }} installer
+    name: Build ${{ matrix.label }} installer
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
+          - label: "macOS Intel"
+            os: macos-13
+            installer: Hermes-Portal-macOS-Intel.dmg
+            kind: dmg
+          - label: "macOS Apple Silicon"
+            os: macos-14
+            installer: Hermes-Portal-macOS-AppleSilicon.dmg
+            kind: dmg
+          - label: "Linux x86_64"
+            os: ubuntu-latest
             installer: Hermes-Portal-Linux.AppImage
-            portable:  Hermes-Portal-Linux.tar.gz
-          - os: macos-latest
-            installer: Hermes-Portal-macOS.dmg
-            portable:  Hermes-Portal-macOS.zip
-          - os: windows-latest
+            kind: appimage
+          - label: "Windows x64"
+            os: windows-latest
             installer: Hermes-Portal-Setup.exe
-            portable:  Hermes-Portal-Windows.zip
+            kind: exe
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -48,7 +59,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r _wiki_server/requirements.txt
-          # pillow → PyInstaller braucht es auf Windows, um logo.png → .ico zu konvertieren
+          # pillow → PyInstaller braucht es auf Windows für PNG → ICO
           pip install pyinstaller pillow
 
       - name: Fetch Monaco editor (vendored offline)
@@ -72,37 +83,22 @@ jobs:
         working-directory: _wiki_server
         run: pyinstaller --noconfirm hermes_portal.spec
 
-      # ------------------------------------------------------------------
-      # Portable Archiv (zip/tar) — für Power-User, die keinen Installer wollen
-      # ------------------------------------------------------------------
-      - name: Pack portable archive
-        shell: bash
-        run: |
-          cd _wiki_server/dist
-          if [ "${{ runner.os }}" = "Linux" ]; then
-            tar -czf "../../${{ matrix.portable }}" hermes-portal
-          else
-            python -c "import shutil; shutil.make_archive('../../${{ matrix.portable }}'.replace('.zip',''), 'zip', '.', 'hermes-portal')"
-          fi
-          ls -lh "../../${{ matrix.portable }}"
-
       # ==================================================================
-      # macOS: .app-Bundle bauen + zu .dmg wrappen (hdiutil ist eingebaut)
+      # macOS: .app-Bundle, ad-hoc signieren, quarantine strippen, .dmg
       # ==================================================================
-      - name: Build macOS .app + .dmg
-        if: runner.os == 'macOS'
+      - name: Build macOS .app + .dmg (ad-hoc signed)
+        if: matrix.kind == 'dmg'
         shell: bash
         run: |
           set -e
           APP="Hermes Portal.app"
           rm -rf "$APP"
           mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-          # PyInstaller-Bundle in den .app-Container kopieren
           cp -R _wiki_server/dist/hermes-portal/. "$APP/Contents/MacOS/"
-          # Logo → .icns konvertieren (sips ist auf macOS eingebaut)
+
+          # Logo → .icns (sips + iconutil sind macOS-Bordmittel)
           ICONSET="logo.iconset"
-          rm -rf "$ICONSET"
-          mkdir "$ICONSET"
+          rm -rf "$ICONSET"; mkdir "$ICONSET"
           SRC="_wiki_server/static/portal/logo.png"
           for SZ in 16 32 64 128 256 512; do
             sips -z $SZ $SZ "$SRC" --out "$ICONSET/icon_${SZ}x${SZ}.png" >/dev/null
@@ -111,6 +107,7 @@ jobs:
           done
           iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/logo.icns"
           rm -rf "$ICONSET"
+
           # Info.plist
           cat > "$APP/Contents/Info.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
@@ -130,7 +127,28 @@ jobs:
           </dict>
           </plist>
           PLIST
-          # .dmg bauen (UDZO = komprimiert read-only)
+
+          # Alle xattrs strippen (quarantine, finder-flags, etc.)
+          xattr -cr "$APP"
+
+          # Ad-hoc signieren (Identity "-" = ohne Developer-Cert).
+          # WICHTIG: KEIN --deep — das würde Python-Metadaten-Ordner wie
+          # `flask-3.1.3.dist-info` als nested Bundles interpretieren und
+          # mit „bundle format unrecognized" abbrechen.
+          # Stattdessen: alle Mach-O-Files (Binary, .dylib, .so) einzeln
+          # signieren, dann das Bundle als Ganzes ohne --deep.
+          echo "→ Signiere nested Mach-O-Files…"
+          find "$APP/Contents/MacOS" -type f | while read -r f; do
+            if file "$f" 2>/dev/null | grep -q "Mach-O"; then
+              codesign --force --sign - --timestamp=none "$f" 2>/dev/null || true
+            fi
+          done
+          echo "→ Signiere Bundle…"
+          codesign --force --sign - --timestamp=none "$APP" 2>/dev/null || true
+          echo "→ Verifikation (informativ, blockt nicht):"
+          codesign --verify "$APP" || echo "(Verifikation hat gemeckert — kein Show-Stopper für ad-hoc Sign)"
+
+          # .dmg bauen
           rm -f "${{ matrix.installer }}"
           hdiutil create -volname "Hermes Portal" \
                          -srcfolder "$APP" \
@@ -139,10 +157,10 @@ jobs:
           ls -lh "${{ matrix.installer }}"
 
       # ==================================================================
-      # Windows: Inno Setup 6 ist auf windows-latest vorinstalliert
+      # Windows: Inno Setup 6 (auf windows-latest vorinstalliert)
       # ==================================================================
       - name: Build Windows .exe installer (Inno Setup)
-        if: runner.os == 'Windows'
+        if: matrix.kind == 'exe'
         shell: bash
         run: |
           set -e
@@ -182,35 +200,30 @@ jobs:
           [Run]
           Filename: "{app}\hermes-portal.exe"; Description: "Hermes Portal jetzt starten"; Flags: nowait postinstall skipifsilent
           ISS
-          # __VERSION__ ersetzen
           sed -i 's/__VERSION__/${{ steps.ver.outputs.version }}/' installer.iss
-          # ISCC.exe von Inno Setup 6 (Standard-Pfad auf windows-latest)
           "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" installer.iss
           mv Hermes-Portal-Setup.exe "${{ matrix.installer }}" 2>/dev/null || true
           ls -lh "${{ matrix.installer }}"
 
       # ==================================================================
-      # Linux: AppImage via appimagetool
+      # Linux AppImage
       # ==================================================================
       - name: Build Linux AppImage
-        if: runner.os == 'Linux'
+        if: matrix.kind == 'appimage'
         shell: bash
         run: |
           set -e
-          # appimagetool herunterladen + extrahieren (FUSE ist im GH-Runner nicht verfügbar)
           wget -q -O appimagetool.AppImage \
             https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool.AppImage
           ./appimagetool.AppImage --appimage-extract >/dev/null
           APPIMAGETOOL="$(pwd)/squashfs-root/AppRun"
 
-          # AppDir-Struktur aufbauen
           APPDIR="HermesPortal.AppDir"
           rm -rf "$APPDIR"
           mkdir -p "$APPDIR/usr/bin"
           cp -R _wiki_server/dist/hermes-portal/. "$APPDIR/usr/bin/"
           cp _wiki_server/static/portal/logo.png "$APPDIR/hermes-portal.png"
-          # .desktop-File
           cat > "$APPDIR/hermes-portal.desktop" <<DESK
           [Desktop Entry]
           Type=Application
@@ -221,7 +234,6 @@ jobs:
           Categories=Network;WebBrowser;Utility;
           Terminal=true
           DESK
-          # AppRun-Launcher
           cat > "$APPDIR/AppRun" <<'RUN'
           #!/bin/bash
           HERE="$(dirname "$(readlink -f "$0")")"
@@ -229,26 +241,15 @@ jobs:
           RUN
           chmod +x "$APPDIR/AppRun"
 
-          # AppImage bauen
           ARCH=x86_64 "$APPIMAGETOOL" "$APPDIR" "${{ matrix.installer }}"
           chmod +x "${{ matrix.installer }}"
           ls -lh "${{ matrix.installer }}"
 
-      # ------------------------------------------------------------------
-      # Upload (Installer + Portable nebeneinander)
-      # ------------------------------------------------------------------
       - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.installer }}
           path: ${{ matrix.installer }}
-          retention-days: 14
-
-      - name: Upload portable archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.portable }}
-          path: ${{ matrix.portable }}
           retention-days: 14
 
   # =====================================================================
@@ -298,7 +299,7 @@ jobs:
             org.opencontainers.image.licenses=Apache-2.0
 
   # =====================================================================
-  # 3) GitHub-Release erstellen + alle Artefakte anhängen
+  # 3) GitHub-Release erstellen + nur die nativen Installer anhängen
   # =====================================================================
   release:
     name: Publish GitHub Release
@@ -342,13 +343,26 @@ jobs:
 
             ### Installation
 
-            | Plattform | Empfohlen (Installer) | Portable (Archiv) |
-            |-----------|----------------------|-------------------|
-            | **macOS**   | `Hermes-Portal-macOS.dmg` — öffnen, App in Programme ziehen | `Hermes-Portal-macOS.zip` |
-            | **Windows** | `Hermes-Portal-Setup.exe` — Setup ausführen | `Hermes-Portal-Windows.zip` |
-            | **Linux**   | `Hermes-Portal-Linux.AppImage` — `chmod +x` und starten | `Hermes-Portal-Linux.tar.gz` |
-            | **Docker**  | `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}` | — |
-            | **Home Assistant** | Add-on-Repo: `https://github.com/${{ github.repository }}` | — |
+            | Plattform | Datei | Hinweis |
+            |-----------|-------|---------|
+            | **macOS (Apple Silicon, M1/M2/M3/M4)** | `Hermes-Portal-macOS-AppleSilicon.dmg` | Siehe macOS-Hinweis unten |
+            | **macOS (Intel)**                       | `Hermes-Portal-macOS-Intel.dmg`         | Siehe macOS-Hinweis unten |
+            | **Windows (x64)**                       | `Hermes-Portal-Setup.exe`               | Setup-Wizard ausführen |
+            | **Linux (x86_64)**                      | `Hermes-Portal-Linux.AppImage`          | `chmod +x` und starten |
+            | **Docker**                               | `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}` | — |
+            | **Home Assistant Add-on**               | Repo `https://github.com/${{ github.repository }}` als HA-Add-on-Quelle hinzufügen | — |
+
+            #### 🍎 macOS-Hinweis (unsigned, kein Apple-Developer-Account)
+
+            Die App ist ad-hoc-signiert, nicht von Apple notarisiert. Beim ersten
+            Start meldet Gatekeeper „beschädigt". Einmaliger Workaround:
+
+            ```bash
+            xattr -dr com.apple.quarantine "/Applications/Hermes Portal.app"
+            ```
+
+            Danach normal per Doppelklick startbar. (Alternativ Rechtsklick → Öffnen
+            funktioniert auf älteren macOS-Versionen ebenfalls.)
 
             Vollständige Anleitung im [README](https://github.com/${{ github.repository }}#-installation).
         env:

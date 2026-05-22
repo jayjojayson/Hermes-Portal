@@ -1,9 +1,9 @@
-# Base-Images für die HA-Add-On Build-Matrix (multi-arch).
+# Base-Images für die HA-Add-on Build-Matrix (multi-arch).
+#
+# Hinweis: Diese Datei ist KEIN Deprecation-Kandidat — `build_from:` wird vom
+# HA-Supervisor weiterhin als Quelle für den BUILD_FROM-Build-Arg erwartet.
+# Deprecated sind nur die Felder `labels:` und `args:` (die liegen in unserem
+# Dockerfile direkt als LABEL / ARG).
 build_from:
-  amd64: ghcr.io/home-assistant/amd64-base:3.19
+  amd64:   ghcr.io/home-assistant/amd64-base:3.19
   aarch64: ghcr.io/home-assistant/aarch64-base:3.19
-labels:
-  org.opencontainers.image.title: "Hermes Portal"
-  org.opencontainers.image.description: "Webfrontend für den Hermes-Agent"
-  org.opencontainers.image.source: "https://github.com/jayjojayson/Hermes-Portal"
-  org.opencontainers.image.licenses: "Apache-2.0"
