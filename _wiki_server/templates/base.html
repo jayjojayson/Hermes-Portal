@@ -14,11 +14,15 @@
     {# Theme-Bootstrap (sofort, ohne FOUC) #}
     <script>(function(){try{var t=localStorage.getItem('theme')||(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 
-    {# Branding-Variablen für site-header.js (Brand-Name + Version aus Config) #}
+    {# Branding-Variablen + Nav-Toggles für site-header.js #}
     <script>
         window.HP_BRAND = {{ agent_name|tojson }};
         window.HP_PORTAL_NAME = {{ portal_name|tojson }};
         window.HP_VERSION = {{ portal_version|tojson }};
+        window.HP_NAV_HIDE = {
+            news:     {{ ('false' if cfg.get('show_news',     True) else 'true')|safe }},
+            briefing: {{ ('false' if cfg.get('show_briefing', True) else 'true')|safe }}
+        };
     </script>
 
     {# Geteilter Site-Header inkl. Theme-Toggle und Active-State #}

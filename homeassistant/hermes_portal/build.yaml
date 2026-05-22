@@ -6,4 +6,4 @@ labels:
   org.opencontainers.image.title: "Hermes Portal"
   org.opencontainers.image.description: "Webfrontend für den Hermes-Agent"
   org.opencontainers.image.source: "https://github.com/USER/hermes-portal"
-  org.opencontainers.image.licenses: "MIT"
+  org.opencontainers.image.licenses: "Apache-2.0"

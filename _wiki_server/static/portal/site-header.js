@@ -49,7 +49,7 @@
     };
 
     // ---- Nav configuration -------------------------------------------
-    var NAV = [
+    var NAV_ALL = [
         { key: 'dashboard',label: 'Dashboard',href: '/',                          icon: '🏠' },
         { key: 'wiki',     label: 'Wiki',     href: '/wiki/',                     icon: '📚' },
         { key: 'news',     label: 'News',     href: '/blog/',                     icon: '📰' },
@@ -60,6 +60,13 @@
         { key: 'activity', label: 'Aktivität',href: '/activity/',                 icon: '⚡' },
         { key: 'settings', label: 'Settings', href: '/settings/',                 icon: '⚙️' }
     ];
+    // Filter: respektiert window.HP_NAV_HIDE = { news: true, briefing: true }
+    function navItems() {
+        var hide = window.HP_NAV_HIDE || {};
+        return NAV_ALL.filter(function(item) { return !hide[item.key]; });
+    }
+    // Legacy-Alias für Stellen, die NAV als Top-Level-Konstante nutzten
+    var NAV = NAV_ALL;
 
     // Wiki-only pages (for sidebar etc.)
     var WIKI_PAGES = { wiki: 1, 'wiki-page': 1, 'wiki-edit': 1, 'wiki-new': 1, 'wiki-search': 1, 'wiki-tags': 1 };
@@ -95,7 +102,7 @@
 
     // ---- Build markup -------------------------------------------------
     function buildHeader(activeKey) {
-        var navHtml = NAV.map(function(item) {
+        var navHtml = navItems().map(function(item) {
             var cls = (item.key === activeKey) ? ' class="active"' : '';
             return '<a href="' + item.href + '"' + cls + '>' + item.label + '</a>';
         }).join('');
@@ -119,7 +126,7 @@
     }
 
     function buildSidebar(activeKey) {
-        var navHtml = NAV.map(function(item) {
+        var navHtml = navItems().map(function(item) {
             var cls = (item.key === activeKey) ? 'sb-link active' : 'sb-link';
             return '<a href="' + item.href + '" class="' + cls + '">' +
                        '<span class="ico">' + item.icon + '</span>' +

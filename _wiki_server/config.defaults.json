@@ -6,6 +6,9 @@
   "category_entity_label": "Entitäten",
   "category_concept_label": "Konzepte",
 
+  "show_news": true,
+  "show_briefing": true,
+
   "connection_mode": "local",
   "agent_host": "127.0.0.1",
   "ssh_user": "root",

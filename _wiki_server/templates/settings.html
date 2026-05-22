@@ -921,6 +921,24 @@
         </div>
 
         <div class="settings-section">
+            <div class="settings-section-title">📑 Menü-Punkte sichtbar</div>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.75rem 0;">
+                Nicht jeder nutzt RSS-News oder ein tägliches Briefing. Du kannst diese
+                Menüpunkte ausblenden — sie verschwinden dann aus Header und Seiten-Sidebar.
+            </p>
+            <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+                <label class="app-toggle">
+                    <input type="checkbox" id="app-show_news">
+                    <span><strong>📰 News</strong> im Menü anzeigen</span>
+                </label>
+                <label class="app-toggle">
+                    <input type="checkbox" id="app-show_briefing">
+                    <span><strong>☕ Briefing</strong> im Menü anzeigen</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
             <div class="settings-section-title">📁 Pfade auf dem Hermes-Agent</div>
             <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
                 <label class="app-field">
@@ -979,6 +997,16 @@
     .app-rss-row input { flex:1 1 auto; }
     .app-rss-row .btn-rm { flex:0 0 auto; }
     body[data-app-mode="local"] .app-ssh-only { opacity:0.45; pointer-events:none; }
+    .app-toggle {
+        display: flex; align-items: center; gap: 10px;
+        padding: 10px 14px; border-radius: 8px;
+        background: var(--bg-primary); border: 1px solid var(--border-color);
+        cursor: pointer; user-select: none;
+        font-size: 0.92rem; color: var(--text-primary);
+        transition: border-color 0.15s, background 0.15s;
+    }
+    .app-toggle:hover { border-color: var(--accent-primary); }
+    .app-toggle input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
     </style>
 
     <!-- ===================== -->
@@ -1554,6 +1582,8 @@ var APP_FIELDS = [
     'exchange_path','wiki_subpath','hermes_home','hermes_bin',
     'briefing_script','briefing_output'
 ];
+// Boolean-Felder (Checkboxen) werden separat gehandhabt
+var APP_BOOL_FIELDS = ['show_news', 'show_briefing'];
 
 function renderAppStatus(meta) {
     var banner = document.getElementById('app-status-banner');
@@ -1583,6 +1613,12 @@ function loadAppConfig() {
             if (v === undefined || v === null) v = '';
             el.value = v;
         });
+        APP_BOOL_FIELDS.forEach(function(k) {
+            var el = document.getElementById('app-' + k);
+            if (!el) return;
+            // Default = true wenn der Wert fehlt (entspricht Backend-Default)
+            el.checked = (d[k] === undefined || d[k] === null) ? true : !!d[k];
+        });
         renderRssFeeds(d.rss_feeds || []);
         renderAppStatus(d._meta);
         applySshOnlyVisibility(d.connection_mode);
@@ -1603,6 +1639,11 @@ function collectAppPayload() {
         var el = document.getElementById('app-' + k);
         if (!el) return;
         payload[k] = el.value;
+    });
+    APP_BOOL_FIELDS.forEach(function(k) {
+        var el = document.getElementById('app-' + k);
+        if (!el) return;
+        payload[k] = !!el.checked;
     });
     payload.ssh_port = parseInt(payload.ssh_port, 10) || 22;
     payload.rss_feeds = collectRssFeeds();

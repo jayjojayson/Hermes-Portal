@@ -495,4 +495,6 @@ Wenn dir das Projekt gefällt:
 
 ## 📄 Lizenz
 
-[Creative Commons Legal Code](LICENSE) — Creative Commons Legal Code
+[Apache License 2.0](LICENSE) — frei für privaten und kommerziellen Gebrauch,
+inkl. expliziter Patent-Grant. Beim Weitergeben muss eine Kopie der Lizenz
+beiliegen; modifizierte Dateien sollen entsprechend gekennzeichnet werden.

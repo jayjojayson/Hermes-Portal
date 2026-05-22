@@ -45,6 +45,12 @@ DEFAULTS: Dict[str, Any] = {
     "category_entity_label":  "Entitäten",
     "category_concept_label": "Konzepte",
 
+    # --- UI-Toggles für optionale Nav-Punkte ----------------------------
+    # Wer kein RSS-News-Feed oder kein tägliches Briefing nutzt, kann diese
+    # Menüpunkte komplett ausblenden (Header + Sidebar).
+    "show_news":      True,
+    "show_briefing":  True,
+
     # --- Verbindung zum Hermes-Agent --------------------------------------
     "connection_mode":     "local",        # "local" oder "ssh"
     "agent_host":          "127.0.0.1",    # IP/Hostname des Hermes-Agents
