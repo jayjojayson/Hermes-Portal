@@ -923,10 +923,15 @@
         <div class="settings-section">
             <div class="settings-section-title">📑 Menü-Punkte sichtbar</div>
             <p style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.75rem 0;">
-                Nicht jeder nutzt RSS-News oder ein tägliches Briefing. Du kannst diese
-                Menüpunkte ausblenden — sie verschwinden dann aus Header und Seiten-Sidebar.
+                Nicht jeder nutzt alle Features. Hier kannst du einzelne Menüpunkte
+                aus Header und Sidebar ausblenden — die zugehörigen Routen bleiben
+                technisch erreichbar, sind aber nicht mehr verlinkt.
             </p>
             <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+                <label class="app-toggle">
+                    <input type="checkbox" id="app-show_wiki">
+                    <span><strong>📚 Wiki</strong> im Menü anzeigen</span>
+                </label>
                 <label class="app-toggle">
                     <input type="checkbox" id="app-show_news">
                     <span><strong>📰 News</strong> im Menü anzeigen</span>
@@ -934,6 +939,10 @@
                 <label class="app-toggle">
                     <input type="checkbox" id="app-show_briefing">
                     <span><strong>☕ Briefing</strong> im Menü anzeigen</span>
+                </label>
+                <label class="app-toggle">
+                    <input type="checkbox" id="app-show_aufgaben">
+                    <span><strong>✅ Aufgaben</strong> im Menü anzeigen</span>
                 </label>
             </div>
         </div>
@@ -1583,7 +1592,7 @@ var APP_FIELDS = [
     'briefing_script','briefing_output'
 ];
 // Boolean-Felder (Checkboxen) werden separat gehandhabt
-var APP_BOOL_FIELDS = ['show_news', 'show_briefing'];
+var APP_BOOL_FIELDS = ['show_wiki', 'show_news', 'show_briefing', 'show_aufgaben'];
 
 function renderAppStatus(meta) {
     var banner = document.getElementById('app-status-banner');

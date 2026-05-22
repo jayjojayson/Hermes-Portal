@@ -134,33 +134,55 @@ def main() -> int:
     return 0
 
 
+def _emergency_log(tb: str) -> Path:
+    """Schreibt den Crash-Log an die ERSTE Stelle, die akzeptiert wird.
+
+    Reihenfolge: Desktop (sichtbar!) → User-Data-Dir → tempdir → cwd.
+    Gibt den tatsächlich geschriebenen Pfad zurück (oder einen Phantasie-
+    Pfad, falls _alles_ scheitert — dann steht der Traceback wenigstens
+    noch im stderr).
+    """
+    from datetime import datetime
+    stamp = f"\n=== {datetime.now().isoformat()} ===\n{tb}\n"
+    candidates = [
+        Path.home() / "Desktop" / "Hermes-Portal-Crash.log",
+        _user_data_dir() / "crash.log",
+    ]
+    try:
+        import tempfile
+        candidates.append(Path(tempfile.gettempdir()) / "hermes-portal-crash.log")
+    except Exception:
+        pass
+    candidates.append(Path.cwd() / "hermes-portal-crash.log")
+
+    for path in candidates:
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "a", encoding="utf-8") as fh:
+                fh.write(stamp)
+            return path
+        except Exception:
+            continue
+    return candidates[0]  # Phantasie-Pfad, wenn alles scheitert
+
+
 if __name__ == "__main__":
     # Ohne Crash-Handler ist die .app per Doppelklick eine Black-Box:
-    # exception → lautlos beendet, kein Terminal-Output sichtbar. Stattdessen
-    # Traceback in eine Datei schreiben + nativen Dialog zeigen (macOS).
+    # exception → lautlos beendet, kein Terminal-Output sichtbar. Wir
+    # schreiben den Traceback an MEHRERE Stellen (zuerst Desktop, damit der
+    # User es definitiv findet) UND zeigen einen nativen Dialog.
     try:
         sys.exit(main())
     except SystemExit:
         raise
     except BaseException as ex:  # noqa: BLE001 — wir wollen hier ALLES fangen
         tb = traceback.format_exc()
-        log_dir = _user_data_dir()
-        log_path = log_dir / "crash.log"
-        try:
-            log_dir.mkdir(parents=True, exist_ok=True)
-            with open(log_path, "a", encoding="utf-8") as fh:
-                from datetime import datetime
-                fh.write(f"\n=== {datetime.now().isoformat()} ===\n")
-                fh.write(tb)
-                fh.write("\n")
-        except Exception:
-            # Falls auch das Schreiben fehlschlägt: ins tempdir
-            import tempfile
-            log_path = Path(tempfile.gettempdir()) / "hermes-portal-crash.log"
-            try:
-                log_path.write_text(tb, encoding="utf-8")
-            except Exception:
-                pass
-        print(tb, file=sys.stderr)
+        # IMMER auf stderr — wenn aus Terminal gestartet, sieht User es live
+        print("\n=== HERMES PORTAL CRASH ===", file=sys.stderr, flush=True)
+        print(tb, file=sys.stderr, flush=True)
+        # IMMER auf Disk an mind. einer Stelle
+        log_path = _emergency_log(tb)
+        print(f"=== Log: {log_path} ===\n", file=sys.stderr, flush=True)
+        # Bonus auf macOS: nativer Dialog (damit Doppelklick-User es merken)
         _show_crash_dialog_macos(log_path, str(ex))
         sys.exit(1)

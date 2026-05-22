@@ -46,10 +46,12 @@ DEFAULTS: Dict[str, Any] = {
     "category_concept_label": "Konzepte",
 
     # --- UI-Toggles für optionale Nav-Punkte ----------------------------
-    # Wer kein RSS-News-Feed oder kein tägliches Briefing nutzt, kann diese
-    # Menüpunkte komplett ausblenden (Header + Sidebar).
+    # Wer einzelne Features nicht nutzt, kann den Menüpunkt komplett
+    # ausblenden (Header + Sidebar). Defaults: alles sichtbar.
+    "show_wiki":      True,
     "show_news":      True,
     "show_briefing":  True,
+    "show_aufgaben":  True,
 
     # --- Verbindung zum Hermes-Agent --------------------------------------
     "connection_mode":     "local",        # "local" oder "ssh"

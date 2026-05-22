@@ -14,6 +14,50 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.4] — 2026-05-23
+
+Diagnostik- und Robustness-Release. macOS-Crash bleibt schwer zu
+reproduzieren — daher mehr Logging, das _definitiv_ irgendwo landet.
+Außerdem SSH-Banner-Timeout für HA-Container-Setups erhöht und das
+Nav-Toggle-Set vervollständigt.
+
+### Added
+- **Nav-Toggles vervollständigt** — Settings → 🛰️ App → „📑 Menü-Punkte
+  sichtbar" bietet jetzt **alle** vier optionalen Hauptpunkte:
+  📚 Wiki, 📰 News, ☕ Briefing, ✅ Aufgaben. Volle Kontrolle für User,
+  die nur Teilfunktionen nutzen (z.B. nur Chat + Dashboard).
+  - Neue Config-Keys `show_wiki` und `show_aufgaben` (Defaults `true`).
+  - Filter greift wie gehabt über `window.HP_NAV_HIDE` in `base.html`
+    und `navItems()` in `site-header.js` — Header **und** Sidebar
+    blenden den Eintrag synchron aus.
+
+### Changed
+- **SSH-Banner-Timeout** in `hermes_client.py` von 15 s (paramiko-Default)
+  auf 30 s, plus `auth_timeout=15`. Plus **Single-Retry** bei
+  `banner`/`transport`/`eof`-Fehlern (Container-Netzwerke wie HA-Add-on
+  zeigen sporadisch flaky Banner-Exchanges beim ersten Verbinden).
+  Auth-Fehler fliegen weiterhin sofort durch.
+- **Crash-Log-Fallback-Chain** in `entry_pyinstaller.py`:
+  1. `~/Desktop/Hermes-Portal-Crash.log` (sichtbar!)
+  2. `~/Library/Application Support/Hermes Portal/crash.log`
+  3. `$TMPDIR/hermes-portal-crash.log`
+  4. `$CWD/hermes-portal-crash.log`
+  Egal wo es klemmt — irgendwo wird der Traceback landen.
+- **Crash-Output zusätzlich auf `stderr`** mit `flush=True` und klarer
+  Marker-Zeile (`=== HERMES PORTAL CRASH ===`). Wer die App aus dem
+  Terminal startet, sieht den Fehler sofort live.
+
+### Notes
+- **macOS-Debug-Anleitung:** wenn die App per Doppelklick immer noch
+  sofort beendet, ohne Crash-Log auf dem Desktop, dann liegt der Fehler
+  _unter_ Python (PyInstaller-Bootloader, Gatekeeper-Library-Validation).
+  Diagnose: einmal direkt aus dem Terminal starten:
+  ```
+  "/Applications/Hermes Portal.app/Contents/MacOS/hermes-portal"
+  ```
+
+---
+
 ## [1.0.3] — 2026-05-22
 
 Desktop-Launch-Fix. v1.0.2 hat den Sign-Bug gelöst, jetzt startete die
@@ -405,7 +449,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.3...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.4...HEAD
+[1.0.4]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.0...v1.0.1

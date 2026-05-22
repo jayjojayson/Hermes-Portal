@@ -256,32 +256,59 @@ class _SSHBackend:
                     return True
                 self._client = None
                 self._sftp = None
-            try:
-                client = paramiko.SSHClient()
-                client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                kwargs = {
-                    "hostname": self.cfg.agent_host,
-                    "port": self.cfg.ssh_port,
-                    "username": self.cfg.ssh_user,
-                    "timeout": 8,
-                    "allow_agent": True,
-                    "look_for_keys": True,
-                }
-                key_path = self.cfg.ssh_key_path
-                if key_path and Path(key_path).exists():
-                    kwargs["key_filename"] = key_path
-                if self.cfg.ssh_password:
-                    kwargs["password"] = self.cfg.ssh_password
-                client.connect(**kwargs)
-                self._client = client
-                self._sftp = client.open_sftp()
-                self._last_connect_error = ""
-                return True
-            except Exception as ex:  # pragma: no cover - network
-                self._last_connect_error = str(ex)
-                self._client = None
-                self._sftp = None
-                return False
+            # Container-Setups (HA-Add-on, Docker) zeigen oft sporadische
+            # „Error reading SSH protocol banner"-Fehler beim ersten Verbinden
+            # (MTU/Bridge-Quirks, sshd-MaxStartups). Deshalb: großzügige
+            # banner_timeout/auth_timeout + Single-Retry bei genau diesem
+            # Symptom. Echte Fehler (Auth, Network unreachable) fliegen direkt
+            # durch.
+            kwargs = {
+                "hostname": self.cfg.agent_host,
+                "port": self.cfg.ssh_port,
+                "username": self.cfg.ssh_user,
+                "timeout": 10,
+                "banner_timeout": 30,
+                "auth_timeout": 15,
+                "allow_agent": True,
+                "look_for_keys": True,
+            }
+            key_path = self.cfg.ssh_key_path
+            if key_path and Path(key_path).exists():
+                kwargs["key_filename"] = key_path
+            if self.cfg.ssh_password:
+                kwargs["password"] = self.cfg.ssh_password
+
+            last_ex: Optional[Exception] = None
+            for attempt in (1, 2):
+                try:
+                    client = paramiko.SSHClient()
+                    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                    client.connect(**kwargs)
+                    self._client = client
+                    self._sftp = client.open_sftp()
+                    self._last_connect_error = ""
+                    return True
+                except Exception as ex:  # pragma: no cover - network
+                    last_ex = ex
+                    msg = str(ex).lower()
+                    # Nur bei Banner-/Transport-Fehlern retry'en. Auth-Fehler
+                    # (BadHostKey, AuthenticationException) sofort durchreichen.
+                    if attempt == 1 and (
+                        "banner" in msg
+                        or "transport" in msg
+                        or "eof" in msg
+                    ):
+                        try:
+                            client.close()
+                        except Exception:
+                            pass
+                        continue
+                    break
+
+            self._last_connect_error = str(last_ex) if last_ex else "Unbekannter Fehler"
+            self._client = None
+            self._sftp = None
+            return False
 
     def last_error(self) -> str:
         return self._last_connect_error

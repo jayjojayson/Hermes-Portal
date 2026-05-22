@@ -3,6 +3,12 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.4
+
+- **SSH-Verbindung robuster** — Banner-Timeout 15→30 s, neuer Single-
+  Retry bei `Error reading SSH protocol banner` (typisch für HA-Add-on
+  Container-Netzwerke beim ersten Verbinden).
+
 ## 1.0.3
 
 - Keine HA-spezifischen Änderungen — Release ist primär ein

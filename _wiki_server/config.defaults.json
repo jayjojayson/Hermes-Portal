@@ -6,8 +6,10 @@
   "category_entity_label": "Entitäten",
   "category_concept_label": "Konzepte",
 
+  "show_wiki": true,
   "show_news": true,
   "show_briefing": true,
+  "show_aufgaben": true,
 
   "connection_mode": "local",
   "agent_host": "127.0.0.1",

@@ -24,8 +24,10 @@
         window.HP_PORTAL_NAME = {{ portal_name|tojson }};
         window.HP_VERSION = {{ portal_version|tojson }};
         window.HP_NAV_HIDE = {
+            wiki:     {{ ('false' if cfg.get('show_wiki',     True) else 'true')|safe }},
             news:     {{ ('false' if cfg.get('show_news',     True) else 'true')|safe }},
-            briefing: {{ ('false' if cfg.get('show_briefing', True) else 'true')|safe }}
+            briefing: {{ ('false' if cfg.get('show_briefing', True) else 'true')|safe }},
+            aufgaben: {{ ('false' if cfg.get('show_aufgaben', True) else 'true')|safe }}
         };
         // Bequemer Helper: window.hpUrl("/api/foo") liefert den korrekten Pfad.
         window.hpUrl = function(p){ return (window.HP_INGRESS_PATH || '') + p; };
