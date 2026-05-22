@@ -14,6 +14,38 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.3] — 2026-05-22
+
+Desktop-Launch-Fix. v1.0.2 hat den Sign-Bug gelöst, jetzt startete die
+.app aber stumm und schloss sich sofort wieder.
+
+### Fixed
+- **macOS-App startet wieder.** `entry_pyinstaller.py` versuchte das
+  Daten-Verzeichnis in `[bundle]/Contents/MacOS/hermes-portal-data/`
+  anzulegen — `/Applications/` ist für Normaluser nicht writable
+  → `PermissionError` → ungefangene Exception → App stirbt im
+  Millisekunden-Bereich. Jetzt plattform-konventionelle User-Data-Pfade:
+  - **macOS:**   `~/Library/Application Support/Hermes Portal/`
+  - **Windows:** `%APPDATA%\Hermes Portal\`
+  - **Linux:**   `$XDG_DATA_HOME/hermes-portal/` (Fallback `~/.local/share/…`)
+
+### Added
+- **Crash-Handler in `entry_pyinstaller.py`** — Tracebacks landen in
+  `<data-dir>/crash.log`. Auf macOS außerdem ein nativer Dialog mit
+  „Beim Start ist ein Fehler aufgetreten…" via `osascript`, damit
+  per-Doppelklick gestartete .app-Bundles nicht mehr lautlos sterben.
+- **Startup-Log** zeigt jetzt das aktive Daten-Verzeichnis im Terminal
+  (für Power-User die das Binary aus der Shell starten).
+
+### Notes
+- **Daten-Migration:** wenn du vorher die portable Variante aus
+  `Downloads/` gestartet hattest, liegen deine Daten dort in
+  `hermes-portal-data/`. Die .app-Variante nutzt jetzt
+  `~/Library/Application Support/Hermes Portal/` — bei Bedarf den
+  Ordner-Inhalt manuell rüberkopieren.
+
+---
+
 ## [1.0.2] — 2026-05-22
 
 Bugfix für den Bugfix: der macOS-Sign-Loop aus v1.0.1 hatte selbst einen
@@ -373,7 +405,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.9.0...v1.0.0

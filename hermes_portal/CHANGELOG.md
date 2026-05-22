@@ -3,6 +3,11 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.3
+
+- Keine HA-spezifischen Änderungen — Release ist primär ein
+  macOS-Desktop-Launch-Fix.
+
 ## 1.0.2
 
 - Keine HA-spezifischen Änderungen — Release ist primär ein mac-Sign-Fix.

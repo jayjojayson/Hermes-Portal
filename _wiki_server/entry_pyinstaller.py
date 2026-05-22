@@ -11,6 +11,7 @@ import os
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 from pathlib import Path
 
@@ -21,16 +22,46 @@ def _resource_path(rel: str) -> str:
     return str(Path(base) / rel)
 
 
-def _ensure_runtime_dirs() -> None:
-    """Beim ersten Start: HP_DATA_DIR neben dem Binary anlegen, damit Configs
-    persistent bleiben (auch wenn die Binary verschoben wird)."""
+def _user_data_dir() -> Path:
+    """Plattform-konventioneller Schreib-Ort für User-Daten.
+
+    NICHT im App-Bundle/Programme-Ordner — das ist read-only (macOS Gatekeeper,
+    Windows UAC, Linux/usr) und würde außerdem die Code-Signatur sprengen.
+
+    - macOS:   ``~/Library/Application Support/Hermes Portal/``
+    - Windows: ``%APPDATA%\\Hermes Portal\\``  (i.d.R. ``…/AppData/Roaming/``)
+    - Linux:   ``$XDG_DATA_HOME/hermes-portal/`` oder ``~/.local/share/hermes-portal/``
+    """
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / "Hermes Portal"
+    if sys.platform == "win32":
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            return Path(appdata) / "Hermes Portal"
+        return Path.home() / "AppData" / "Roaming" / "Hermes Portal"
+    # Linux / BSD
+    xdg = os.environ.get("XDG_DATA_HOME")
+    return (Path(xdg) if xdg else Path.home() / ".local" / "share") / "hermes-portal"
+
+
+def _ensure_runtime_dirs() -> Path:
+    """Stellt HP_DATA_DIR sicher und gibt den Pfad zurück (für den Crash-Log)."""
     if os.environ.get("HP_DATA_DIR"):
-        return
-    # Bei PyInstaller: sys.executable ist der Binary-Pfad
-    exe_dir = Path(sys.executable).parent if getattr(sys, "frozen", False) else Path.cwd()
-    data_dir = exe_dir / "hermes-portal-data"
-    data_dir.mkdir(parents=True, exist_ok=True)
+        p = Path(os.environ["HP_DATA_DIR"])
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    data_dir = _user_data_dir()
+    try:
+        data_dir.mkdir(parents=True, exist_ok=True)
+    except PermissionError:
+        # Letzter Ausweg: temporäres Verzeichnis im /tmp bzw. %TEMP%, damit
+        # die App wenigstens startet — User sieht in der UI eine Warnung.
+        import tempfile
+        data_dir = Path(tempfile.gettempdir()) / "hermes-portal-data"
+        data_dir.mkdir(parents=True, exist_ok=True)
     os.environ["HP_DATA_DIR"] = str(data_dir)
+    return data_dir
 
 
 def _open_browser(url: str, delay: float = 1.5) -> None:
@@ -44,8 +75,34 @@ def _open_browser(url: str, delay: float = 1.5) -> None:
     threading.Thread(target=_later, daemon=True).start()
 
 
+def _show_crash_dialog_macos(log_path: Path, exc_text: str) -> None:
+    """Zeigt einen nativen macOS-Dialog mit dem Crash-Hinweis.
+
+    Wichtig, weil .app-Bundles per Doppelklick gestartet kein sichtbares
+    Terminal haben — sonst stirbt die App lautlos und der User rätselt.
+    """
+    if sys.platform != "darwin":
+        return
+    try:
+        import subprocess
+        title = "Hermes Portal — Startfehler"
+        # AppleScript escaping: " → \\\", \\ → \\\\
+        def esc(s): return s.replace('\\', '\\\\').replace('"', '\\"')
+        body = (
+            f"Beim Start ist ein Fehler aufgetreten:\\n\\n"
+            f"{esc(exc_text[:300])}\\n\\n"
+            f"Vollständiger Log:\\n{esc(str(log_path))}"
+        )
+        subprocess.run([
+            "osascript", "-e",
+            f'display dialog "{body}" with title "{esc(title)}" buttons {{"OK"}} with icon stop'
+        ], timeout=15, check=False)
+    except Exception:
+        pass
+
+
 def main() -> int:
-    _ensure_runtime_dirs()
+    data_dir = _ensure_runtime_dirs()
 
     # sys.path so erweitern, dass alle relativen Imports funktionieren
     here = Path(__file__).resolve().parent
@@ -61,6 +118,7 @@ def main() -> int:
     print()
     print("=" * 60)
     print(f"  🛰️  Hermes Portal — startet auf {url}")
+    print(f"     Daten:   {data_dir}")
     print("=" * 60)
     print("  Browser öffnet sich gleich automatisch.")
     print("  Beenden mit Strg+C bzw. Schließen dieses Fensters.")
@@ -77,4 +135,32 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    # Ohne Crash-Handler ist die .app per Doppelklick eine Black-Box:
+    # exception → lautlos beendet, kein Terminal-Output sichtbar. Stattdessen
+    # Traceback in eine Datei schreiben + nativen Dialog zeigen (macOS).
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except BaseException as ex:  # noqa: BLE001 — wir wollen hier ALLES fangen
+        tb = traceback.format_exc()
+        log_dir = _user_data_dir()
+        log_path = log_dir / "crash.log"
+        try:
+            log_dir.mkdir(parents=True, exist_ok=True)
+            with open(log_path, "a", encoding="utf-8") as fh:
+                from datetime import datetime
+                fh.write(f"\n=== {datetime.now().isoformat()} ===\n")
+                fh.write(tb)
+                fh.write("\n")
+        except Exception:
+            # Falls auch das Schreiben fehlschlägt: ins tempdir
+            import tempfile
+            log_path = Path(tempfile.gettempdir()) / "hermes-portal-crash.log"
+            try:
+                log_path.write_text(tb, encoding="utf-8")
+            except Exception:
+                pass
+        print(tb, file=sys.stderr)
+        _show_crash_dialog_macos(log_path, str(ex))
+        sys.exit(1)
