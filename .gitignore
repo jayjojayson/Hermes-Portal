@@ -76,9 +76,8 @@ _wiki_server/take_dark_screenshots*.py
 # Vendored Monaco-Editor (~14 MB) wird beim Install via fetch_monaco.py geholt
 _wiki_server/static/vendor/
 
-# -------- HA Add-on Build-Output --------
-hermes_portal/rootfs/app/
-hermes_portal/rootfs/requirements.txt
+# (HA Add-on baut sich seit v0.7.0 self-contained via git-clone im Dockerfile,
+#  ehemalige rootfs/-Artefakte sind entfallen.)
 
 # -------- Logs / Test-Artefakte --------
 *.log

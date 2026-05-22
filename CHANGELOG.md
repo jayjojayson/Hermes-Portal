@@ -14,6 +14,42 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [0.7.0] — 2026-05-22
+
+Hotfix- und Distribution-Release. Macht das Home-Assistant-Add-on installierbar
+und liefert echte native Installer für alle Desktop-Plattformen.
+
+### Added
+- **Native Installer** im Release-Workflow:
+  - **macOS** → `Hermes-Portal-macOS.dmg` (`.app`-Bundle mit `.icns`-Icon,
+    in DMG verpackt via `hdiutil`).
+  - **Windows** → `Hermes-Portal-Setup.exe` (Inno Setup 6, mit Start-Menü-
+    Eintrag, optionalem Desktop-Icon, Uninstaller, deutscher Übersetzung).
+  - **Linux** → `Hermes-Portal-Linux.AppImage` (self-contained,
+    `chmod +x` reicht zum Start).
+- **Portable Archive** (`.zip` / `.tar.gz`) bleiben zusätzlich für Power-User
+  erhalten — beide Varianten landen am Release dran.
+- **HA-Add-on-Logo + -Icon**: `hermes_portal/logo.png` (250×250) und
+  `hermes_portal/icon.png` (128×128) → HA zeigt jetzt das Hermes-Caduceus
+  im Add-on-Store statt Default-Platzhalter.
+
+### Changed
+- **HA-Add-on Dockerfile** komplett umgebaut: zieht die Portal-Sourcen beim
+  Build self-contained per `git clone --branch v${BUILD_VERSION}` aus
+  GitHub, statt vorgenerierte `rootfs/app/`-Artefakte zu erwarten.
+  - `hermes_portal/prepare.sh` ist damit obsolet und entfällt.
+  - `hermes_portal/rootfs/` entfällt, `run.sh` liegt jetzt direkt im
+    Add-on-Root.
+  - `.gitignore`-Einträge für `rootfs/app/` und `rootfs/requirements.txt`
+    aufgeräumt.
+
+### Fixed
+- **HA-Add-on Build-Fehler** „failed to compute cache key … '/rootfs/app':
+  not found" — Build funktioniert jetzt 1:1 auf dem HA-Supervisor, ohne
+  dass `prepare.sh` vorher lokal ausgeführt werden musste.
+
+---
+
 ## [0.6.0] — 2026-05-22
 
 Erstes Wartungs-Release nach dem öffentlichen Launch. Lizenz-Wechsel,
@@ -167,6 +203,7 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/jayjojayson/Hermes-Portal/releases/tag/v0.5.0

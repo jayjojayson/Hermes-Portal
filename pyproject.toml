@@ -1,6 +1,6 @@
 [project]
 name = "hermes-portal"
-version = "0.6.0"
+version = "0.7.0"
 description = "Modernes Web-Frontend für den Hermes-Agent (Wiki, Briefing, Chat, Settings, …)"
 readme = "README.md"
 license = { file = "LICENSE" }

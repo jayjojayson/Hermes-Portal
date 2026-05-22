@@ -1,18 +1,33 @@
 ARG BUILD_FROM
 FROM $BUILD_FROM
 
-# Home-Assistant Base hat bereits Python + bashio.
-# Wir installieren Python-Deps und kopieren das Portal in /app.
+# Home-Assistant-Add-on: Hermes Portal
+# ------------------------------------
+# Baut sich self-contained — zieht die Portal-Sourcen direkt aus dem Git-Tag
+# `v${BUILD_VERSION}` (BUILD_VERSION wird von HA-Supervisor automatisch aus
+# `config.yaml` → `version:` gesetzt). Damit gibt es keine vorgenerierten
+# rootfs/-Artefakte im Repo und der Build läuft 1:1 wie auf einem Maintainer-PC.
 
-RUN apk add --no-cache python3 py3-pip openssh-client tzdata curl tini
+ARG BUILD_VERSION
+
+RUN apk add --no-cache python3 py3-pip openssh-client tzdata curl tini git
 
 WORKDIR /app
 
-COPY rootfs/requirements.txt /tmp/requirements.txt
-RUN pip install --break-system-packages --no-cache-dir -r /tmp/requirements.txt
+# Portal-Sourcen aus dem getaggten Release ziehen
+RUN git clone --depth 1 --branch "v${BUILD_VERSION}" \
+        https://github.com/jayjojayson/Hermes-Portal.git /tmp/portal \
+    && cp -a /tmp/portal/_wiki_server/. /app/ \
+    && rm -rf /tmp/portal
 
-COPY rootfs/app/ /app/
-COPY rootfs/run.sh /run.sh
+# Python-Dependencies installieren (Alpine: --break-system-packages nötig)
+RUN pip install --break-system-packages --no-cache-dir -r /app/requirements.txt
+
+# Monaco-Editor offline-bundeln (~14 MB JS/CSS für Chat-Code-Editor)
+RUN python3 /app/scripts/fetch_monaco.py
+
+# HA-spezifischer Entry-Point (bashio-Wrapper, liest Add-on-Optionen)
+COPY run.sh /run.sh
 RUN chmod +x /run.sh
 
 ENV HP_DATA_DIR=/data \

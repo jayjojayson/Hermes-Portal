@@ -107,12 +107,15 @@ python _wiki_server/wiki_app.py
 </details>
 
 <details>
-<summary><strong>Alternative: fertiges .app-Bundle</strong> (kein Python nötig)</summary>
+<summary><strong>Alternative: fertiges .dmg-Installer-Image</strong> (kein Python nötig)</summary>
 
-Lade die neueste `Hermes-Portal-macOS.zip` aus den
+Lade die neueste `Hermes-Portal-macOS.dmg` aus den
 [Releases](https://github.com/jayjojayson/Hermes-Portal/releases),
-entpacke sie, und doppelklicke `Hermes Portal.app`.
+öffne sie und ziehe `Hermes Portal.app` in den Programme-Ordner.
 Beim ersten Start ggf. Sicherheits-Dialog: **Rechtsklick → Öffnen**.
+
+Wer lieber portable bleibt: `Hermes-Portal-macOS.zip` aus demselben Release
+entpacken und `Hermes Portal.app` direkt starten.
 
 </details>
 
@@ -153,11 +156,19 @@ sudo systemctl enable --now hermes-portal
 </details>
 
 <details>
-<summary><strong>Alternative: AppImage / .tar.gz</strong></summary>
+<summary><strong>Alternative: AppImage</strong> (kein Python, kein Install)</summary>
 
-Lade die neueste `Hermes-Portal-Linux.tar.gz` aus den
-[Releases](https://github.com/jayjojayson/Hermes-Portal/releases),
-entpacke sie und starte die mitgelieferte `hermes-portal`-Binary.
+Lade die neueste `Hermes-Portal-Linux.AppImage` aus den
+[Releases](https://github.com/jayjojayson/Hermes-Portal/releases) und starte
+sie direkt:
+
+```bash
+chmod +x Hermes-Portal-Linux.AppImage
+./Hermes-Portal-Linux.AppImage
+```
+
+Portable Variante (entpacktes Bundle): `Hermes-Portal-Linux.tar.gz`
+herunterladen, entpacken, `./hermes-portal/hermes-portal` starten.
 
 </details>
 
@@ -190,12 +201,16 @@ python _wiki_server\wiki_app.py
 </details>
 
 <details>
-<summary><strong>Alternative: fertige .exe</strong> (kein Python nötig)</summary>
+<summary><strong>Alternative: fertiger Installer (.exe)</strong> (kein Python nötig)</summary>
 
-Lade die neueste `Hermes-Portal-Windows.zip` aus den
-[Releases](https://github.com/jayjojayson/Hermes-Portal/releases),
-entpacke sie und führe `Hermes-Portal.exe` aus.
+Lade die neueste `Hermes-Portal-Setup.exe` aus den
+[Releases](https://github.com/jayjojayson/Hermes-Portal/releases) und führe
+den Setup-Wizard aus (Inno Setup, deutsch). Legt Start-Menü-Eintrag und
+optional Desktop-Verknüpfung an, Uninstaller über Apps & Features.
 Firewall fragt einmal nach Netzwerk-Zugriff → erlauben.
+
+Portable Variante: `Hermes-Portal-Windows.zip` herunterladen, entpacken,
+`hermes-portal.exe` direkt starten.
 
 </details>
 
@@ -208,8 +223,9 @@ Firewall fragt einmal nach Netzwerk-Zugriff → erlauben.
 Installation
 In Home Assistant: Einstellungen → Add-ons → Add-on Store → ⋮ → Repositories.  
 URL eintragen: `https://github.com/jayjojayson/Hermes-Portal`  
-(Das Repo ist seit v0.6.0 eine gültige HA-Add-on-Quelle: `repository.yaml`
-im Root, Add-on-Folder `hermes_portal/` auf Root-Ebene.)  
+(Das Repo ist seit v0.7.0 ein voll installierbares HA-Add-on: `repository.yaml`
++ `hermes_portal/` im Root, das Add-on baut sich beim Install self-contained
+direkt aus dem Git-Tag — kein `prepare.sh` mehr nötig.)  
 Add-on **Hermes Portal** auswählen und installieren.  
 Konfiguration setzen (siehe Optionen unten), dann starten.  
 Öffne den Reiter über die Sidebar (Ingress) oder direkt http://<ha-ip>:8090.  

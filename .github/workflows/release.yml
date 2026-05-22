@@ -1,6 +1,6 @@
 name: Release
 
-# Triggert auf Tag-Push (z.B. v0.5.0) oder manuell aus der Actions-UI.
+# Triggert auf Tag-Push (z.B. v0.7.0) oder manuell aus der Actions-UI.
 on:
   push:
     tags:
@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag (z.B. v0.5.0)'
+        description: 'Tag (z.B. v0.7.0)'
         required: true
 
 permissions:
@@ -17,23 +17,23 @@ permissions:
 
 jobs:
   # =====================================================================
-  # 1) Native Binaries (PyInstaller) für macOS, Linux, Windows
+  # 1) Native Installer für macOS (.dmg), Linux (.AppImage), Windows (.exe)
   # =====================================================================
   binaries:
-    name: Build ${{ matrix.os }} binary
+    name: Build ${{ matrix.os }} installer
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
-            artifact: Hermes-Portal-Linux.tar.gz
-            pack: tar
+            installer: Hermes-Portal-Linux.AppImage
+            portable:  Hermes-Portal-Linux.tar.gz
           - os: macos-latest
-            artifact: Hermes-Portal-macOS.zip
-            pack: zip
+            installer: Hermes-Portal-macOS.dmg
+            portable:  Hermes-Portal-macOS.zip
           - os: windows-latest
-            artifact: Hermes-Portal-Windows.zip
-            pack: zip
+            installer: Hermes-Portal-Setup.exe
+            portable:  Hermes-Portal-Windows.zip
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -55,27 +55,200 @@ jobs:
         shell: bash
         run: python _wiki_server/scripts/fetch_monaco.py
 
+      - name: Derive version
+        id: ver
+        shell: bash
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            T="${{ github.event.inputs.tag }}"
+          else
+            T="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "tag=$T" >> "$GITHUB_OUTPUT"
+          echo "version=${T#v}" >> "$GITHUB_OUTPUT"
+
       - name: Build with PyInstaller
         shell: bash
         working-directory: _wiki_server
         run: pyinstaller --noconfirm hermes_portal.spec
 
-      - name: Pack (tar.gz / zip)
+      # ------------------------------------------------------------------
+      # Portable Archiv (zip/tar) — für Power-User, die keinen Installer wollen
+      # ------------------------------------------------------------------
+      - name: Pack portable archive
         shell: bash
         run: |
           cd _wiki_server/dist
-          if [ "${{ matrix.pack }}" = "tar" ]; then
-            tar -czf "../../${{ matrix.artifact }}" hermes-portal
+          if [ "${{ runner.os }}" = "Linux" ]; then
+            tar -czf "../../${{ matrix.portable }}" hermes-portal
           else
-            python -c "import shutil; shutil.make_archive('../../${{ matrix.artifact }}'.replace('.zip',''), 'zip', '.', 'hermes-portal')"
+            python -c "import shutil; shutil.make_archive('../../${{ matrix.portable }}'.replace('.zip',''), 'zip', '.', 'hermes-portal')"
           fi
-          ls -lh "../../${{ matrix.artifact }}"
+          ls -lh "../../${{ matrix.portable }}"
 
-      - name: Upload artifact
+      # ==================================================================
+      # macOS: .app-Bundle bauen + zu .dmg wrappen (hdiutil ist eingebaut)
+      # ==================================================================
+      - name: Build macOS .app + .dmg
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -e
+          APP="Hermes Portal.app"
+          rm -rf "$APP"
+          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
+          # PyInstaller-Bundle in den .app-Container kopieren
+          cp -R _wiki_server/dist/hermes-portal/. "$APP/Contents/MacOS/"
+          # Logo → .icns konvertieren (sips ist auf macOS eingebaut)
+          ICONSET="logo.iconset"
+          rm -rf "$ICONSET"
+          mkdir "$ICONSET"
+          SRC="_wiki_server/static/portal/logo.png"
+          for SZ in 16 32 64 128 256 512; do
+            sips -z $SZ $SZ "$SRC" --out "$ICONSET/icon_${SZ}x${SZ}.png" >/dev/null
+            DBL=$((SZ * 2))
+            sips -z $DBL $DBL "$SRC" --out "$ICONSET/icon_${SZ}x${SZ}@2x.png" >/dev/null
+          done
+          iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/logo.icns"
+          rm -rf "$ICONSET"
+          # Info.plist
+          cat > "$APP/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleName</key><string>Hermes Portal</string>
+            <key>CFBundleDisplayName</key><string>Hermes Portal</string>
+            <key>CFBundleIdentifier</key><string>de.jayjojayson.hermes-portal</string>
+            <key>CFBundleVersion</key><string>${{ steps.ver.outputs.version }}</string>
+            <key>CFBundleShortVersionString</key><string>${{ steps.ver.outputs.version }}</string>
+            <key>CFBundleExecutable</key><string>hermes-portal</string>
+            <key>CFBundleIconFile</key><string>logo.icns</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>LSMinimumSystemVersion</key><string>11.0</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          # .dmg bauen (UDZO = komprimiert read-only)
+          rm -f "${{ matrix.installer }}"
+          hdiutil create -volname "Hermes Portal" \
+                         -srcfolder "$APP" \
+                         -ov -format UDZO \
+                         "${{ matrix.installer }}"
+          ls -lh "${{ matrix.installer }}"
+
+      # ==================================================================
+      # Windows: Inno Setup 6 ist auf windows-latest vorinstalliert
+      # ==================================================================
+      - name: Build Windows .exe installer (Inno Setup)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          set -e
+          cat > installer.iss <<'ISS'
+          [Setup]
+          AppName=Hermes Portal
+          AppVersion=__VERSION__
+          AppPublisher=Hermes Portal Contributors
+          AppPublisherURL=https://github.com/jayjojayson/Hermes-Portal
+          DefaultDirName={autopf}\Hermes Portal
+          DefaultGroupName=Hermes Portal
+          DisableProgramGroupPage=yes
+          UninstallDisplayIcon={app}\hermes-portal.exe
+          OutputDir=.
+          OutputBaseFilename=Hermes-Portal-Setup
+          Compression=lzma2
+          SolidCompression=yes
+          ArchitecturesAllowed=x64compatible
+          ArchitecturesInstallIn64BitMode=x64compatible
+          WizardStyle=modern
+
+          [Languages]
+          Name: "de"; MessagesFile: "compiler:Languages\German.isl"
+          Name: "en"; MessagesFile: "compiler:Default.isl"
+
+          [Tasks]
+          Name: "desktopicon"; Description: "Desktop-Verknüpfung anlegen"; GroupDescription: "Zusätzliche Verknüpfungen:"
+
+          [Files]
+          Source: "_wiki_server\dist\hermes-portal\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+
+          [Icons]
+          Name: "{group}\Hermes Portal"; Filename: "{app}\hermes-portal.exe"
+          Name: "{group}\Hermes Portal deinstallieren"; Filename: "{uninstallexe}"
+          Name: "{userdesktop}\Hermes Portal"; Filename: "{app}\hermes-portal.exe"; Tasks: desktopicon
+
+          [Run]
+          Filename: "{app}\hermes-portal.exe"; Description: "Hermes Portal jetzt starten"; Flags: nowait postinstall skipifsilent
+          ISS
+          # __VERSION__ ersetzen
+          sed -i 's/__VERSION__/${{ steps.ver.outputs.version }}/' installer.iss
+          # ISCC.exe von Inno Setup 6 (Standard-Pfad auf windows-latest)
+          "/c/Program Files (x86)/Inno Setup 6/ISCC.exe" installer.iss
+          mv Hermes-Portal-Setup.exe "${{ matrix.installer }}" 2>/dev/null || true
+          ls -lh "${{ matrix.installer }}"
+
+      # ==================================================================
+      # Linux: AppImage via appimagetool
+      # ==================================================================
+      - name: Build Linux AppImage
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -e
+          # appimagetool herunterladen + extrahieren (FUSE ist im GH-Runner nicht verfügbar)
+          wget -q -O appimagetool.AppImage \
+            https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool.AppImage
+          ./appimagetool.AppImage --appimage-extract >/dev/null
+          APPIMAGETOOL="$(pwd)/squashfs-root/AppRun"
+
+          # AppDir-Struktur aufbauen
+          APPDIR="HermesPortal.AppDir"
+          rm -rf "$APPDIR"
+          mkdir -p "$APPDIR/usr/bin"
+          cp -R _wiki_server/dist/hermes-portal/. "$APPDIR/usr/bin/"
+          cp _wiki_server/static/portal/logo.png "$APPDIR/hermes-portal.png"
+          # .desktop-File
+          cat > "$APPDIR/hermes-portal.desktop" <<DESK
+          [Desktop Entry]
+          Type=Application
+          Name=Hermes Portal
+          Comment=Webfrontend für den Hermes-Agent
+          Exec=hermes-portal
+          Icon=hermes-portal
+          Categories=Network;WebBrowser;Utility;
+          Terminal=true
+          DESK
+          # AppRun-Launcher
+          cat > "$APPDIR/AppRun" <<'RUN'
+          #!/bin/bash
+          HERE="$(dirname "$(readlink -f "$0")")"
+          exec "$HERE/usr/bin/hermes-portal" "$@"
+          RUN
+          chmod +x "$APPDIR/AppRun"
+
+          # AppImage bauen
+          ARCH=x86_64 "$APPIMAGETOOL" "$APPDIR" "${{ matrix.installer }}"
+          chmod +x "${{ matrix.installer }}"
+          ls -lh "${{ matrix.installer }}"
+
+      # ------------------------------------------------------------------
+      # Upload (Installer + Portable nebeneinander)
+      # ------------------------------------------------------------------
+      - name: Upload installer
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
+          name: ${{ matrix.installer }}
+          path: ${{ matrix.installer }}
+          retention-days: 14
+
+      - name: Upload portable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.portable }}
+          path: ${{ matrix.portable }}
           retention-days: 14
 
   # =====================================================================
@@ -169,10 +342,13 @@ jobs:
 
             ### Installation
 
-            - **Docker** (empfohlen): `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}`
-            - **macOS**:   `Hermes-Portal-macOS.zip` herunterladen, entpacken, doppelklicken
-            - **Linux**:   `Hermes-Portal-Linux.tar.gz` herunterladen, entpacken, `./hermes-portal/hermes-portal`
-            - **Windows**: `Hermes-Portal-Windows.zip` herunterladen, entpacken, `hermes-portal.exe` starten
+            | Plattform | Empfohlen (Installer) | Portable (Archiv) |
+            |-----------|----------------------|-------------------|
+            | **macOS**   | `Hermes-Portal-macOS.dmg` — öffnen, App in Programme ziehen | `Hermes-Portal-macOS.zip` |
+            | **Windows** | `Hermes-Portal-Setup.exe` — Setup ausführen | `Hermes-Portal-Windows.zip` |
+            | **Linux**   | `Hermes-Portal-Linux.AppImage` — `chmod +x` und starten | `Hermes-Portal-Linux.tar.gz` |
+            | **Docker**  | `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}` | — |
+            | **Home Assistant** | Add-on-Repo: `https://github.com/${{ github.repository }}` | — |
 
             Vollständige Anleitung im [README](https://github.com/${{ github.repository }}#-installation).
         env:
