@@ -3,6 +3,14 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.5
+
+- **Aufgaben / News / Briefing zeigen Layout + Header korrekt** im HA-
+  Sidebar-Panel — vom Hermes-Agent generierte HTML-Files werden jetzt
+  beim Ausliefern um den Ingress-Prefix ergänzt (CSS, JS, Logo, Links).
+- **Settings → 🛰️ App → „📑 Menü-Punkte sichtbar"**: Buttons kürzer
+  beschriftet („📰 News anzeigen"), alle 4 passen jetzt nebeneinander.
+
 ## 1.0.4
 
 - **SSH-Verbindung robuster** — Banner-Timeout 15→30 s, neuer Single-

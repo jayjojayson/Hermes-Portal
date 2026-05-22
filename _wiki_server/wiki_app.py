@@ -2467,6 +2467,12 @@ def _serve_blog_file(filename: str):
     client = get_client()
     full_path = str(BLOG_STATIC_DIR / filename)
     is_html = filename.lower().endswith(('.html', '.htm'))
+    # HA-Ingress-Prefix: leerer String wenn standalone, sonst z.B.
+    # ``/api/hassio_ingress/<TOKEN>``. Wird unten an ALLE hardcodierten
+    # "/static/..."- und "/blog/..."-Pfade im served HTML angeflanscht,
+    # sonst fragt der Browser gegen die HA-Origin → 404 → kein CSS/JS,
+    # kein Header (genau der Aufgaben-Layout-Bug aus v1.0.3).
+    prefix = (request.script_root or "")
     if is_html:
         text = client.read_text(full_path)
         if text is None:
@@ -2559,8 +2565,15 @@ def _serve_blog_file(filename: str):
             # Favicon-Backup (falls Blog-HTML keinen <link rel="icon"> hat)
             '<link rel="icon" href="/static/portal/logo.png" type="image/png">'
             '<script>'
+            f'window.HP_INGRESS_PATH={json_module.dumps(prefix)};'
             f'window.HP_BRAND={json_module.dumps(agent)};'
             f'window.HP_PORTAL_NAME="Hermes Portal";'
+            # Mini-Fetch-Patcher (gleiches Muster wie in base.html), damit
+            # JS in den Blog-HTMLs absolute /-URLs unter Ingress trifft.
+            'if(window.HP_INGRESS_PATH){var _p=window.HP_INGRESS_PATH;'
+            'var _of=window.fetch;window.fetch=function(u,o){'
+            'if(typeof u==="string"&&u.charAt(0)==="/"&&u.indexOf(_p)!==0){u=_p+u;}'
+            'return _of.call(this,u,o);};}'
             '</script>'
         )
         if "</head>" in text:
@@ -2580,6 +2593,25 @@ def _serve_blog_file(filename: str):
             '</footer>'
         )
         text = _BLOG_FOOTER_RE.sub(portal_footer, text, count=1)
+
+        # HA-Ingress: ALLE absoluten /-URLs in href/src um den Prefix
+        # ergänzen. Greift sowohl auf vom Hermes-Agent generierte Links
+        # (z.B. /blog/post-2026-05-22.html) als auch auf alle von uns
+        # injizierten /static/portal/...-Pfade.
+        if prefix:
+            def _prefix_url(match):
+                attr, quote, url = match.group(1), match.group(2), match.group(3)
+                if (url.startswith(prefix)
+                        or url.startswith('//')
+                        or url.startswith('http')):
+                    return match.group(0)
+                return f'{attr}={quote}{prefix}{url}{quote}'
+            text = re.sub(
+                r'(href|src)=(["\'])(/[^"\']*)\2',
+                _prefix_url,
+                text,
+            )
+
         return text, 200, {"Content-Type": "text/html; charset=utf-8"}
 
     data = client.read_bytes(full_path)

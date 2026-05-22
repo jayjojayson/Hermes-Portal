@@ -7,6 +7,42 @@ beendet sich der Server.
 Wird nicht direkt vom User benutzt — nur als ``--onefile``-Build-Target.
 """
 from __future__ import annotations
+
+# ──────────────────────────────────────────────────────────────────────
+# STARTUP-MARKER — wird als allererstes geschrieben, BEVOR irgendein
+# komplexer Import läuft. Wenn die Datei auf dem Desktop erscheint,
+# wissen wir: Python ist gestartet, PyInstaller-Bootloader hat geklappt.
+# Wenn sie NICHT erscheint, ist der Crash _unter_ Python (Bootloader,
+# dyld-Library-Loading, Gatekeeper-Library-Validation). Diagnostik nur,
+# kostet beim normalen Start ~5 ms.
+# ──────────────────────────────────────────────────────────────────────
+try:
+    import os as _os_marker
+    import sys as _sys_marker
+    from pathlib import Path as _Path_marker
+    from datetime import datetime as _dt_marker
+    _marker = _Path_marker.home() / "Desktop" / "hermes-portal-started.txt"
+    _marker.write_text(
+        f"Hermes Portal Startup-Marker\n"
+        f"────────────────────────────\n"
+        f"Zeit:       {_dt_marker.now().isoformat()}\n"
+        f"PID:        {_os_marker.getpid()}\n"
+        f"Python:     {_sys_marker.version.split(chr(10))[0]}\n"
+        f"Executable: {_sys_marker.executable}\n"
+        f"argv:       {_sys_marker.argv}\n"
+        f"CWD:        {_os_marker.getcwd()}\n"
+        f"HOME:       {_os_marker.environ.get('HOME', '<unset>')}\n"
+        f"_MEIPASS:   {getattr(_sys_marker, '_MEIPASS', '<not frozen>')}\n"
+        f"frozen:     {getattr(_sys_marker, 'frozen', False)}\n"
+        f"\nWenn diese Datei existiert aber die App trotzdem nicht startet:\n"
+        f"  → Crash passiert NACH Python-Start. Schau in:\n"
+        f"     ~/Desktop/Hermes-Portal-Crash.log\n"
+        f"     ~/Library/Application Support/Hermes Portal/crash.log\n",
+        encoding="utf-8",
+    )
+except Exception:
+    pass
+
 import os
 import sys
 import threading

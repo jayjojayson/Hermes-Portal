@@ -14,6 +14,44 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.5] — 2026-05-23
+
+HA-Blog-Layout-Fix + UI-Polish + tiefere macOS-Crash-Diagnostik +
+PyInstaller-Codesign-Integration.
+
+### Fixed
+- **Aufgaben / News / Briefing-Seiten in HA hatten kein Layout** — gleiches
+  Muster wie der ursprüngliche Ingress-Header-Bug, nur an einer anderen
+  Stelle: `_serve_blog_file` reicht vom Hermes-Agent generierte HTML-Files
+  durch, die wiederum hardcodierte `/static/...`- und `/blog/...`-URLs
+  enthalten. Diese URLs werden jetzt am Ende der HTML-Verarbeitung per
+  regex um den Ingress-Prefix ergänzt. Zusätzlich landet `window.HP_INGRESS_PATH`
+  + ein Mini-`fetch`-Patcher in jedem Blog-HTML.
+
+### Changed
+- **Toggle-Button-Text** in Settings → 🛰️ App → „📑 Menü-Punkte sichtbar"
+  gekürzt: „📰 News anzeigen" statt „📰 News im Menü anzeigen", Grid auf
+  `minmax(160px, 1fr)` → alle 4 Buttons passen jetzt nebeneinander
+  (auf Handy fallen sie automatisch in 2× 2-Layout).
+- **PyInstaller-Codesign integriert** — Spec-File setzt jetzt
+  `codesign_identity='-'` auf macOS, damit PyInstaller jeden Mach-O
+  während des Builds selbst ad-hoc signiert (in korrekter Reihenfolge,
+  inner-most-first). Unser `sign_macos_app.py`-Script läuft danach als
+  Safety-Net.
+
+### Added
+- **Startup-Marker für mac-Crash-Diagnose** — `entry_pyinstaller.py`
+  schreibt jetzt als ALLER-erstes (vor jedem komplexen Import) eine Datei
+  `~/Desktop/hermes-portal-started.txt` mit PID, Python-Version,
+  CWD, HOME, `_MEIPASS` etc. Damit lässt sich diagnostizieren:
+  - **Datei existiert + App startet trotzdem nicht** → Crash NACH
+    Python-Start, schau in `~/Desktop/Hermes-Portal-Crash.log`
+  - **Datei existiert nicht** → Crash IM PyInstaller-Bootloader (vor
+    Python). Schau in `~/Library/Logs/DiagnosticReports/` nach einem
+    macOS-Kernel-Crash-Report mit „hermes-portal".
+
+---
+
 ## [1.0.4] — 2026-05-23
 
 Diagnostik- und Robustness-Release. macOS-Crash bleibt schwer zu
@@ -449,7 +487,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.4...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.5...HEAD
+[1.0.5]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.2...v1.0.3
 [1.0.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.1...v1.0.2

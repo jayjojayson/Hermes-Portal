@@ -9,8 +9,16 @@ Output: dist/hermes-portal/  (komplettes Verzeichnis mit Binary + Assets)
 """
 from PyInstaller.utils.hooks import collect_submodules
 import os
+import sys
 
 block_cipher = None
+
+# Auf macOS ad-hoc signieren — PyInstaller signiert dabei jeden Mach-O
+# während des Builds in der korrekten Reihenfolge (libs vor Bundle).
+# Das ist robuster als Post-hoc-Signing per Bash-Script. Unser
+# scripts/sign_macos_app.py läuft trotzdem nochmal als Safety-Net im
+# Workflow.
+_codesign = "-" if sys.platform == "darwin" else None
 
 # Templates + statische Assets ins Bundle aufnehmen
 datas = [
@@ -55,6 +63,8 @@ exe = EXE(
     upx=False,
     console=True,
     icon=os.path.join("static", "portal", "logo.png") if os.path.exists(os.path.join("static", "portal", "logo.png")) else None,
+    codesign_identity=_codesign,
+    entitlements_file=None,
 )
 coll = COLLECT(
     exe,
