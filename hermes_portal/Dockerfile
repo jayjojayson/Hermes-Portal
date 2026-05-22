@@ -40,5 +40,6 @@ ENV HP_DATA_DIR=/data \
     HP_CONFIG_FILE=/data/config.json
 
 EXPOSE 8090
-ENTRYPOINT ["/usr/bin/tini", "--"]
+# Auf Alpine landet `tini` unter /sbin/tini (nicht /usr/bin/tini wie auf Debian).
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["/run.sh"]

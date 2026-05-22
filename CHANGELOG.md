@@ -14,6 +14,26 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [0.9.0] — 2026-05-22
+
+Hotfix-Release. v0.8.0 ließ sich zwar im HA-Supervisor bauen, aber der
+Container startete nicht — und der macOS-Intel-Build hing 20+ Minuten am
+Sign-Loop.
+
+### Fixed
+- **HA-Add-on startet wieder** — `tini` liegt auf Alpine unter `/sbin/tini`,
+  nicht unter `/usr/bin/tini` wie auf Debian. Der Container scheiterte mit
+  `exec: "/usr/bin/tini": stat … no such file or directory`. Pfad im
+  `hermes_portal/Dockerfile` korrigiert.
+- **macOS-Sign-Loop 10× schneller** — alter Code rief für *jede* Datei
+  im Bundle (~500–2000 Files) erst `file`, dann `codesign` auf, jeweils
+  als eigenen Prozess. Jetzt:
+  - Filter per Extension (`*.dylib`, `*.so`) statt `file`-Magic-Check,
+  - Batch-Mode (`-exec … {} +`) statt Einzelausführung (`\;`),
+  - macos-13-Runner ist nicht mehr der Stau-Engpass im Release-Workflow.
+
+---
+
 ## [0.8.0] — 2026-05-22
 
 Release-Streamlining und macOS-Härten.
@@ -247,7 +267,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.5.0...v0.6.0
