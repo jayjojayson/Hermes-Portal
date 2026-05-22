@@ -109,12 +109,9 @@ python _wiki_server/wiki_app.py
 <details>
 <summary><strong>Alternative: fertiges .dmg-Installer-Image</strong> (kein Python nötig)</summary>
 
-Aus den [Releases](https://github.com/jayjojayson/Hermes-Portal/releases) das
-zur eigenen CPU passende DMG laden:
-
-- **Apple Silicon (M1/M2/M3/M4)** → `Hermes-Portal-macOS-AppleSilicon.dmg`
-- **Intel (älter, vor 2020)**     → `Hermes-Portal-macOS-Intel.dmg`
-
+Aus den [Releases](https://github.com/jayjojayson/Hermes-Portal/releases)
+`Hermes-Portal-macOS.dmg` laden (Apple Silicon, M1/M2/M3/M4 — Intel-Macs
+ab v1.0.0 nicht mehr im Release, dort Repo klonen + `pyinstaller` selbst).
 DMG öffnen → `Hermes Portal.app` in den Programme-Ordner ziehen.
 
 **Wichtig — Erster Start (Gatekeeper-Workaround):**

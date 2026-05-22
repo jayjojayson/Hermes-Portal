@@ -1,0 +1,28 @@
+# Hermes Portal — Add-on Changelog
+
+> Home Assistant Supervisor zeigt diese Datei beim Update.
+> Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
+
+## 1.0.0
+
+- **HA-Ingress-Layout-Bug behoben** — Asset-URLs (CSS/JS/Logo) und
+  API-Calls werden jetzt automatisch um den Ingress-Prefix ergänzt.
+  Header und Styling laden wieder korrekt im HA-Sidebar-Panel.
+
+## 0.9.0
+
+- Container startet wieder: `tini` liegt auf Alpine unter `/sbin/tini`
+  (nicht `/usr/bin/tini` wie auf Debian).
+- macOS-Sign-Loop 10× schneller (Release-Workflow).
+
+## 0.8.0
+
+- `build.yaml` minimiert: nur noch `build_from:`.
+- OCI-Labels via `LABEL`-Direktiven im Dockerfile.
+
+## 0.7.0
+
+- Add-on self-contained: Dockerfile zieht Portal-Sourcen per
+  `git clone --branch v${BUILD_VERSION}` aus GitHub. Kein
+  `prepare.sh`-Lauf vor dem Build mehr nötig.
+- Add-on-Logo + -Icon im Repo-Root des Add-ons.

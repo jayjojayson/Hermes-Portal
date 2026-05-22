@@ -29,13 +29,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: "macOS Intel"
-            os: macos-13
-            installer: Hermes-Portal-macOS-Intel.dmg
-            kind: dmg
+          # macos-13-Runner (Intel) sind seit Q2 2026 stark rationiert und
+          # bleiben oft Stunden in "Waiting for a runner". Intel-Macs vor 2020
+          # sind außerdem im Steady-State-Userkreis sehr selten — daher raus.
+          # Wer auf Intel-Mac will: Repo selbst klonen + PyInstaller laufen lassen.
           - label: "macOS Apple Silicon"
             os: macos-14
-            installer: Hermes-Portal-macOS-AppleSilicon.dmg
+            installer: Hermes-Portal-macOS.dmg
             kind: dmg
           - label: "Linux x86_64"
             os: ubuntu-latest
@@ -346,12 +346,16 @@ jobs:
 
             | Plattform | Datei | Hinweis |
             |-----------|-------|---------|
-            | **macOS (Apple Silicon, M1/M2/M3/M4)** | `Hermes-Portal-macOS-AppleSilicon.dmg` | Siehe macOS-Hinweis unten |
-            | **macOS (Intel)**                       | `Hermes-Portal-macOS-Intel.dmg`         | Siehe macOS-Hinweis unten |
-            | **Windows (x64)**                       | `Hermes-Portal-Setup.exe`               | Setup-Wizard ausführen |
-            | **Linux (x86_64)**                      | `Hermes-Portal-Linux.AppImage`          | `chmod +x` und starten |
+            | **macOS (Apple Silicon, M1/M2/M3/M4)** | `Hermes-Portal-macOS.dmg` | Siehe macOS-Hinweis unten |
+            | **Windows (x64)**                       | `Hermes-Portal-Setup.exe` | Setup-Wizard ausführen |
+            | **Linux (x86_64)**                      | `Hermes-Portal-Linux.AppImage` | `chmod +x` und starten |
             | **Docker**                               | `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}` | — |
             | **Home Assistant Add-on**               | Repo `https://github.com/${{ github.repository }}` als HA-Add-on-Quelle hinzufügen | — |
+
+            > **Intel-Mac (vor 2020)**: ab v1.0.0 nicht mehr im Release.
+            > GitHub-Actions Intel-Runner sind stark rationiert (Wartezeit
+            > Stunden). Wer Intel-Hardware nutzt: Repo klonen + `pyinstaller`
+            > selbst laufen lassen, oder Docker-Variante verwenden.
 
             #### 🍎 macOS-Hinweis (unsigned, kein Apple-Developer-Account)
 

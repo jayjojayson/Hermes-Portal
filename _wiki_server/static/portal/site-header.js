@@ -60,10 +60,19 @@
         { key: 'activity', label: 'Aktivität',href: '/activity/',                 icon: '⚡' },
         { key: 'settings', label: 'Settings', href: '/settings/',                 icon: '⚙️' }
     ];
-    // Filter: respektiert window.HP_NAV_HIDE = { news: true, briefing: true }
+    // HA-Ingress-Prefix (leerer String, wenn standalone)
+    var INGRESS = (typeof window !== 'undefined' && window.HP_INGRESS_PATH) || '';
+    function withPrefix(p) { return INGRESS + p; }
+
+    // Filter + Ingress-Prefix anwenden.
+    // Respektiert window.HP_NAV_HIDE = { news: true, briefing: true }
     function navItems() {
         var hide = window.HP_NAV_HIDE || {};
-        return NAV_ALL.filter(function(item) { return !hide[item.key]; });
+        return NAV_ALL.filter(function(item) {
+            return !hide[item.key];
+        }).map(function(item) {
+            return { key: item.key, label: item.label, icon: item.icon, href: withPrefix(item.href) };
+        });
     }
     // Legacy-Alias für Stellen, die NAV als Top-Level-Konstante nutzten
     var NAV = NAV_ALL;
@@ -81,8 +90,13 @@
         } catch (e) { return []; }
     }
     function pushRecent() {
-        // Nur sinnvolle Seiten in den Recent-Track; nicht jede static-Datei
-        var path = location.pathname;
+        // Nur sinnvolle Seiten in den Recent-Track; nicht jede static-Datei.
+        // Unter HA-Ingress liegt der Pfad als /api/hassio_ingress/TOKEN/... vor —
+        // den Prefix abziehen, damit die Vergleiche ('/', '/wiki/' etc.) greifen.
+        var rawPath = location.pathname;
+        var path = (INGRESS && rawPath.indexOf(INGRESS) === 0)
+                    ? (rawPath.slice(INGRESS.length) || '/')
+                    : rawPath;
         var title = (document.title || path).replace(/\s+[–—\-]\s+.*$/i, '');
         // Skip blog list/index pages (zu viele, zu generisch)
         if (path === '/' || /\/blog\/?$/.test(path) || /\/blog\/page\d+\.html$/.test(path)) return;
@@ -398,7 +412,7 @@
         dot.title = 'Hermes: ' + state;
     }
     function pollHermesStatus() {
-        fetch('/api/dashboard/status', { cache: 'no-store' })
+        fetch(withPrefix('/api/dashboard/status'), { cache: 'no-store' })
             .then(function(r) { return r.ok ? r.json() : null; })
             .then(function(d) {
                 if (!d) return applyHermesStatus('unknown');

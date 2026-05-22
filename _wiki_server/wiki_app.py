@@ -37,6 +37,37 @@ app = Flask(__name__)
 app.secret_key = cfg.secret_key
 
 
+# -----------------------------------------------------------------------
+# Home-Assistant-Ingress-Support
+# -----------------------------------------------------------------------
+# Wenn das Portal als HA-Add-on läuft, kommt jede Anfrage über den HA-
+# Supervisor-Ingress mit URL-Prefix `/api/hassio_ingress/<TOKEN>/`. HA
+# setzt dafür den Header `X-Ingress-Path`. Wir mappen den auf WSGIs
+# `SCRIPT_NAME`, damit Flask's `url_for(...)` und `request.script_root`
+# in Templates die korrekten URLs erzeugen (CSS, JS, API-Routen).
+class _IngressMiddleware:
+    """Liest ``X-Ingress-Path`` und setzt ``SCRIPT_NAME`` entsprechend.
+
+    Ohne diese Middleware liefert Flask Asset-URLs als ``/static/…`` aus,
+    der Browser fragt aber gegen die HA-Origin → 404, kein CSS, kein JS.
+    """
+
+    def __init__(self, wsgi_app):
+        self.wsgi_app = wsgi_app
+
+    def __call__(self, environ, start_response):
+        prefix = environ.get("HTTP_X_INGRESS_PATH")
+        if prefix:
+            environ["SCRIPT_NAME"] = prefix
+            path_info = environ.get("PATH_INFO", "")
+            if path_info.startswith(prefix):
+                environ["PATH_INFO"] = path_info[len(prefix):] or "/"
+        return self.wsgi_app(environ, start_response)
+
+
+app.wsgi_app = _IngressMiddleware(app.wsgi_app)
+
+
 def _compute_asset_version():
     """Hash der wichtigsten Portal-Assets — als Cache-Buster für ``base.html``.
 

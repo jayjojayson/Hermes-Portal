@@ -3,19 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="/static/portal/logo.png" type="image/png">
-    <link rel="apple-touch-icon" href="/static/portal/logo.png">
+    <link rel="icon" href="{{ url_for('static', filename='portal/logo.png') }}" type="image/png">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='portal/logo.png') }}">
     <title>{% block title %}{{ portal_name }}{% endblock %}</title>
 
     {# Portal-Stylesheet — Cache-Buster via Asset-Version, damit Browser
        nach Updates nicht an einer alten gecachten Version hängen bleibt. #}
-    <link rel="stylesheet" href="/static/portal/style.css?v={{ portal_asset_version }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='portal/style.css') }}?v={{ portal_asset_version }}">
 
     {# Theme-Bootstrap (sofort, ohne FOUC) #}
     <script>(function(){try{var t=localStorage.getItem('theme')||(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();</script>
 
-    {# Branding-Variablen + Nav-Toggles für site-header.js #}
+    {# Branding-Variablen + Nav-Toggles + Ingress-Prefix für site-header.js #}
     <script>
+        // HA-Ingress: leerer String, wenn standalone. Sonst z.B.
+        // "/api/hassio_ingress/<TOKEN>" — JS muss diesen Prefix vor jedes
+        // hardcodierte "/api/..." oder "/dashboard" o.ä. setzen.
+        window.HP_INGRESS_PATH = {{ (request.script_root or '')|tojson }};
         window.HP_BRAND = {{ agent_name|tojson }};
         window.HP_PORTAL_NAME = {{ portal_name|tojson }};
         window.HP_VERSION = {{ portal_version|tojson }};
@@ -23,10 +27,45 @@
             news:     {{ ('false' if cfg.get('show_news',     True) else 'true')|safe }},
             briefing: {{ ('false' if cfg.get('show_briefing', True) else 'true')|safe }}
         };
+        // Bequemer Helper: window.hpUrl("/api/foo") liefert den korrekten Pfad.
+        window.hpUrl = function(p){ return (window.HP_INGRESS_PATH || '') + p; };
+
+        // -------------------------------------------------------------
+        // HA-Ingress-Global-Patcher
+        // -------------------------------------------------------------
+        // Statt 46 hardcodierte fetch('/api/…')-Aufrufe einzeln anzufassen,
+        // wrappen wir hier window.fetch + Form-Actions so, dass absolute
+        // "/"-URLs automatisch um den Ingress-Prefix ergänzt werden.
+        // No-op, wenn standalone (HP_INGRESS_PATH leer).
+        (function(){
+            var prefix = window.HP_INGRESS_PATH || '';
+            if (!prefix) return;
+            // 1) fetch
+            var origFetch = window.fetch;
+            window.fetch = function(url, opts){
+                if (typeof url === 'string' && url.charAt(0) === '/' && url.indexOf(prefix) !== 0) {
+                    url = prefix + url;
+                }
+                return origFetch.call(this, url, opts);
+            };
+            // 2) Form-Action-Attribute auf "/" rewriten
+            function fixForms(){
+                var forms = document.querySelectorAll('form[action^="/"]');
+                for (var i=0; i<forms.length; i++) {
+                    var act = forms[i].getAttribute('action');
+                    if (act && act.indexOf(prefix) !== 0) {
+                        forms[i].setAttribute('action', prefix + act);
+                    }
+                }
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fixForms);
+            } else { fixForms(); }
+        })();
     </script>
 
     {# Geteilter Site-Header inkl. Theme-Toggle und Active-State #}
-    <script src="/static/portal/site-header.js?v={{ portal_asset_version }}" defer></script>
+    <script src="{{ url_for('static', filename='portal/site-header.js') }}?v={{ portal_asset_version }}" defer></script>
 
     {# Seiten-spezifische extra Styles, falls nötig #}
     {% block extra_head %}{% endblock %}
@@ -52,7 +91,7 @@
     </div>
 
     <footer class="footer">
-        <img src="/static/portal/logo.png" alt="" class="footer-logo" aria-hidden="true">
+        <img src="{{ url_for('static', filename='portal/logo.png') }}" alt="" class="footer-logo" aria-hidden="true">
         <span>{{ portal_name }} &copy; {{ current_year }}</span>
     </footer>
 

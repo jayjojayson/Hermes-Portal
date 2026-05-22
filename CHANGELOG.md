@@ -14,7 +14,39 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
-## [0.9.0] — 2026-05-22
+## [1.0.0] — 2026-05-22
+
+Erstes 1.0-Release. Markiert den Punkt, an dem alle Plattform-Pfade
+(Desktop-Installer, Docker, Home-Assistant-Add-on) durchgängig
+nutzbar sind.
+
+### Added
+- **HA-Ingress-Support** in `_wiki_server/wiki_app.py` als WSGI-Middleware
+  (`_IngressMiddleware`): liest den `X-Ingress-Path`-Header vom HA-Supervisor
+  und mappt ihn auf WSGIs `SCRIPT_NAME`. Damit erzeugt Flask's `url_for(...)`
+  automatisch korrekt geprefixte URLs für Static-Assets und Endpoints.
+- **`window.HP_INGRESS_PATH`** in `base.html` aus `request.script_root`.
+  Plus globaler Patcher: wrappt `window.fetch` und rewritet `<form action="/…">`,
+  damit die 46 hardcodierten `/api/…`-Calls im Frontend ohne einzelne
+  Anpassung unter Ingress funktionieren.
+- **`hermes_portal/CHANGELOG.md`** — HA-Supervisor zeigt diese Datei im
+  Update-Dialog des Add-ons (vorher: "No changelog found").
+
+### Changed
+- **macOS-Intel-Build aus dem Release-Workflow entfernt**: `macos-13`-Runner
+  sind seit Q2 2026 stark rationiert (Wartezeit Stunden, oft Timeout). Einziges
+  macOS-Asset ist jetzt `Hermes-Portal-macOS.dmg` (Apple Silicon, arm64).
+  Intel-Mac-User können das Repo lokal klonen und `pyinstaller` selbst laufen
+  lassen oder die Docker-Variante nutzen.
+- **`pyproject.toml`** Development Status von Beta (4) auf Production/Stable (5).
+- **`base.html`** Static-Asset-URLs auf `url_for('static', filename=…)` statt
+  hardcodierter `/static/…`-Pfade (CSS, Logo, Favicon, site-header.js).
+
+### Fixed
+- **HA-Add-on: kaputtes Layout im Sidebar-Panel** — Browser holte CSS, JS und
+  Logos gegen die HA-Origin statt gegen die Ingress-URL → 404, nackte HTML-Seite,
+  kein Header. Behoben durch Ingress-Middleware + URL-Prefix in `base.html` +
+  Prefix-Anwendung in `site-header.js` (Nav-Links + Status-Polling).
 
 Hotfix-Release. v0.8.0 ließ sich zwar im HA-Supervisor bauen, aber der
 Container startete nicht — und der macOS-Intel-Build hing 20+ Minuten am
@@ -267,7 +299,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.6.0...v0.7.0

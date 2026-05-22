@@ -87,3 +87,6 @@ _wiki_server/static/vendor/
 /tmp/
 hermes-portal-test/
 .env.local
+
+# Persönliche Arbeits-/Notiz-Datei für Claude-Sessions (nicht im Repo)
+Plan.md

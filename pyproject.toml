@@ -1,6 +1,6 @@
 [project]
 name = "hermes-portal"
-version = "0.9.0"
+version = "1.0.0"
 description = "Modernes Web-Frontend für den Hermes-Agent (Wiki, Briefing, Chat, Settings, …)"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -8,7 +8,7 @@ authors = [{ name = "Hermes Portal Contributors" }]
 requires-python = ">=3.11"
 keywords = ["hermes", "agent", "wiki", "portal", "dashboard", "flask"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Web Environment",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: Apache Software License",
