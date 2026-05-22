@@ -126,7 +126,7 @@
         var brand = (window.HP_BRAND || window.HP_PORTAL_NAME || 'Hermes Portal');
         return (
             '<div class="header-logo" title="' + brand + '">' +
-              '<img class="brand-logo" src="/static/portal/logo.png" alt="" aria-hidden="true">' +
+              '<img class="brand-logo" src="' + withPrefix('/static/portal/logo.png') + '" alt="" aria-hidden="true">' +
               '<span class="live-dot" aria-hidden="true"></span>' +
               '<span>' + brand + '</span>' +
             '</div>' +
@@ -166,6 +166,7 @@
             ? '<div class="sb-version" title="Hermes Portal Version">' +
                 '<a href="https://github.com/jayjojayson/Hermes-Portal/releases/tag/v' + version + '" ' +
                 'target="_blank" rel="noopener">v' + version + '</a>' +
+                '<span id="sb-update-badge" hidden></span>' +
               '</div>'
             : '';
         return (
@@ -377,7 +378,7 @@
         // Erkennung: <footer> ohne class="footer" (das ist der Portal-Footer aus base.html).
         var portalName = (window.HP_PORTAL_NAME || 'Hermes Portal');
         var currentYear = new Date().getFullYear();
-        var footerHtml = '<img src="/static/portal/logo.png" alt="" class="footer-logo" aria-hidden="true">'
+        var footerHtml = '<img src="' + withPrefix('/static/portal/logo.png') + '" alt="" class="footer-logo" aria-hidden="true">'
             + '<span>' + portalName + ' &copy; ' + currentYear + '</span>';
         document.querySelectorAll('footer').forEach(function(f) {
             if (f.classList.contains('footer')) return; // Portal-eigener Footer – nicht anfassen
@@ -399,6 +400,26 @@
 
         // Hermes-Status polling für Live-Dot im Header
         try { startHermesStatusPolling(); } catch (e) {}
+
+        // Update-Check (GitHub Releases) — einmalig nach Render
+        try { checkForUpdate(); } catch (e) {}
+    }
+
+    // ---- Update-Check ------------------------------------------------
+    function checkForUpdate() {
+        fetch(withPrefix('/api/version/check'), { cache: 'no-store' })
+            .then(function(r){ return r.ok ? r.json() : null; })
+            .then(function(d){
+                if (!d || !d.update_available) return;
+                var badge = document.getElementById('sb-update-badge');
+                if (!badge) return;
+                badge.hidden = false;
+                badge.className = 'sb-update-badge';
+                badge.innerHTML = ' · <a href="' + d.url + '" target="_blank" ' +
+                                  'rel="noopener" title="Neue Version verfügbar: v' +
+                                  d.latest + '">⬆ v' + d.latest + '</a>';
+            })
+            .catch(function(){ /* offline / rate-limit — ignorieren */ });
     }
 
     // ---- Hermes-Status für Live-Dot ----------------------------------

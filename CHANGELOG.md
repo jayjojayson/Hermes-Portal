@@ -14,6 +14,50 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.1] — 2026-05-22
+
+Hotfix-Welle nach den ersten produktiven 1.0-Installationen.
+
+### Added
+- **Update-Check via GitHub Releases API** (`/api/version/check`).
+  Antwortet `{current, latest, update_available, url}`, In-Memory-Cache
+  60 Min, robust gegen Offline/Rate-Limit. Sidebar zeigt einen kleinen
+  gelben „⬆ vX.Y.Z"-Badge neben der Versionsnummer, wenn ein neuerer
+  Release verfügbar ist — Klick öffnet die GitHub-Release-Seite.
+  Hauptnutzen für Desktop-Installer (AppImage/.dmg/.exe), wo es sonst
+  keinen Hinweis auf neue Versionen gibt. HA-Add-on bleibt unberührt
+  (HA-Supervisor liefert den Hinweis selbst).
+- **Freundliche Fallback-Seite** für `/blog/index.html`,
+  `/blog/aufgaben.html`, `/blog/briefing.html`, wenn die Datei (noch)
+  nicht existiert: neues Template `blog_missing.html` erklärt, dass
+  News/Aufgaben/Briefing vom Hermes-Agent erzeugt werden, listet
+  typische Ursachen und verlinkt auf Settings + Briefing-„Jetzt erzeugen".
+
+### Changed
+- **HA-Add-on Panel-Icon** von `mdi:satellite-uplink` auf `mdi:robot-happy`.
+- **macOS-DMG-Workaround** in README + Release-Body korrigiert: xattr
+  muss **vor** dem Kopieren in Programme ausgeführt werden (entweder
+  an der DMG-Datei im Downloads-Ordner oder am gemounteten Volume) —
+  vorher dokumentierter `/Applications/Hermes Portal.app`-Pfad existiert
+  nicht, weil Finder die App schon vor dem Kopieren ablehnt.
+
+### Fixed
+- **HA-Header-Logo fehlte** im Sidebar-Panel: zwei Stellen in
+  `site-header.js` (Header-Brand + Footer-Logo) nutzten noch das
+  hardcodierte `/static/portal/logo.png` ohne Ingress-Prefix. Beide
+  durch `withPrefix(...)` ersetzt.
+- **News/Aufgaben/Briefing-404** ist jetzt eine erklärende Seite statt
+  nacktem „Not Found" — vorher dachte man, das Add-on sei kaputt.
+- **macOS-DMG „beschädigt"** bei jeder Installation: PyInstaller bündelt
+  Mach-O-Files ohne Extension (z.B. `_internal/Python`-Framework), unser
+  alter Sign-Loop filterte aber nur `*.dylib`/`*.so` → Python-Framework
+  blieb unsigned → Apple-Silicon-Gatekeeper hart abgelehnt. Neuer
+  Sign-Loop identifiziert Mach-O-Files per `file`-Magic-Check (alle ~30 s
+  durch) und signiert inner-most zuerst, damit verschachtelte Bundles
+  korrekt aufgebaut sind.
+
+---
+
 ## [1.0.0] — 2026-05-22
 
 Erstes 1.0-Release. Markiert den Punkt, an dem alle Plattform-Pfade
@@ -299,7 +343,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.9.0...v1.0.0
 [0.9.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v0.7.0...v0.8.0

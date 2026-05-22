@@ -15,6 +15,8 @@ import threading
 import json as json_module
 import random
 import subprocess
+import urllib.request
+import urllib.error
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
@@ -114,6 +116,65 @@ def add_no_cache(response):
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
     return response
+
+
+# ----------------------------------------------------------------------
+# Update-Check (GitHub Releases API)
+# ----------------------------------------------------------------------
+# Cached die letzte Antwort 60 Min im Prozess-Memory, damit jeder Page-Load
+# nicht GitHub triggert. HA-Add-on updated sich über den Supervisor — der
+# Check hier ist nur für Desktop-Installer (AppImage/.dmg/.exe), wo es
+# sonst keinen Hinweis auf neue Versionen gibt.
+_UPDATE_CACHE = {"checked_at": None, "data": None}
+_UPDATE_TTL = timedelta(hours=1)
+_GITHUB_RELEASES_URL = "https://api.github.com/repos/jayjojayson/Hermes-Portal/releases/latest"
+
+
+def _semver_tuple(v: str):
+    """'1.0.3' → (1,0,3). Ungültige Stellen → 0. Defensiv."""
+    try:
+        return tuple(int(p) for p in v.lstrip("v").split(".")[:3])
+    except Exception:
+        return (0, 0, 0)
+
+
+@app.route("/api/version/check")
+def api_version_check():
+    """Fragt GitHub Releases ab; liefert {current, latest, update_available, url}."""
+    now = datetime.now()
+    cached = _UPDATE_CACHE.get("data")
+    cached_at = _UPDATE_CACHE.get("checked_at")
+    if cached and cached_at and (now - cached_at) < _UPDATE_TTL:
+        return jsonify({**cached, "cached": True})
+
+    payload = {
+        "current": PORTAL_VERSION,
+        "latest": None,
+        "update_available": False,
+        "url": "https://github.com/jayjojayson/Hermes-Portal/releases/latest",
+        "error": None,
+        "cached": False,
+    }
+    try:
+        req = urllib.request.Request(
+            _GITHUB_RELEASES_URL,
+            headers={"Accept": "application/vnd.github+json",
+                     "User-Agent": f"hermes-portal/{PORTAL_VERSION}"},
+        )
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json_module.loads(resp.read().decode("utf-8"))
+        tag = (data.get("tag_name") or "").lstrip("v")
+        if tag:
+            payload["latest"] = tag
+            payload["url"] = data.get("html_url") or payload["url"]
+            payload["update_available"] = _semver_tuple(tag) > _semver_tuple(PORTAL_VERSION)
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError) as ex:
+        # Offline / Rate-Limit / kaputtes JSON — kein Show-Stopper.
+        payload["error"] = str(ex)[:200]
+
+    _UPDATE_CACHE["data"] = payload
+    _UPDATE_CACHE["checked_at"] = now
+    return jsonify(payload)
 
 
 @app.template_filter("format_date")
@@ -2409,7 +2470,21 @@ def _serve_blog_file(filename: str):
     if is_html:
         text = client.read_text(full_path)
         if text is None:
-            abort(404)
+            # Freundlicher Hinweis statt nacktem 404: News/Aufgaben/Briefing-
+            # Dateien werden vom Hermes-Agent erzeugt (Cronjob). Wenn das
+            # Portal solo läuft (z. B. HA-Add-on im local-Mode ohne aktive
+            # Agent-VM auf demselben Share), gibt es die Dateien noch nicht.
+            page_label = {
+                "index.html":     "News",
+                "aufgaben.html":  "Aufgaben",
+                "briefing.html":  "Briefing",
+            }.get(filename, filename)
+            return render_template(
+                "blog_missing.html",
+                page_label=page_label,
+                filename=filename,
+                full_path=full_path,
+            ), 404
         agent = cfg.agent_name or "Hermes"
         user = cfg.user_name or "User"
         if agent != "Wally":

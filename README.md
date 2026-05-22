@@ -116,15 +116,24 @@ DMG öffnen → `Hermes Portal.app` in den Programme-Ordner ziehen.
 
 **Wichtig — Erster Start (Gatekeeper-Workaround):**
 Die App ist ad-hoc-signiert, **nicht** von Apple notarisiert (das würde
-einen kostenpflichtigen Apple-Developer-Account voraussetzen). Beim ersten
+einen kostenpflichtigen Apple-Developer-Account voraussetzen). Beim
 Doppelklick erscheint daher die Meldung „Hermes Portal.app ist beschädigt".
-Einmalig im Terminal ausführen:
+Workaround **vor** dem Mounten/Kopieren — Quarantine-Flag an der DMG
+entfernen:
 
 ```bash
-xattr -dr com.apple.quarantine "/Applications/Hermes Portal.app"
+xattr -dr com.apple.quarantine ~/Downloads/Hermes-Portal-macOS.dmg
 ```
 
-Danach startet die App per Doppelklick ganz normal.
+Anschließend DMG öffnen und `Hermes Portal.app` ganz normal in den
+Programme-Ordner ziehen. Falls du die DMG schon gemountet hast und die
+Meldung schon kam, geht es auch direkt am gemounteten Image:
+
+```bash
+xattr -dr com.apple.quarantine "/Volumes/Hermes Portal/Hermes Portal.app"
+```
+
+Danach in Programme ziehen, startet per Doppelklick.
 
 </details>
 

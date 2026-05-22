@@ -430,6 +430,13 @@ body[data-page] > header:not(.site-header) { display: none; }
     transition: color 0.15s;
 }
 .site-sidebar .sb-version a:hover { color: var(--accent); }
+/* Update-verfügbar-Badge im Sidebar-Footer */
+.site-sidebar .sb-update-badge a {
+    color: #f0b400;
+    font-weight: 600;
+    text-decoration: none;
+}
+.site-sidebar .sb-update-badge a:hover { color: var(--accent); text-decoration: underline; }
 /* Sidebar zum Flexcol machen, damit margin-top:auto funktioniert */
 .site-sidebar #sidebar-content {
     display: flex;

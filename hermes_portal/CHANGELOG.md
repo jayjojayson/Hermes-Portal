@@ -3,6 +3,17 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.1
+
+- **Logo im Header** wird wieder angezeigt (Ingress-Prefix-Fix in
+  `site-header.js`).
+- **Panel-Icon** in der HA-Sidebar von `satellite-uplink` auf
+  `robot-happy` (`mdi:robot-happy`).
+- **News/Aufgaben/Briefing 404** zeigt jetzt eine erklärende Seite —
+  diese Inhalte werden vom Hermes-Agent erzeugt, nicht vom Portal.
+- **Update-Check** (Sidebar-Footer) ist hier irrelevant — HA-Supervisor
+  zeigt Updates eh selbst an.
+
 ## 1.0.0
 
 - **HA-Ingress-Layout-Bug behoben** — Asset-URLs (CSS/JS/Logo) und
