@@ -3,6 +3,18 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.3
+
+- **Slash-Commands-Dropdown im Chat** — Hermes-CLI-Befehle (`/new`,
+  `/reset`, `/stop`, `/model`, …) als Schnellauswahl rechts neben
+  dem Ordner-Picker. Klick sendet den Befehl direkt im Chat.
+- **🎤 Mikrofon-Button** mit klar erkennbarem SVG-Icon.
+- **🤖 Agent-Avatar** zeigt Roboter-Kopf statt Herz.
+- **i18n weiter**: Personality-Tab + Skills-Tab.
+- **Bug-Fix Desktop-Bundles**: i18n-Strings (z.B. „Hermes" statt
+  „Dashboard.Hermes") werden in PyInstaller-Builds wieder korrekt
+  geladen — `i18n/` war nicht im Bundle.
+
 ## 1.1.2
 
 - **Mobile-Padding**: Cards/Boxen kleben auf dem Handy nicht mehr am

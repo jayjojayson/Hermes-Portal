@@ -1229,18 +1229,16 @@
     <!-- ===================== -->
     <div class="tab-content" id="tab-content-personality">
         <div class="settings-section">
-            <div class="settings-section-title">👤 Identität</div>
+            <div class="settings-section-title">👤 {{ t('settings.app.section.identity') }}</div>
             <p style="font-size:0.9rem; color:var(--text-secondary); margin:0;">
-                Name des Agenten, dein Name und Wiki-Kategorien werden im Tab
-                <a href="#" onclick="switchTab('app');return false;" style="color:var(--accent-primary);"><img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true"> App</a>
-                gesetzt. Die Persönlichkeit (Tonfall, Wissen, Vorlieben) lebt unten in den Memory-Dateien:
-                vor allem <code>SOUL.md</code> für den Charakter, <code>USER.md</code> für deine Eigenheiten
-                und <code>MEMORY.md</code> für langfristige Erinnerungen.
+                {{ t('personality.intro_pre') }}
+                <a href="#" onclick="switchTab('app');return false;" style="color:var(--accent-primary);"><img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true"> {{ t('settings.tab.app') }}</a>
+                {{ t('personality.intro_post') }}
             </p>
         </div>
 
         <div class="settings-section">
-            <div class="settings-section-title">🔤 Memory-Dateien bearbeiten</div>
+            <div class="settings-section-title">🔤 {{ t('personality.memory_files') }}</div>
             {% for key, path in memory_files|dictsort %}
             <div class="memory-file-card" id="card-{{ key }}">
                 <div class="memory-file-header">
@@ -1265,7 +1263,7 @@
     <div class="tab-content" id="tab-content-skills">
         <div class="settings-section">
             <div class="settings-section-title" style="display:flex;align-items:center;justify-content:space-between;">
-                <span>🛠️ Skills Übersicht</span>
+                <span>🛠️ {{ t('settings.tab.skills') }}</span>
                 <div style="display:flex;gap:8px;align-items:center;">
                     <span class="skills-count" id="skills-visible-count" style="font-size:0.8rem;color:var(--text-secondary);"></span>
                     <button class="btn-sm btn-sm-secondary" onclick="loadSkills()" style="font-size:0.78rem;padding:3px 10px;">🔄</button>
@@ -1276,7 +1274,7 @@
                 <!-- Linke Spalte: Liste -->
                 <div class="split-left">
                     <div class="split-left-toolbar">
-                        <input type="text" id="skills-search-input" placeholder="🔍 Skills durchsuchen…" oninput="filterSkills()">
+                        <input type="text" id="skills-search-input" placeholder="🔍 {{ t('common.search') }}…" oninput="filterSkills()">
                     </div>
                     <div class="split-left-list" id="skills-list">
                         <!-- Wird dynamisch geladen -->

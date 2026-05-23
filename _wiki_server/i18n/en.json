@@ -170,6 +170,11 @@
     "chat.button.mic":                  "Voice input (German)",
     "chat.button.attach":               "Attach file",
     "chat.button.shared":               "Shared folder",
+    "chat.button.slash":                "Slash commands (Hermes CLI)",
+
+    "personality.intro_pre":            "Agent name, your name and wiki categories are set in the",
+    "personality.intro_post":           "tab. The personality (tone, knowledge, preferences) lives in the memory files below: SOUL.md for character, USER.md for your specifics, MEMORY.md for long-term memories.",
+    "personality.memory_files":         "Edit memory files",
     "chat.button.folder_picker":        "Pick server folder",
     "chat.editor.save":                 "Save",
     "chat.editor.close":                "Close editor",

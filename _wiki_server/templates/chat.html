@@ -399,6 +399,53 @@ body.chat-splitter-dragging * { user-select: none !important; }
 }
 .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
 
+/* Slash-Commands-Dropdown — Liste der Hermes-CLI-Befehle als Schnellauswahl */
+.slash-wrap { position: relative; }
+.slash-menu {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    min-width: 320px;
+    max-width: 380px;
+    max-height: 360px;
+    overflow-y: auto;
+    background: var(--bg-secondary, #1a1d24);
+    border: 1px solid var(--border-color, #2a2e38);
+    border-radius: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    padding: 6px 0;
+    z-index: 50;
+    font-size: 0.85rem;
+}
+.slash-menu.hidden { display: none; }
+.slash-group-header {
+    padding: 8px 14px 4px;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-dim, #8a8f9b);
+    font-weight: 600;
+}
+.slash-item {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.slash-item:hover { background: var(--bg-tertiary, #0f1115); }
+.slash-item code {
+    color: var(--accent, #5cc8ff);
+    font-family: var(--mono, monospace);
+    font-size: 0.82rem;
+    min-width: 80px;
+}
+.slash-item span {
+    color: var(--text-secondary, #b0b6c0);
+    font-size: 0.82rem;
+}
+
 .send-btn {
     width: 38px; height: 38px; border-radius: 50%; border: none;
     background: var(--accent); color: #fff; font-size: 1.1rem;
@@ -609,7 +656,7 @@ body[data-page="chat"] .footer {
                 <div class="chat-tools">
                     <div class="chat-tools-left">
                         <button class="tool-btn" id="mic-btn" title="{{ t('chat.button.mic') }}"
-                                onclick="toggleMic()" aria-label="{{ t('chat.button.mic') }}">🎤</button>
+                                onclick="toggleMic()" aria-label="{{ t('chat.button.mic') }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                         <button class="tool-btn" id="attach-btn" title="{{ t('chat.button.attach') }}"
                                 onclick="document.getElementById('file-input').click()">📎</button>
                         <button class="tool-btn" id="folder-btn"
@@ -618,6 +665,17 @@ body[data-page="chat"] .footer {
                         <button class="tool-btn tool-btn-text" id="exchange-btn"
                                 title="{{ t('chat.button.shared') }}"
                                 onclick="useExchangeFolder()">📂 {{ exchange_path.rsplit('/', 1)[-1] or exchange_path }}</button>
+
+                        <!-- Slash-Commands-Dropdown — Hermes-CLI-Befehle als
+                             Schnellauswahl, sendet den gewählten Command
+                             direkt im Chat ab. -->
+                        <div class="slash-wrap" style="position:relative;">
+                            <button class="tool-btn tool-btn-text" id="slash-btn"
+                                    title="{{ t('chat.button.slash') }}"
+                                    onclick="toggleSlashMenu(event)">⚡ /</button>
+                            <div class="slash-menu hidden" id="slash-menu"></div>
+                        </div>
+
                         <input type="file" id="file-input" class="hidden" multiple onchange="handleFileSelect(event)">
                     </div>
                     <div class="chat-tools-right">
@@ -865,7 +923,7 @@ function renderMessages() {
             var bubble = document.createElement('div');
             bubble.className = 'message ' + (m.role === 'user' ? 'user' : 'bot');
             bubble.innerHTML =
-                '<div class="message-avatar">' + (m.role === 'user' ? '👤' : '💜') + '</div>' +
+                '<div class="message-avatar">' + (m.role === 'user' ? '👤' : '🤖') + '</div>' +
                 '<div>' +
                     '<div class="message-bubble">' + formatMessage(m.content) + '</div>' +
                     '<div class="message-time">' + formatTime(m.created) + '</div>' +
@@ -1060,6 +1118,110 @@ function stopMessage() {
 function quickPrompt(text) {
     // Always create a NEW chat for quick prompts
     createAndSend(text);
+}
+
+// === SLASH-COMMANDS DROPDOWN ===
+// Hermes-CLI-Befehle als Schnellauswahl. Klick → wird wie eine normale
+// User-Nachricht abgesendet (Hermes-Agent interpretiert sie als Command).
+var HERMES_SLASH_COMMANDS = [
+    // Sitzungsfluss + Historie
+    { group: 'session', cmd: '/new',                desc: 'Neue Sitzung starten' },
+    { group: 'session', cmd: '/reset',              desc: 'Sitzungs-Historie zurücksetzen' },
+    { group: 'session', cmd: '/resume',             desc: 'Benannte Sitzung fortsetzen' },
+    { group: 'session', cmd: '/retry',              desc: 'Letzten Turn wiederholen' },
+    { group: 'session', cmd: '/undo',               desc: 'Letzte Exchange fallen lassen' },
+    { group: 'session', cmd: '/title ',             desc: 'Sitzung benennen' },
+    { group: 'session', cmd: '/compress',           desc: 'Kontext manuell komprimieren' },
+    { group: 'session', cmd: '/branch',             desc: 'Konversation verzweigen' },
+    { group: 'session', cmd: '/fork',               desc: 'Konversation forken' },
+    // Hintergrund + Ziele
+    { group: 'goals',   cmd: '/background ',        desc: 'Paralleler Hintergrund-Lauf' },
+    { group: 'goals',   cmd: '/queue ',             desc: 'Nächsten Prompt einreihen' },
+    { group: 'goals',   cmd: '/steer ',             desc: 'Mid-Loop-Nudge nach Tool' },
+    { group: 'goals',   cmd: '/goal ',              desc: 'Multi-Turn-Ziel setzen' },
+    { group: 'goals',   cmd: '/stop',               desc: 'Aktuelle Generation stoppen' },
+    // Modelle, Tools, Skills
+    { group: 'tools',   cmd: '/model ',             desc: 'Modell wechseln' },
+    { group: 'tools',   cmd: '/tools',              desc: 'Tool-Toggles anzeigen' },
+    { group: 'tools',   cmd: '/toolsets',           desc: 'Toolsets auflisten' },
+    { group: 'tools',   cmd: '/skills',             desc: 'Skills suchen/installieren' },
+    { group: 'tools',   cmd: '/cron',               desc: 'Geplante Aufgaben (UI)' },
+    { group: 'tools',   cmd: '/reload-mcp',         desc: 'MCP-Server neu laden' },
+    { group: 'tools',   cmd: '/reload',             desc: '.env neu laden' },
+    { group: 'tools',   cmd: '/update',             desc: 'Hermes Agent aktualisieren' },
+    // Info + Hilfe
+    { group: 'info',    cmd: '/usage',              desc: 'Token-/Kosten-Übersicht' },
+    { group: 'info',    cmd: '/insights',           desc: 'Analytics-Snapshot' },
+    { group: 'info',    cmd: '/help',               desc: 'Hilfe' },
+    { group: 'info',    cmd: '/quit',               desc: 'CLI beenden' },
+];
+
+function toggleSlashMenu(ev) {
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+    var menu = document.getElementById('slash-menu');
+    if (!menu) return;
+    if (!menu.classList.contains('hidden')) {
+        menu.classList.add('hidden');
+        return;
+    }
+    // Menü aufbauen, falls leer
+    if (!menu.dataset.built) {
+        var groups = {
+            session: '💬 Sitzungsfluss',
+            goals:   '🎯 Hintergrund & Ziele',
+            tools:   '🛠 Modelle, Tools & Skills',
+            info:    'ℹ️ Info & Hilfe',
+        };
+        var html = '';
+        Object.keys(groups).forEach(function(gk) {
+            html += '<div class="slash-group-header">' + groups[gk] + '</div>';
+            HERMES_SLASH_COMMANDS.filter(function(c){ return c.group === gk; })
+                .forEach(function(c) {
+                    var needsArg = c.cmd.endsWith(' ');
+                    html += '<div class="slash-item" data-cmd="' + c.cmd.trim() +
+                            '" data-needs-arg="' + (needsArg ? '1' : '0') + '">' +
+                            '<code>' + c.cmd.trim() + '</code>' +
+                            '<span>' + c.desc + '</span></div>';
+                });
+        });
+        menu.innerHTML = html;
+        menu.dataset.built = '1';
+        // Click-Handler delegieren
+        menu.addEventListener('click', function(e) {
+            var item = e.target.closest('.slash-item');
+            if (!item) return;
+            var cmd = item.dataset.cmd;
+            var needsArg = item.dataset.needsArg === '1';
+            menu.classList.add('hidden');
+            if (needsArg) {
+                // Befehl in Textarea einfügen, Fokus dort
+                var ta = document.getElementById('chat-textarea');
+                if (ta) {
+                    ta.value = cmd + ' ';
+                    ta.focus();
+                    try { autoResize(ta); } catch (e) {}
+                }
+            } else {
+                // Direkt abschicken
+                if (typeof handleSendOrStop === 'function') {
+                    var ta2 = document.getElementById('chat-textarea');
+                    if (ta2) { ta2.value = cmd; }
+                    handleSendOrStop();
+                }
+            }
+        });
+    }
+    menu.classList.remove('hidden');
+    // Outside-Click schließt
+    setTimeout(function() {
+        document.addEventListener('click', function _cls(e) {
+            if (!document.getElementById('slash-menu').contains(e.target) &&
+                e.target.id !== 'slash-btn') {
+                document.getElementById('slash-menu').classList.add('hidden');
+                document.removeEventListener('click', _cls);
+            }
+        });
+    }, 50);
 }
 
 function startEmptyChat() {

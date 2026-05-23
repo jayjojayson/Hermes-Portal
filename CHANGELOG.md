@@ -14,6 +14,59 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.3] — 2026-05-25
+
+Mega-Update: macOS-PKG, Slash-Commands-Dropdown, Roboter-Avatar, neue
+englische Default-README, vollständiger i18n-Bug-Fix für Windows.
+
+### Fixed
+- **🔴 „Dashboard.Hermes"-Bug auf Windows/Mac-Bundles** — der `i18n/`-
+  Ordner war nicht in der PyInstaller-Spec gebündelt → `t()` returned
+  den Raw-Key statt der Übersetzung. Jetzt in `datas` aufgenommen.
+  Betraf alle gebundelten Desktop-Apps seit v1.0.9.
+
+### Changed
+- **🍎 macOS-Distribution: DMG → PKG-Installer**. Mit `pkgbuild` +
+  `productbuild` wird ein nativer macOS-Installer-Wizard gebaut, der
+  die App automatisch nach `/Applications/` kopiert. Kein xattr-DMG-
+  Mount-Tanz mehr — User klickt durch und ist fertig.
+- **📖 README zweisprachig** — englische `README.md` ist jetzt Default
+  (sichtbarer auf GitHub für internationale User), deutsche Anleitung
+  unter `README.de.md`. Beide verlinken aufeinander via Badge oben.
+
+### Added
+- **⚡ Slash-Commands-Dropdown im Chat** — neuer Button rechts neben
+  dem Austausch-Ordner-Picker. Klick öffnet eine kuratierte Liste der
+  wichtigsten Hermes-CLI-Befehle:
+  - **Sitzungsfluss**: `/new`, `/reset`, `/resume`, `/retry`, `/undo`,
+    `/title`, `/compress`, `/branch`, `/fork`
+  - **Hintergrund & Ziele**: `/background`, `/queue`, `/steer`, `/goal`, `/stop`
+  - **Modelle, Tools, Skills**: `/model`, `/tools`, `/toolsets`,
+    `/skills`, `/cron`, `/reload-mcp`, `/reload`, `/update`
+  - **Info & Hilfe**: `/usage`, `/insights`, `/help`, `/quit`
+
+  Befehle ohne Argument werden direkt abgeschickt; Befehle mit Argument
+  (`/model …`) landen im Textfeld zum Vervollständigen.
+- **🎤 Mikrofon-Button** ist jetzt ein klar erkennbares SVG-Mic-Icon
+  statt Emoji.
+- **🤖 Agent-Avatar im Chat** zeigt Roboter-Kopf statt 💜-Herz.
+- **i18n weiter komplettiert**: Personality-Tab (Intro-Text +
+  Memory-Dateien-Section), Skills-Tab (Section-Title + Search-Box-
+  Placeholder), Slash-Button-Label, je 4 Sprachen.
+
+### Notes — Ideen, die in v1.2.0+ landen
+- **Wiki Semantic Search** (Embeddings + Vector DB) — größere Investition
+- **OpenAPI/Swagger Docs** für die 60+ Endpoints
+- **Update-Manager** (`git pull` + Restart von der Portal-UI aus)
+- **Auto-Wiki-Mentions im Chat** (`@page-name` → Link)
+- **Chat-Summary** (lange Verläufe zusammenfassen via LLM-Call)
+- **Windows SmartScreen-Warning** — würde EV-Code-Signing-Cert
+  (≈ 300 USD/Jahr) erfordern, für ein Open-Source-Projekt
+  unverhältnismäßig
+- **Briefcase-Migration** als Alternative zu PyInstaller (Plan v1.2.0)
+
+---
+
 ## [1.1.2] — 2026-05-24
 
 UX-Politur und mehr Übersetzungen.
@@ -866,7 +919,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.2...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.3...HEAD
+[1.1.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.10...v1.1.0

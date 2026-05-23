@@ -20,10 +20,14 @@ block_cipher = None
 # Workflow.
 _codesign = "-" if sys.platform == "darwin" else None
 
-# Templates + statische Assets ins Bundle aufnehmen
+# Templates + statische Assets ins Bundle aufnehmen.
+# WICHTIG: i18n/-Verzeichnis muss explizit dabei sein, sonst returned t()
+# auf Windows/Mac den Raw-Key („dashboard.hermes") statt der Übersetzung
+# („Hermes") — Bug aus v1.1.2.
 datas = [
     ("templates", "templates"),
     ("static",    "static"),
+    ("i18n",      "i18n"),
     ("config.defaults.json", "."),
     ("__version__.py",       "."),
 ]

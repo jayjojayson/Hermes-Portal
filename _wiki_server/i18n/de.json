@@ -170,6 +170,11 @@
     "chat.button.mic":                  "Spracheingabe (Deutsch)",
     "chat.button.attach":               "Datei anhängen",
     "chat.button.shared":               "Geteilter Ordner",
+    "chat.button.slash":                "Slash-Befehle (Hermes CLI)",
+
+    "personality.intro_pre":            "Name des Agenten, dein Name und Wiki-Kategorien werden im Tab",
+    "personality.intro_post":           "gesetzt. Die Persönlichkeit (Tonfall, Wissen, Vorlieben) lebt unten in den Memory-Dateien: vor allem SOUL.md für den Charakter, USER.md für deine Eigenheiten und MEMORY.md für langfristige Erinnerungen.",
+    "personality.memory_files":         "Memory-Dateien bearbeiten",
     "chat.button.folder_picker":        "Server-Ordner auswählen",
     "chat.editor.save":                 "Speichern",
     "chat.editor.close":                "Editor schließen",

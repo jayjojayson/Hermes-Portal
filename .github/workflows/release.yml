@@ -35,8 +35,8 @@ jobs:
           # Wer auf Intel-Mac will: Repo selbst klonen + PyInstaller laufen lassen.
           - label: "macOS Apple Silicon"
             os: macos-14
-            installer: Hermes-Portal-macOS.dmg
-            kind: dmg
+            installer: Hermes-Portal-macOS.pkg
+            kind: pkg
           - label: "Linux x86_64"
             os: ubuntu-latest
             installer: Hermes-Portal-Linux.AppImage
@@ -93,10 +93,14 @@ jobs:
         run: pyinstaller --noconfirm hermes_portal.spec
 
       # ==================================================================
-      # macOS: .app-Bundle, ad-hoc signieren, quarantine strippen, .dmg
       # ==================================================================
-      - name: Build macOS .app + .dmg (ad-hoc signed)
-        if: matrix.kind == 'dmg'
+      # macOS: .app-Bundle bauen → ad-hoc signieren → in .pkg-Installer
+      # verpacken via productbuild. PKG ist Apples nativer Installer-
+      # Mechanismus — User klickt durch, App wird automatisch nach
+      # /Applications kopiert. Keine xattr-Quarantine-Tanz mehr.
+      # ==================================================================
+      - name: Build macOS .app + .pkg installer
+        if: matrix.kind == 'pkg'
         shell: bash
         run: |
           set -e
@@ -140,18 +144,51 @@ jobs:
           # Alle xattrs strippen (quarantine, finder-flags, etc.)
           xattr -cr "$APP"
 
-          # Ad-hoc signieren via Python-Script (siehe Datei für Details).
-          # In v1.0.1 hatte das ein kaputtes awk-Pipe ersetzt, das de facto
-          # nichts signiert hatte → DMG-„beschädigt"-Bug. Das Python-Script
-          # ist robust und gibt verifizierbare Counts aus.
+          # Ad-hoc signieren via Python-Script
           python3 _wiki_server/scripts/sign_macos_app.py "$APP"
 
-          # .dmg bauen
-          rm -f "${{ matrix.installer }}"
-          hdiutil create -volname "Hermes Portal" \
-                         -srcfolder "$APP" \
-                         -ov -format UDZO \
-                         "${{ matrix.installer }}"
+          # PKG-Installer bauen via pkgbuild + productbuild.
+          # pkgbuild erstellt eine Component-Package, die die .app nach
+          # /Applications/ installiert. productbuild wrapped es in einen
+          # User-facing Installer mit Welcome/Conclusion-Screens.
+          rm -rf staging
+          mkdir -p staging/Applications
+          cp -R "$APP" "staging/Applications/"
+
+          pkgbuild --root staging \
+                   --identifier de.jayjojayson.hermes-portal \
+                   --version "${{ steps.ver.outputs.version }}" \
+                   --install-location / \
+                   "Hermes-Portal-component.pkg"
+
+          # Distribution-XML für productbuild (Welcome/License optional)
+          cat > distribution.xml <<XML
+          <?xml version="1.0" encoding="utf-8"?>
+          <installer-gui-script minSpecVersion="2">
+              <title>Hermes Portal</title>
+              <organization>de.jayjojayson</organization>
+              <domains enable_localSystem="true"/>
+              <options customize="never" require-scripts="false" hostArchitectures="arm64,x86_64"/>
+              <choices-outline>
+                  <line choice="default">
+                      <line choice="hermes-portal"/>
+                  </line>
+              </choices-outline>
+              <choice id="default"/>
+              <choice id="hermes-portal" visible="false">
+                  <pkg-ref id="de.jayjojayson.hermes-portal"/>
+              </choice>
+              <pkg-ref id="de.jayjojayson.hermes-portal" version="${{ steps.ver.outputs.version }}"
+                       onConclusion="none">Hermes-Portal-component.pkg</pkg-ref>
+          </installer-gui-script>
+          XML
+
+          productbuild --distribution distribution.xml \
+                       --package-path . \
+                       "${{ matrix.installer }}"
+
+          # Cleanup
+          rm -rf staging "Hermes-Portal-component.pkg" distribution.xml
           ls -lh "${{ matrix.installer }}"
 
       # ==================================================================
@@ -341,35 +378,33 @@ jobs:
 
             ### Installation
 
-            | Plattform | Datei | Hinweis |
-            |-----------|-------|---------|
-            | **macOS (Apple Silicon, M1/M2/M3/M4)** | `Hermes-Portal-macOS.dmg` | Siehe macOS-Hinweis unten |
-            | **Windows (x64)**                       | `Hermes-Portal-Setup.exe` | Setup-Wizard ausführen |
-            | **Linux (x86_64)**                      | `Hermes-Portal-Linux.AppImage` | `chmod +x` und starten |
-            | **Docker**                               | `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}` | — |
-            | **Home Assistant Add-on**               | Repo `https://github.com/${{ github.repository }}` als HA-Add-on-Quelle hinzufügen | — |
+            | Platform | File | How to install |
+            |----------|------|----------------|
+            | **macOS (Apple Silicon, M1/M2/M3/M4)** | `Hermes-Portal-macOS.pkg` | Double-click, run the installer wizard. See note below. |
+            | **Windows (x64)**                      | `Hermes-Portal-Setup.exe` | Run the setup wizard. |
+            | **Linux (x86_64)**                     | `Hermes-Portal-Linux.AppImage` | `chmod +x` and run. |
+            | **Docker**                              | `docker pull ghcr.io/${{ github.repository_owner }}/hermes-portal:${{ steps.tag.outputs.tag }}` | — |
+            | **Home Assistant Add-on**              | Add repo `https://github.com/${{ github.repository }}` as HA add-on source | — |
 
-            > **Intel-Mac (vor 2020)**: ab v1.0.0 nicht mehr im Release.
-            > GitHub-Actions Intel-Runner sind stark rationiert (Wartezeit
-            > Stunden). Wer Intel-Hardware nutzt: Repo klonen + `pyinstaller`
-            > selbst laufen lassen, oder Docker-Variante verwenden.
+            > **Intel Mac (pre-2020)**: not in releases since v1.0.0.
+            > GitHub Actions Intel runners are rationed (hour-long waits).
+            > Intel users: clone the repo + run `pyinstaller` yourself, or
+            > use the Docker variant.
 
-            #### 🍎 macOS-Hinweis (unsigned, kein Apple-Developer-Account)
+            #### 🍎 macOS PKG installer (ad-hoc signed)
 
-            Die App ist ad-hoc-signiert, nicht von Apple notarisiert. Beim Mounten
-            meldet Gatekeeper „beschädigt". Workaround **vor** dem Kopieren in
-            Programme — direkt an der heruntergeladenen DMG:
-
-            ```bash
-            xattr -dr com.apple.quarantine ~/Downloads/Hermes-Portal-macOS.dmg
-            ```
-
-            Dann DMG öffnen, `Hermes Portal.app` in Programme ziehen, fertig.
-            Falls schon gemountet:
+            The PKG is ad-hoc signed, not notarized by Apple (which would
+            require a paid Apple Developer account). On first install macOS
+            may show a Gatekeeper warning. Workaround **before** opening
+            the PKG — strip the quarantine flag from the download:
 
             ```bash
-            xattr -dr com.apple.quarantine "/Volumes/Hermes Portal/Hermes Portal.app"
+            xattr -dr com.apple.quarantine ~/Downloads/Hermes-Portal-macOS.pkg
             ```
+
+            Then double-click the PKG → installer guides you through, app
+            lands in `/Applications/Hermes Portal.app`. Launch via
+            Launchpad or Spotlight as usual.
 
             Vollständige Anleitung im [README](https://github.com/${{ github.repository }}#-installation).
         env:
