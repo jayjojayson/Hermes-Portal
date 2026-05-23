@@ -3,6 +3,13 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.2
+
+- **Mobile-Padding**: Cards/Boxen kleben auf dem Handy nicht mehr am
+  Display-Rand (5 px Seitenrand bei `<768px` Viewport).
+- **Settings → App-Tab**: Connection-Sektion und Identity-Sektion
+  vollständig auf i18n umgestellt.
+
 ## 1.1.1
 
 - **Briefing-Seite** rendert jetzt direkt das Agent-HTML (wie News/

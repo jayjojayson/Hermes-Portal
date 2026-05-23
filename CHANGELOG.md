@@ -14,6 +14,33 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.2] — 2026-05-24
+
+UX-Politur und mehr Übersetzungen.
+
+### Added
+- **Mobile-Padding**: Cards/Boxen kleben auf schmalen Viewports
+  (`<768 px`) nicht mehr am Display-Rand — `5 px` Seitenrand am
+  `.container` / `main`. Tablets im Querformat und Desktop unverändert.
+
+### Changed
+- **Settings → App-Tab** weiter auf `t()` umgestellt:
+  - Connection-Sektion (Modus-Dropdown-Optionen, alle Field-Labels)
+  - Identity-Sektion (User-Name, Agent-Name, Wiki-Kategorien)
+  - Save-/Test-Buttons (alle „💾 Speichern" → `{{ t('common.save') }}`)
+  - Status-Banner-Loading-Text
+- **Cronjobs-Section-Title**: nutzt jetzt `t('cron.title')` +
+  `t('cron.subtitle')` als kleines Untertitel.
+
+### Notes
+- JSON-Tables sind mittlerweile auf ~200 Keys pro Sprache ausgebaut
+  (linter-/community-getriebene Ergänzungen). Restliche Templates
+  (Skills-Tab, References-Tab, Cron-Modal, Explorer-Toolbar) folgen
+  inkrementell — Keys sind teilweise schon da, nur das `{{ t() }}`-
+  Wiring im Template fehlt noch.
+
+---
+
 ## [1.1.1] — 2026-05-24
 
 Drei UX-Korrekturen aus dem v1.1.0-Feedback plus i18n-Aufstockung
@@ -839,7 +866,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.2...HEAD
+[1.1.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.10...v1.1.0
 [1.0.10]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.9...v1.0.10

@@ -798,44 +798,44 @@
         <div class="settings-section">
             <div class="settings-section-title">
                 <img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true">
-                Verbindung zum Hermes-Agent
+                {{ t('settings.app.section.connection') }}
             </div>
             <div id="app-status-banner" style="margin-bottom:1rem; padding:10px 14px; border-radius:8px; background:var(--bg-tertiary); font-size:0.88rem;">
-                Status wird geladen…
+                {{ t('common.loading') }}
             </div>
             <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
                 <label class="app-field">
-                    <span>Modus</span>
+                    <span>{{ t('settings.app.field.connection_mode') }}</span>
                     <select id="app-connection_mode" class="app-input">
-                        <option value="local">Local (gleicher Host/VM/Container wie Hermes)</option>
-                        <option value="ssh">SSH (Hermes läuft auf anderem Gerät im Netzwerk)</option>
+                        <option value="local">{{ t('settings.app.connection.local') }}</option>
+                        <option value="ssh">{{ t('settings.app.connection.ssh') }}</option>
                     </select>
                 </label>
                 <label class="app-field">
-                    <span>Host / IP des Hermes-Agent</span>
-                    <input id="app-agent_host" class="app-input" placeholder="192.168.x.y oder 127.0.0.1">
+                    <span>{{ t('settings.app.field.agent_host') }}</span>
+                    <input id="app-agent_host" class="app-input" placeholder="192.168.x.y / 127.0.0.1">
                 </label>
                 <label class="app-field app-ssh-only">
-                    <span>SSH-User</span>
+                    <span>{{ t('settings.app.field.ssh_user') }}</span>
                     <input id="app-ssh_user" class="app-input" placeholder="root">
                 </label>
                 <label class="app-field app-ssh-only">
-                    <span>SSH-Port</span>
+                    <span>{{ t('settings.app.field.ssh_port') }}</span>
                     <input id="app-ssh_port" class="app-input" type="number" min="1" max="65535" placeholder="22">
                 </label>
                 <label class="app-field app-ssh-only">
-                    <span>Pfad zum privaten SSH-Key (auf dem Portal-Host)</span>
+                    <span>{{ t('settings.app.field.ssh_key_path') }}</span>
                     <input id="app-ssh_key_path" class="app-input" placeholder="/data/.ssh/id_ed25519">
                 </label>
                 <label class="app-field app-ssh-only">
-                    <span>SSH-Passwort <em style="color:var(--text-secondary);font-style:normal;font-size:0.8em;">(nur falls kein Key)</em></span>
-                    <input id="app-ssh_password" class="app-input" type="password" placeholder="(leer lassen = nicht ändern)">
+                    <span>{{ t('settings.app.field.ssh_password') }}</span>
+                    <input id="app-ssh_password" class="app-input" type="password" placeholder="(leer = nicht ändern)">
                 </label>
             </div>
             <div style="margin-top:1rem;">
-                <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 Speichern</button>
-                <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 Verbindung testen</button>
-                <span class="save-feedback" id="app-save-feedback">✓ Gespeichert!</span>
+                <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 {{ t('common.save') }}</button>
+                <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 {{ t('settings.app.connection.test') }}</button>
+                <span class="save-feedback" id="app-save-feedback">✓ {{ t('settings.saved') }}</span>
             </div>
 
             <!-- SSH-Key Wizard (nur im SSH-Mode sichtbar) -->
@@ -895,28 +895,27 @@
         </div>
 
         <div class="settings-section">
-            <div class="settings-section-title">👤 Identität</div>
+            <div class="settings-section-title">👤 {{ t('settings.app.section.identity') }}</div>
             <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
                 <label class="app-field">
-                    <span>Dein Name</span>
-                    <input id="app-user_name" class="app-input" placeholder="z.B. Jan">
+                    <span>{{ t('settings.app.field.user_name') }}</span>
+                    <input id="app-user_name" class="app-input" placeholder="Jan">
                 </label>
                 <label class="app-field">
-                    <span>Name deines Agenten</span>
-                    <input id="app-agent_name" class="app-input" placeholder="z.B. Wally, Athena, Jarvis">
+                    <span>{{ t('settings.app.field.agent_name') }}</span>
+                    <input id="app-agent_name" class="app-input" placeholder="Wally, Athena, Jarvis…">
                 </label>
                 <label class="app-field">
-                    <span>Wiki-Kategorie 1 (statt „Entitäten")</span>
+                    <span>{{ t('settings.app.field.cat_entity') }}</span>
                     <input id="app-category_entity_label" class="app-input" placeholder="Entitäten">
                 </label>
                 <label class="app-field">
-                    <span>Wiki-Kategorie 2 (statt „Konzepte")</span>
+                    <span>{{ t('settings.app.field.cat_concept') }}</span>
                     <input id="app-category_concept_label" class="app-input" placeholder="Konzepte">
                 </label>
             </div>
             <p style="margin-top:0.6rem; font-size:0.85rem; color:var(--text-secondary);">
-                💡 Die <strong>Agenten-Persönlichkeit</strong> wird über die Memory-Dateien (SOUL.md) im Tab
-                <a href="#" onclick="switchTab('personality');return false;" style="color:var(--accent-primary);">🧠 Personality &amp; Memory</a> gepflegt.
+                💡 <a href="#" onclick="switchTab('personality');return false;" style="color:var(--accent-primary);">🧠 {{ t('settings.tab.personality') }}</a>
             </p>
         </div>
 
@@ -1057,7 +1056,7 @@
             </span>
             <span class="save-feedback" id="app-save-feedback-bottom">✓ Gespeichert!</span>
             <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 Verbindung testen</button>
-            <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 Speichern</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 {{ t('common.save') }}</button>
         </div>
     </div>
 
@@ -1199,7 +1198,7 @@
     <div class="tab-content active" id="tab-content-cronjobs">
         <div class="settings-section">
             <div class="settings-section-title">
-                ⏰ Aufgabenplanung (Wiki + Hermes Agent)
+                ⏰ {{ t('cron.title') }} <span style="font-size:0.75em; color:var(--text-secondary); font-weight:normal;">({{ t('cron.subtitle') }})</span>
                 <span style="font-weight:normal;color:var(--text-secondary);margin-left:0.5rem;">
                     (<span id="cron-count">0</span> aktiv)
                 </span>
@@ -1250,7 +1249,7 @@
                         <span class="file-path">{{ path }}</span>
                     </h4>
                     <div>
-                        <button class="btn-sm btn-sm-primary" onclick="saveMemory('{{ key }}')">💾 Speichern</button>
+                        <button class="btn-sm btn-sm-primary" onclick="saveMemory('{{ key }}')">💾 {{ t('common.save') }}</button>
                         <span class="save-feedback" id="feedback-{{ key }}">✓ Gespeichert!</span>
                     </div>
                 </div>
@@ -1298,7 +1297,7 @@
                             <span class="split-editor-path" id="skills-editor-path"></span>
                             <div class="split-editor-actions">
                                 <span class="save-feedback" id="skills-editor-feedback">✓ Gespeichert!</span>
-                                <button class="btn-sm btn-sm-primary" onclick="saveSkillInline()">💾 Speichern</button>
+                                <button class="btn-sm btn-sm-primary" onclick="saveSkillInline()">💾 {{ t('common.save') }}</button>
                             </div>
                         </div>
                         <div class="split-editor-body">
@@ -1349,7 +1348,7 @@
                             <div class="split-editor-actions">
                                 <span class="save-feedback" id="ref-editor-feedback">✓ Gespeichert!</span>
                                 <button class="btn-sm btn-sm-danger" id="ref-editor-delete-btn" onclick="deleteReferenceInline()">🗑️</button>
-                                <button class="btn-sm btn-sm-primary" onclick="saveReferenceInline()">💾 Speichern</button>
+                                <button class="btn-sm btn-sm-primary" onclick="saveReferenceInline()">💾 {{ t('common.save') }}</button>
                             </div>
                         </div>
                         <div class="split-editor-body">
@@ -1566,7 +1565,7 @@
         </label>
         <div class="modal-buttons">
             <button class="btn-sm btn-sm-warning" onclick="closeCronModal()">Abbrechen</button>
-            <button class="btn-sm btn-sm-primary" onclick="saveCronjob()">💾 Speichern</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveCronjob()">💾 {{ t('common.save') }}</button>
         </div>
     </div>
 </div>
@@ -1580,7 +1579,7 @@
         <div class="modal-buttons" style="margin-top: 1rem;">
             <span class="save-feedback" id="skill-feedback">✓ Gespeichert!</span>
             <button class="btn-sm btn-sm-warning" onclick="closeSkillEditor()">Schließen</button>
-            <button class="btn-sm btn-sm-primary" onclick="saveSkill()">💾 Speichern</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveSkill()">💾 {{ t('common.save') }}</button>
         </div>
     </div>
 </div>
@@ -1600,7 +1599,7 @@
         <div class="modal-buttons" style="margin-top:1rem;">
             <span class="save-feedback" id="new-memory-feedback">✓ Gespeichert!</span>
             <button class="btn-sm btn-sm-warning" onclick="closeNewMemoryModal()">Abbrechen</button>
-            <button class="btn-sm btn-sm-primary" onclick="saveNewMemory()">💾 Speichern</button>
+            <button class="btn-sm btn-sm-primary" onclick="saveNewMemory()">💾 {{ t('common.save') }}</button>
         </div>
     </div>
 </div>

@@ -1437,6 +1437,28 @@ input:focus, select:focus, textarea:focus {
 .preview-content .close:hover { border-color: var(--accent); background: var(--accent-glow); }
 
 /* ========================================================================
+   Mobile / Schmale Viewports
+   ========================================================================
+   Boxen sollten auf dem Handy nicht am Display-Rand kleben → 5px Seiten-
+   Padding am Container. Greift unter 768px (Tablet-Portrait und kleiner).
+*/
+@media (max-width: 768px) {
+    .container,
+    main {
+        padding-left:  5px !important;
+        padding-right: 5px !important;
+    }
+    /* Tab-Inhalte in Settings: gleiche Behandlung, sonst kleben Cards
+       in der Tab-Pane noch immer am Rand */
+    .tab-content,
+    .dash-grid,
+    .settings-tabs {
+        padding-left:  0;
+        padding-right: 0;
+    }
+}
+
+/* ========================================================================
    Print
    ======================================================================== */
 @media print {
