@@ -35,6 +35,14 @@ hiddenimports = (
     + collect_submodules("markdown")
     + collect_submodules("waitress")
 )
+# pywebview ist optional (nur Desktop-Builds, nicht HA-Container) — wenn
+# installiert, in die hidden_imports aufnehmen, damit das native Fenster
+# im Bundle funktioniert.
+try:
+    import webview  # noqa: F401
+    hiddenimports += collect_submodules("webview")
+except ImportError:
+    pass
 
 a = Analysis(
     ["entry_pyinstaller.py"],
@@ -61,7 +69,11 @@ exe = EXE(
     bootloader_ignore_signals=False,
     strip=False,
     upx=False,
-    console=True,
+    # macOS: console=False vermeidet Crash beim Finder-Doppelklick (kein
+    # Controlling-Terminal → PyInstaller-Bootloader stürzt mit console=True
+    # in einigen Versionen lautlos ab, genau das Symptom in v1.0.3-1.0.6).
+    # Windows/Linux: bleibt True für Power-User die per CLI starten.
+    console=False if sys.platform == "darwin" else True,
     icon=os.path.join("static", "portal", "logo.png") if os.path.exists(os.path.join("static", "portal", "logo.png")) else None,
     codesign_identity=_codesign,
     entitlements_file=None,

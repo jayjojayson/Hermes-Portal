@@ -62,6 +62,15 @@ jobs:
           # pillow → PyInstaller braucht es auf Windows für PNG → ICO
           pip install pyinstaller pillow
 
+      - name: Install pywebview (Mac + Windows nur)
+        # pywebview wraps die App in ein natives Fenster (WKWebView auf mac,
+        # WebView2 auf Windows — beides OS-Standard, kein Extra-Install
+        # für den End-User). Linux würde GTK-/QT-WebKit-Libs brauchen, die
+        # sich in AppImage schwer bündeln lassen → Linux behält Browser-Fallback.
+        if: runner.os == 'macOS' || runner.os == 'Windows'
+        shell: bash
+        run: pip install pywebview
+
       - name: Fetch Monaco editor (vendored offline)
         shell: bash
         run: python _wiki_server/scripts/fetch_monaco.py

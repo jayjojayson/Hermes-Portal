@@ -14,6 +14,45 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.7] — 2026-05-23
+
+Echte native Desktop-App-Experience auf macOS und Windows — kein Browser-
+Tab mehr, kein Terminal-Fenster. Plus PyInstaller-Bootloader-Fix für
+macOS-Finder-Launch.
+
+### Changed
+- **`console=False` für macOS-Build** in `hermes_portal.spec`. Der
+  PyInstaller-Bootloader stürzte beim Finder-Doppelklick in den
+  v1.0.3–v1.0.6-Builds lautlos ab — wahrscheinliche Ursache:
+  `console=True` erwartet ein Controlling-Terminal, das eine via Finder
+  gestartete .app aber nicht hat. **Damit sollte der mac-Crash endlich
+  weg sein.**
+- **`entry_pyinstaller.py` startet jetzt ein natives Fenster via
+  `pywebview`** statt den Default-Browser zu öffnen. Auf macOS nutzt
+  pywebview WKWebView (= Safari-Engine), auf Windows den eingebauten
+  Edge-WebView2 — beides ist Teil des Betriebssystems, **kein
+  zusätzlicher Install für den End-User**.
+- **Server läuft im Background-Thread** statt blockierend; das native
+  Fenster zeigt erst nach erfolgreichem Port-Connect die UI, damit
+  keine weiße „Server-noch-nicht-bereit"-Seite mehr aufblitzt.
+
+### Added
+- **Browser-Fallback** wenn pywebview im Bundle fehlt (Linux-AppImage
+  startet weiter im Browser — GTK-/QT-WebKit-Libs sind in AppImage
+  nicht zuverlässig bündelbar, kommt vielleicht in v1.1.x via
+  Tauri-Refactor).
+
+### Notes
+- **macOS**: keine Terminal-Fenster mehr, keine Browser-Tabs.
+  Doppelklick → Fenster mit Hermes Portal öffnet sich direkt.
+- **Windows**: WebView2-Runtime ist auf Windows 10/11 vorinstalliert,
+  sollte ohne Extra-Setup laufen. Falls nicht: Setup-Wizard installiert
+  WebView2 automatisch nach.
+- **Linux**: AppImage öffnet weiterhin im Default-Browser. Pure-Native
+  via Tauri ist Kandidat für v1.1.0.
+
+---
+
 ## [1.0.6] — 2026-05-23
 
 Drei wichtige Bug-Fixes für den HA-Add-on-Modus. Native-Window-Refactor
@@ -527,7 +566,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.6...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.3...v1.0.4

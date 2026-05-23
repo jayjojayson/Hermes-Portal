@@ -101,7 +101,7 @@ def _ensure_runtime_dirs() -> Path:
 
 
 def _open_browser(url: str, delay: float = 1.5) -> None:
-    """Browser nach kurzer Verzögerung öffnen, damit der Server schon antwortet."""
+    """Browser nach kurzer Verzögerung öffnen — Fallback wenn pywebview fehlt."""
     def _later():
         time.sleep(delay)
         try:
@@ -109,6 +109,19 @@ def _open_browser(url: str, delay: float = 1.5) -> None:
         except Exception:
             pass
     threading.Thread(target=_later, daemon=True).start()
+
+
+def _wait_for_server(host: str, port: int, timeout: float = 6.0) -> bool:
+    """Pollt den lokalen TCP-Port bis der Server antwortet (max. timeout s)."""
+    import socket
+    deadline = time.monotonic() + timeout
+    while time.monotonic() < deadline:
+        try:
+            with socket.create_connection((host, port), timeout=0.3):
+                return True
+        except OSError:
+            time.sleep(0.1)
+    return False
 
 
 def _show_crash_dialog_macos(log_path: Path, exc_text: str) -> None:
@@ -148,6 +161,7 @@ def main() -> int:
     import wiki_app
     cfg = wiki_app.cfg
     host = cfg.bind_host if cfg.bind_host != "0.0.0.0" else "127.0.0.1"
+    bind_host = cfg.bind_host
     port = cfg.bind_port
     url = f"http://{host}:{port}/"
 
@@ -156,18 +170,54 @@ def main() -> int:
     print(f"  🛰️  Hermes Portal — startet auf {url}")
     print(f"     Daten:   {data_dir}")
     print("=" * 60)
-    print("  Browser öffnet sich gleich automatisch.")
-    print("  Beenden mit Strg+C bzw. Schließen dieses Fensters.")
     print()
-    _open_browser(url)
 
-    # Production-Server (wenn waitress vorhanden, sonst Flask-Dev)
+    # Server im Hintergrund-Thread starten, damit wir parallel das native
+    # Fenster (pywebview) im Main-Thread öffnen können. Auf macOS MUSS die
+    # UI im Main-Thread laufen — daher diese Reihenfolge.
+    def _serve_in_background():
+        try:
+            from waitress import serve as _wserve
+            _wserve(wiki_app.app, host=bind_host, port=port, threads=8)
+        except ImportError:
+            wiki_app.app.run(host=bind_host, port=port, threaded=True)
+
+    server_thread = threading.Thread(target=_serve_in_background, daemon=True)
+    server_thread.start()
+
+    # Auf Server-Bereitschaft warten — sonst zeigt pywebview erst eine
+    # weiße Seite und reloadet, was hässlich aussieht.
+    if not _wait_for_server(host, port, timeout=8.0):
+        print(f"⚠ Server antwortet nicht auf {url} — starte trotzdem das Fenster.", file=sys.stderr)
+
+    # Natives Fenster via pywebview (wenn verfügbar), sonst Browser-Fallback.
+    # pywebview gibt es nur in Desktop-Builds (Mac/Windows/Linux-AppImage);
+    # HA-Container/Docker brauchen es nicht.
     try:
-        from waitress import serve as _serve
-        _serve(wiki_app.app, host=cfg.bind_host, port=port, threads=8)
+        import webview  # type: ignore
+        win = webview.create_window(
+            "Hermes Portal",
+            url,
+            width=1400,
+            height=900,
+            min_size=(900, 600),
+            resizable=True,
+        )
+        # webview.start() blockt bis der User das Fenster schließt.
+        # Dann läuft die main() weiter → return → Programm beendet.
+        webview.start()
+        return 0
     except ImportError:
-        wiki_app.app.run(host=cfg.bind_host, port=port, threaded=True)
-    return 0
+        # Kein pywebview gebündelt → Fallback: Browser öffnen + auf Server-Thread warten
+        print("  Hinweis: pywebview nicht installiert — öffne stattdessen den Browser.")
+        print("  Beenden: Strg+C bzw. Fenster schließen.")
+        print()
+        _open_browser(url)
+        try:
+            server_thread.join()
+        except KeyboardInterrupt:
+            pass
+        return 0
 
 
 def _emergency_log(tb: str) -> Path:

@@ -3,6 +3,12 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.7
+
+- Keine HA-spezifischen Änderungen — Release ist primär ein macOS-
+  Native-Window-Sprung (kein Browser/Terminal mehr beim Desktop-DMG).
+  HA-Container nutzt weiterhin gunicorn ohne pywebview.
+
 ## 1.0.6
 
 - **Wiki-Beiträge öffnen** jetzt korrekt (404 in HA behoben — globaler
