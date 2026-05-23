@@ -715,16 +715,24 @@
         });
         if (!hjl.children.length) hjl.innerHTML = '<li class="empty">Keine Aufgaben gefunden.</li>';
 
-        // Nächste 3 Cronjobs in der Cronjobs-Box
+        // Nächste 3 Cronjobs in der Cronjobs-Box.
+        // Tooltip enthält zusätzlich die ABSOLUTE Lokal-Zeit (Browser-TZ).
         var jl = $('#nextJobsList');
+        var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
         jl.innerHTML = '';
         (data.next_jobs || []).slice(0, 3).forEach(function(j) {
             var li = document.createElement('li');
-            li.innerHTML = '<span class="ts pill">' + esc(j.next_run_human) + '</span>' +
-                '<span class="ttl" title="' + esc(j.schedule || '') + '">' + esc(j.name) + '</span>';
+            var absLocal = window.formatLocalTime ? window.formatLocalTime(j.next_run) : '';
+            var schedAndAbs = (j.schedule || '') + (absLocal ? ' · ' + absLocal : '');
+            li.innerHTML = '<span class="ts pill" title="' + esc(absLocal) + '">' + esc(j.next_run_human) + '</span>' +
+                '<span class="ttl" title="' + esc(schedAndAbs) + '">' + esc(j.name) + '</span>';
             jl.appendChild(li);
         });
-        if (!jl.children.length) jl.innerHTML = '<li class="empty">Keine geplanten Jobs.</li>';
+        if (!jl.children.length) {
+            var emptyMsg = T('dashboard.no_jobs');
+            if (emptyMsg === 'dashboard.no_jobs') emptyMsg = 'Keine geplanten Jobs.';
+            jl.innerHTML = '<li class="empty">' + emptyMsg + '</li>';
+        }
 
         // Wiki Recent — letzte 5 Beiträge, Klick führt zur Beitragsseite
         var wr = $('#wikiRecent');

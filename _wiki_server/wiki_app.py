@@ -3837,7 +3837,15 @@ def api_briefing_info():
 
 @app.route("/api/briefing/render")
 def api_briefing_render():
-    """Liefert das gerenderte Briefing-HTML zurück (für iframe)."""
+    """Liefert das gerenderte Briefing-HTML zurück (für iframe).
+
+    Wendet die gleiche URL-Rewrite-Logik wie ``_serve_blog_file`` an, sonst
+    versuchen die im Agent-HTML hardcodierten ``/blog/style.css``- und
+    ``/blog/site-header.js``-Pfade gegen die HA-Origin zu laden und scheitern.
+
+    Plus: injiziert unser Portal-Stylesheet + ein bisschen Scrollbar-Hide-
+    CSS, damit das iframe nicht doppelt-scrollt.
+    """
     client = get_client()
     html_text = client.read_text(cfg.briefing_output_path())
     if not html_text:
@@ -3846,10 +3854,47 @@ def api_briefing_render():
             "<!doctype html><html><head><meta charset='utf-8'>"
             "<style>body{font-family:system-ui,-apple-system,sans-serif;color:#aaa;"
             "background:#1a1a1a;padding:40px;text-align:center;}</style></head><body>"
-            "<h2>📭 Noch kein Briefing vorhanden</h2>"
-            "<p>Klicke oben auf <b>Briefing jetzt erzeugen</b>, um das erste zu erstellen.</p>"
+            "<h2>📭 " + _i18n.t("briefing.no_briefing", cfg.get("language") or "en") + "</h2>"
             "</body></html>"
         )
+
+    prefix = (request.script_root or "")
+
+    # Portal-Stylesheet + Scrollbar-Hide-CSS einbinden, damit das iframe
+    # konsistent aussieht und nicht intern scrollt.
+    style_href = (prefix or "") + "/static/portal/style.css?v=" + _ASSET_VERSION
+    head_inject = (
+        f'<link rel="stylesheet" href="{style_href}">'
+        '<style>'
+        # iframe-internes Scrollen unterdrücken — das Portal-Iframe wird
+        # vom Parent auf 100vh gesetzt, das reicht für 99% der Briefings
+        'html,body{margin:0;padding:1.5rem;overflow-x:hidden;}'
+        'html::-webkit-scrollbar,body::-webkit-scrollbar{width:6px;height:6px;}'
+        'html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background:#444;border-radius:3px;}'
+        '</style>'
+    )
+    if "</head>" in html_text:
+        html_text = html_text.replace("</head>", head_inject + "</head>", 1)
+    else:
+        html_text = head_inject + html_text
+
+    # ALLE absoluten /-URLs in href/src um den Ingress-Prefix ergänzen
+    # (gleiche Logik wie in _serve_blog_file). Greift sowohl auf
+    # hardcodierte /blog/style.css als auch auf andere Pfade.
+    if prefix:
+        def _prefix_url(match):
+            attr, quote, url = match.group(1), match.group(2), match.group(3)
+            if (url.startswith(prefix)
+                    or url.startswith('//')
+                    or url.startswith('http')):
+                return match.group(0)
+            return f'{attr}={quote}{prefix}{url}{quote}'
+        html_text = re.sub(
+            r'(href|src)=(["\'])(/[^"\']*)\2',
+            _prefix_url,
+            html_text,
+        )
+
     return html_text, 200, {"Content-Type": "text/html; charset=utf-8",
                             "Cache-Control": "no-store"}
 

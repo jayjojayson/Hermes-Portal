@@ -15,8 +15,12 @@
                    font-size:0.88rem; margin-bottom:1rem; }
 .brf-banner.ok   { border-left:4px solid #22c55e; }
 .brf-banner.err  { border-left:4px solid #ef4444; }
-.brf-iframe      { width:100%; min-height:70vh; border:1px solid var(--border-color);
-                   border-radius:12px; background:#0f0f0f; }
+/* Iframe ist hoch genug für 99% der Briefings → kein interner Scrollbar
+   im Normalfall. Background nutzt Portal-bg, damit's mit injiziertem
+   portal/style.css optisch zusammenpasst. */
+.brf-iframe      { width:100%; height:calc(100vh - 220px); min-height:600px;
+                   border:1px solid var(--border-color); border-radius:12px;
+                   background:var(--bg-secondary); display:block; }
 .brf-settings    { margin-top:1.5rem; }
 .brf-settings details { background:var(--bg-secondary); border:1px solid var(--border-color);
                        border-radius:10px; padding:1rem 1.25rem; }
@@ -38,39 +42,39 @@
 <div class="brf-wrap">
     <div class="brf-header">
         <div>
-            <h2>☕ Briefing</h2>
-            <div class="brf-meta" id="brf-meta">Lade Status…</div>
+            <h2>☕ {{ t('briefing.title') }}</h2>
+            <div class="brf-meta" id="brf-meta">{{ t('common.loading') }}</div>
         </div>
         <div class="brf-toolbar">
             <button class="btn-sm btn-sm-primary" onclick="runBriefing()" id="brf-run-btn">
-                ▶ Briefing jetzt erzeugen
+                ▶ {{ t('briefing.button.run_now') }}
             </button>
-            <button class="btn-sm btn-sm-secondary" onclick="reloadFrame()">🔄 Vorschau neu laden</button>
+            <button class="btn-sm btn-sm-secondary" onclick="reloadFrame()">🔄 {{ t('briefing.button.reload') }}</button>
         </div>
     </div>
 
     <div class="brf-banner" id="brf-banner" style="display:none;"></div>
 
-    <iframe class="brf-iframe" id="brf-frame" src="{{ url_for('api_briefing_render') }}" title="Briefing-Vorschau"></iframe>
+    <iframe class="brf-iframe" id="brf-frame" src="{{ url_for('api_briefing_render') }}" title="{{ t('briefing.title') }}"></iframe>
 
     <div class="brf-settings">
         <details>
-            <summary>⚙️ Briefing-Einstellungen (GitHub, Wetter, RSS, BVG …)</summary>
+            <summary>⚙️ {{ t('briefing.section.config') }}</summary>
             <div class="brf-grid">
                 <label class="brf-field">
-                    <span>GitHub-User <em style="font-weight:normal;color:var(--text-secondary);">(leer = überspringen)</em></span>
+                    <span>{{ t('briefing.field.github_user') }}</span>
                     <input id="brf-github_user" class="brf-input" placeholder="z.B. octocat">
                 </label>
                 <label class="brf-field">
-                    <span>Wetter Breite</span>
+                    <span>{{ t('briefing.field.weather_lat') }}</span>
                     <input id="brf-weather_lat" class="brf-input" placeholder="52.52">
                 </label>
                 <label class="brf-field">
-                    <span>Wetter Länge</span>
+                    <span>{{ t('briefing.field.weather_lon') }}</span>
                     <input id="brf-weather_lon" class="brf-input" placeholder="13.40">
                 </label>
                 <label class="brf-field">
-                    <span>Zeitzone</span>
+                    <span>{{ t('briefing.field.weather_tz') }}</span>
                     <input id="brf-weather_tz" class="brf-input" placeholder="Europe/Berlin">
                 </label>
                 <label class="brf-field">

@@ -537,11 +537,11 @@ body[data-page="chat"] .footer {
     <div class="chat-sidebar" id="chat-sidebar">
         <div class="chat-sidebar-header">
             <button class="chat-sidebar-collapse-btn" onclick="toggleSessionSidebar()" id="chat-sidebar-toggle" title="Session-Liste ein-/ausklappen">‹</button>
-            <h2>Sessions</h2>
-            <button class="btn-new-chat" onclick="newChat()" title="Neuer Chat">+</button>
+            <h2>{{ t('chat.session.title') }}</h2>
+            <button class="btn-new-chat" onclick="newChat()" title="{{ t('chat.session.new') }}">+</button>
         </div>
         <div class="chat-search">
-            <input type="text" id="chat-search-input" placeholder="Sessions suchen..." oninput="filterChats(this.value)">
+            <input type="text" id="chat-search-input" placeholder="{{ t('chat.session.search') }}" oninput="filterChats(this.value)">
         </div>
         <div class="chat-list" id="chat-list"></div>
     </div>
@@ -549,13 +549,13 @@ body[data-page="chat"] .footer {
     <!-- Chat Area -->
     <div class="chat-area" id="chat-area">
         <div class="chat-area-header">
-            <h3 id="chat-area-title">Chat mit {{ agent_name }} 💬</h3>
+            <h3 id="chat-area-title">{{ t('chat.title') }} · {{ agent_name }} 💬</h3>
         </div>
 
         <!-- Empty State -->
         <div class="chat-empty" id="chat-empty">
             <div class="chat-empty-icon">💬</div>
-            <h2>Hallo {{ user_name }}! </h2>
+            <h2>{{ t('greeting.afternoon') }}, {{ user_name }}! </h2>
             <p>Ich bin {{ agent_name }} – dein persönlicher Chat. Frag mich alles über Code, Smart Home, dein Wiki oder etwas ganz anderes.</p>
             <div class="chat-empty-actions">
                 <button class="chat-empty-btn" onclick="quickPrompt('Erzähl mir was über das Wiki')">
@@ -601,27 +601,27 @@ body[data-page="chat"] .footer {
         <div class="chat-input-section hidden" id="chat-input-section">
             <div class="chat-input-box">
                 <textarea class="chat-textarea" id="chat-textarea"
-                    placeholder="Schreib {{ agent_name }} eine Nachricht..."
+                    placeholder="{{ t('chat.placeholder') }}"
                     rows="1"
                     oninput="autoResize(this)"
                     onkeydown="handleKeyDown(event)"></textarea>
                 <div class="chat-tools">
                     <div class="chat-tools-left">
-                        <button class="tool-btn" id="mic-btn" title="Spracheingabe starten (Web Speech API)"
-                                onclick="toggleMic()" aria-label="Spracheingabe">🎤</button>
-                        <button class="tool-btn" id="attach-btn" title="Datei(en) anhängen"
+                        <button class="tool-btn" id="mic-btn" title="{{ t('chat.button.mic') }}"
+                                onclick="toggleMic()" aria-label="{{ t('chat.button.mic') }}">🎤</button>
+                        <button class="tool-btn" id="attach-btn" title="{{ t('chat.button.attach') }}"
                                 onclick="document.getElementById('file-input').click()">📎</button>
                         <button class="tool-btn" id="folder-btn"
-                                title="Ordner auf dem Hermes-Host freigeben (Datei-Picker)"
+                                title="{{ t('chat.button.folder_picker') }}"
                                 onclick="openPickerModal()">📁</button>
                         <button class="tool-btn tool-btn-text" id="exchange-btn"
-                                title="Konfigurierten Austausch-Ordner direkt freigeben"
+                                title="{{ t('chat.button.shared') }}"
                                 onclick="useExchangeFolder()">📂 {{ exchange_path.rsplit('/', 1)[-1] or exchange_path }}</button>
                         <input type="file" id="file-input" class="hidden" multiple onchange="handleFileSelect(event)">
                     </div>
                     <div class="chat-tools-right">
                         <span class="shared-folder-status" id="shared-folder-status"></span>
-                        <button class="send-btn" id="send-btn" onclick="handleSendOrStop()" title="Senden" aria-label="Senden">
+                        <button class="send-btn" id="send-btn" onclick="handleSendOrStop()" title="{{ t('chat.button.send') }}" aria-label="{{ t('chat.button.send') }}">
                             <!-- Idle: Pfeil hoch (Senden) -->
                             <svg class="send-icon-send" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <line x1="12" y1="19" x2="12" y2="5"/>
@@ -676,8 +676,11 @@ body[data-page="chat"] .footer {
     </div>
 </div>
 
-<!-- Monaco-Loader (lokal aus static/vendor) -->
-<script src="/static/vendor/monaco/vs/loader.js" defer></script>
+<!-- Monaco-Loader (lokal aus static/vendor) — url_for für HA-Ingress.
+     Der DOM-Patcher in base.html greift bei <script>-Tags zu spät
+     (Browser hat den initialen Pfad schon angefordert bevor der
+     MutationObserver feuert) → server-side url_for ist Pflicht. -->
+<script src="{{ url_for('static', filename='vendor/monaco/vs/loader.js') }}" defer></script>
 
 <!-- Drag & Drop Overlay -->
 <div class="drag-overlay" id="drag-overlay">

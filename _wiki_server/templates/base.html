@@ -37,6 +37,46 @@
         // Bequemer Helper: window.hpUrl("/api/foo") liefert den korrekten Pfad.
         window.hpUrl = function(p){ return (window.HP_INGRESS_PATH || '') + p; };
 
+        // ─── Zeitzonen-Helper ────────────────────────────────────────
+        // Hermes-Agent läuft typischerweise in UTC und liefert Timestamps
+        // ohne TZ-Marker oder mit ``+00:00``. Wir wollen sie im User-Browser
+        // immer in der lokalen Zeitzone anzeigen — sonst zeigt ein Cronjob
+        // „16:00" zwar korrekt in UTC, aber ein User in UTC+2 erwartet
+        // „18:00" auf seinem Bildschirm.
+        //
+        // Verwendung:
+        //   formatLocalTime("2026-05-24T16:00:00")      → "24.05.2026, 18:00:00"
+        //   formatLocalTime("2026-05-24T16:00:00+00:00") → dito
+        //   formatLocalTime(null)                        → ""
+        //
+        // Wenn der String KEINE TZ-Info trägt, wird UTC angenommen
+        // (Hermes-Konvention).
+        window.formatLocalTime = function(iso, opts) {
+            if (!iso) return '';
+            var s = String(iso);
+            var hasTz = /[Zz]$|[+-]\d{2}:?\d{2}$/.test(s);
+            if (!hasTz) s += 'Z';
+            var d = new Date(s);
+            if (isNaN(d.getTime())) return iso;
+            var lang = (window.HP_LANG || 'en').replace('en','en-GB');
+            try { return d.toLocaleString(lang, opts || undefined); }
+            catch (e) { return d.toLocaleString(); }
+        };
+        // Browser-erkannte Zeitzone als String (z.B. „Europe/Berlin")
+        window.userTimezone = function() {
+            try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; }
+            catch (e) { return 'UTC'; }
+        };
+        // UTC-Offset des Browsers als Stunden-String (z.B. „UTC+02:00")
+        window.userTzOffset = function() {
+            var min = -new Date().getTimezoneOffset();
+            var sign = min >= 0 ? '+' : '-';
+            var abs = Math.abs(min);
+            var hh = String(Math.floor(abs/60)).padStart(2,'0');
+            var mm = String(abs%60).padStart(2,'0');
+            return 'UTC' + sign + hh + ':' + mm;
+        };
+
         // -------------------------------------------------------------
         // HA-Ingress-Global-Patcher
         // -------------------------------------------------------------

@@ -1173,11 +1173,19 @@
             </div>
             <div class="cron-toolbar">
                 <button class="btn-sm btn-sm-primary" onclick="openCronModal()">➕ Neuer Cronjob</button>
-                <button class="btn-sm btn-sm-warning" onclick="loadCronjobs()">🔄 Aktualisieren</button>
+                <button class="btn-sm btn-sm-warning" onclick="loadCronjobs()">🔄 {{ t('common.refresh') }}</button>
                 <span style="font-size:0.82rem; color:var(--text-secondary); margin-left:auto;">
-                    Alle Jobs werden vom <span class="source-badge hermes">hermes</span> Agenten ausgeführt
+                    Hermes Agent · <span id="cron-tz-hint" title="Cron-Pattern werden vom Agent in dessen Zeitzone (meist UTC) interpretiert. Die Spalten ‚Nächster Lauf' und ‚Letzter Lauf' werden hier in deiner Browser-Zeitzone angezeigt." style="cursor:help; border-bottom:1px dotted var(--text-secondary);">🕐 …</span>
                 </span>
             </div>
+            <script>
+                // Browser-Zeitzonen-Anzeige nachschieben sobald JS bereit ist
+                (function(){
+                    var el = document.getElementById('cron-tz-hint');
+                    if (!el || !window.userTimezone) return;
+                    el.textContent = '🕐 ' + window.userTzOffset() + ' · ' + window.userTimezone();
+                })();
+            </script>
             <div id="cron-list">
                 <!-- Wird dynamisch geladen -->
             </div>
@@ -1693,6 +1701,14 @@ function collectAppPayload() {
 
 function saveAppConfig() {
     var payload = collectAppPayload();
+    // Sprach-Wechsel erkennen — wenn ja, nach Save automatisch reloaden
+    // damit das neue Sprach-Bundle sofort überall greift (Header, Nav,
+    // Sidebar). Sonst zeigen i18n'ed Templates noch die alte Sprache bis
+    // zum nächsten Seitenwechsel → wirkt wie eine wilde Sprach-Mischung.
+    var prevLang = (window.HP_LANG || '').toLowerCase();
+    var newLang  = (payload.language || '').toLowerCase();
+    var langChanged = (newLang && newLang !== prevLang);
+
     fetch('/api/settings/app', {
         method:'POST',
         headers:{'Content-Type':'application/json'},
@@ -1706,6 +1722,11 @@ function saveAppConfig() {
         });
         if (d.client) renderAppStatus({client: d.client, has_paramiko: true});
         if (d.message) console.log(d.message);
+        if (langChanged) {
+            // Kurz die Save-Bestätigung anzeigen, dann reload damit der
+            // neue Sprach-Bundle vom Server kommt.
+            setTimeout(function(){ location.reload(); }, 400);
+        }
     })
     .catch(function(e) { alert('Speichern fehlgeschlagen: ' + e); });
 }
@@ -1982,8 +2003,12 @@ function renderCronjobs(jobs) {
         var isHermes = j.source === 'hermes';
         var statusClass = j.enabled ? 'enabled' : 'disabled';
         var statusLabel = j.enabled ? 'Aktiv' : 'Deaktiviert';
-        var lastRun = j.last_run ? new Date(j.last_run.replace('+00:00', '')).toLocaleString('de-DE') : (j.last_run_at ? new Date(j.last_run_at.replace('+00:00', '')).toLocaleString('de-DE') : '—');
-        var nextRun = j.next_run ? new Date(j.next_run.replace('+00:00', '')).toLocaleString('de-DE') : (j.next_run_at ? new Date(j.next_run_at.replace('+00:00', '')).toLocaleString('de-DE') : '—');
+        // ZEITZONEN-FIX: alte Logik strippte „+00:00" und interpretierte
+        // den Rest als LOKALE Zeit → User in UTC+2 sah 16:00 statt 18:00.
+        // Jetzt: window.formatLocalTime() behandelt fehlende TZ als UTC
+        // (Hermes-Konvention) und konvertiert in die Browser-TZ.
+        var lastRun = window.formatLocalTime(j.last_run || j.last_run_at) || '—';
+        var nextRun = window.formatLocalTime(j.next_run || j.next_run_at) || '—';
         var exitCode = j.last_exit_code !== null && j.last_exit_code !== undefined ? j.last_exit_code : (j.last_status === 'ok' ? '0' : (j.last_status === 'error' ? '✗' : '—'));
         var exitStyle = '';
         if (j.last_exit_code === 0 || j.last_status === 'ok') exitStyle = 'color:var(--success-color)';

@@ -280,32 +280,32 @@
         </div>
     </div>
     <div class="card wiki-actions-card">
-        <h4>🔎 Wiki</h4>
-        <p class="stat-desc">Suche und neue Einträge</p>
+        <h4>🔎 {{ t('wiki.title') }}</h4>
+        <p class="stat-desc">{{ t('wiki.search_placeholder') }}</p>
         <div class="wiki-action-buttons">
             <form action="/search" method="get" class="wiki-search-form">
-                <input type="text" name="q" placeholder="Wiki durchsuchen…" aria-label="Wiki durchsuchen">
-                <button type="submit" class="btn btn-sm btn-primary">Suchen</button>
+                <input type="text" name="q" placeholder="{{ t('wiki.search_placeholder') }}" aria-label="{{ t('wiki.search') }}">
+                <button type="submit" class="btn btn-sm btn-primary">{{ t('wiki.search') }}</button>
             </form>
-            <a href="/new" class="btn btn-sm btn-accent" title="Neue Seite erstellen">+ Neuer Eintrag</a>
+            <a href="/new" class="btn btn-sm btn-accent" title="{{ t('wiki.new') }}">+ {{ t('wiki.new') }}</a>
         </div>
     </div>
 
     <div class="card wiki-io-card">
-        <h4>📦 Import &amp; Export</h4>
-        <p class="stat-desc">.md-Dateien hochladen oder das Wiki als ZIP sichern</p>
+        <h4>📦 {{ t('wiki.import_export') }}</h4>
+        <p class="stat-desc">.md → Upload · {{ t('wiki.export_zip') }}</p>
         <div class="wiki-io-buttons">
             <label class="btn btn-sm btn-primary" style="cursor:pointer;">
-                ⬆️ Import…
+                ⬆️ {{ t('common.import') }}…
                 <input type="file" id="wiki-import-input" multiple accept=".md,.markdown,text/markdown"
                        style="display:none;" onchange="wikiImport(event)">
             </label>
-            <select id="wiki-import-section" class="wiki-io-select" title="Ziel-Bereich für Import">
+            <select id="wiki-import-section" class="wiki-io-select" title="{{ t('common.import') }}">
                 <option value="concept">{{ category_concept_label }}</option>
                 <option value="entity">{{ category_entity_label }}</option>
             </select>
-            <a href="/api/wiki/export" class="btn btn-sm btn-accent" title="Komplettes Wiki als ZIP">
-                ⬇️ Export ZIP
+            <a href="/api/wiki/export" class="btn btn-sm btn-accent" title="{{ t('wiki.export_zip') }}">
+                ⬇️ {{ t('wiki.export_zip') }}
             </a>
         </div>
         <div id="wiki-import-status" class="wiki-io-status"></div>

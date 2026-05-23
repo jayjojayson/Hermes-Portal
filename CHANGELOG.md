@@ -14,6 +14,68 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.10] — 2026-05-24
+
+Vier konkrete HA-Fixes (Briefing-Style, Chat-Editor, i18n-Vermischung,
+Zeitzonen) plus weitere Template-Übersetzungen.
+
+### Fixed
+- **Briefing-iframe in HA**: vom Agent gelieferte HTML hatte hardcoded
+  `/blog/style.css` und `/blog/site-header.js` — die liefen ohne
+  Ingress-Prefix gegen die HA-Origin → 404. `api_briefing_render` rewritet
+  jetzt alle absoluten `/`-URLs und injiziert zusätzlich unser Portal-
+  Stylesheet, damit Cards/Farben konsistent zur restlichen UI aussehen.
+  Plus: iframe-Höhe auf `calc(100vh - 220px)`, interner Scrollbar fast
+  immer weg.
+- **Chat-Editor leer, `loader.js 404`**: Monaco-Loader-Script-Tag in
+  `chat.html` nutzte hardcoded `/static/...`-Pfad. Der DOM-Patcher
+  in `base.html` rewritet zwar dynamisch, aber bei `<script>`-Tags zu
+  spät — der Browser hat den 404 schon gefeuert. Fix: `{{ url_for() }}`
+  server-side, sodass der Pfad SCHON beim Render korrekt ist.
+- **Sprache-Mix nach Sprachwechsel**: nach Save in Settings → 🌐 Sprache
+  reloadet die Seite jetzt **automatisch** (`location.reload()`), damit
+  das neue i18n-Bundle sofort überall greift. Vorher musste man manuell
+  die Seite wechseln, und manche i18n'd-Templates zeigten noch die alte
+  Sprache → wirkte wie wilder Mix.
+- **Settings-Cronjobs zeigten UTC als lokal**: der alte Code stripte
+  `+00:00` aus dem ISO-Timestamp und behandelte den Rest als lokal —
+  ergo wurde `16:00 UTC` als „16:00 lokal" angezeigt statt korrekt
+  „18:00" (UTC+2). Fix: neuer Helper `window.formatLocalTime()`, der
+  fehlende TZ als UTC annimmt (Hermes-Konvention) und sauber in die
+  Browser-TZ konvertiert.
+
+### Added
+- **🕐 Zeitzonen-Helper in `base.html`**:
+  - `window.formatLocalTime(iso)` — UTC-ISO → User-Browser-Lokal-String
+    in der aktiven UI-Sprache
+  - `window.userTimezone()` — z.B. `"Europe/Berlin"`
+  - `window.userTzOffset()` — z.B. `"UTC+02:00"`
+- **TZ-Hinweis in Settings → Cronjobs-Toolbar**: zeigt dezent die
+  Browser-Zeitzone (z.B. „🕐 UTC+02:00 · Europe/Berlin") mit Tooltip,
+  der erklärt: Cron-Pattern werden vom Agent in dessen Zeitzone (UTC)
+  interpretiert, die Spalten „Nächster/Letzter Lauf" in deiner Browser-TZ.
+- **Dashboard-Cronjob-Tile**: Tooltip auf der Time-Pill zeigt jetzt die
+  absolute Lokal-Zeit zusätzlich zur relativen („in 2h 15min").
+
+### Changed
+- **Mehr Templates auf `t()` umgestellt**:
+  - **Chat** (`chat.html`): Session-Liste, Suche, Empty-State-Greeting,
+    Eingabefeld-Placeholder, alle Toolbar-Buttons (🎤/📎/📁/📂),
+    Send-Button-Labels.
+  - **Briefing** (`briefing.html`): Header, „Jetzt erzeugen"/„Neu laden"-
+    Buttons, Config-Block-Titel, GitHub/Wetter/Zeitzone-Felder.
+  - **Wiki-Index** (`index.html`): Wiki-Such-Box, Import/Export-Karte.
+
+### Notes
+- **Empfehlung zur Zeitzonen-Lösung**: Browser-TZ ist 95%-Lösung ohne
+  jede Konfiguration. Falls jemand den Portal-Container in einer
+  anderen TZ läuft als sein Browser (selten, z.B. HA-Hostzeit von
+  Smartphone aus aufrufen), könnte man später einen TZ-Override in
+  Settings hinzufügen. Aktuell: nicht nötig, der Browser kennt seine
+  TZ zuverlässig.
+
+---
+
 ## [1.0.9] — 2026-05-23
 
 i18n-Vollausbau-Release. Übersetzungs-Tables auf ~150 Keys pro Sprache
@@ -662,7 +724,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.9...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.10...HEAD
+[1.0.10]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.6...v1.0.7

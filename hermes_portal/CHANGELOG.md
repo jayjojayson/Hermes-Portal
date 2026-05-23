@@ -3,6 +3,18 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.10
+
+- **Briefing-Seite** sieht im Portal-Style aus (Portal-CSS injiziert,
+  hardcoded /blog/... URLs umgeschrieben, iframe-Höhe vergrößert).
+- **Chat-Editor** lädt Monaco wieder unter Ingress (loader.js per
+  url_for statt JS-Patcher).
+- **Sprachwechsel** reloadet die Seite automatisch — keine wilde
+  Sprach-Vermischung mehr.
+- **🕐 Zeitzonen-Anzeige** der Cronjobs in deiner Browser-TZ (z.B.
+  UTC+2 statt rohem UTC). TZ-Hinweis in Settings → Cronjobs sichtbar.
+- **Mehr Übersetzungen**: Chat, Briefing-Config, Wiki-Index.
+
 ## 1.0.9
 
 - **i18n vollständig** für Dashboard, Settings (alle Sektionen + Hilfe-
