@@ -125,16 +125,36 @@ def _apply_env(values: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _load_raw() -> Dict[str, Any]:
-    """Lädt das JSON; legt eine Default-Datei an, falls keine existiert."""
+    """Lädt das JSON; legt eine Default-Datei an, falls keine existiert.
+
+    Beim allerersten Start (config.json fehlt) werden ``HP_*``-Env-Variablen
+    als Seed in die neue config.json geschrieben. Bei späteren Reloads
+    werden die Env-Variablen ignoriert — sonst würden in der UI gespeicherte
+    User-Änderungen bei jedem Page-Load von HA-Add-on-Options o.ä.
+    überschrieben (das war der Pfad-Reset-Bug in v1.0.5).
+    """
     if not CONFIG_FILE.exists():
         # Erst aus user-bereitstellter Defaults-Datei, sonst aus dem in-code DEFAULTS-Dict
         if DEFAULTS_FILE.exists():
             try:
-                CONFIG_FILE.write_text(DEFAULTS_FILE.read_text(encoding="utf-8"), encoding="utf-8")
-            except OSError:
-                CONFIG_FILE.write_text(json.dumps(DEFAULTS, indent=2, ensure_ascii=False), encoding="utf-8")
+                seed = json.loads(DEFAULTS_FILE.read_text(encoding="utf-8"))
+                if not isinstance(seed, dict):
+                    seed = dict(DEFAULTS)
+            except (OSError, json.JSONDecodeError):
+                seed = dict(DEFAULTS)
         else:
-            CONFIG_FILE.write_text(json.dumps(DEFAULTS, indent=2, ensure_ascii=False), encoding="utf-8")
+            seed = dict(DEFAULTS)
+        # Env-Vars als Initial-Seed übernehmen (z.B. HP_EXCHANGE_PATH aus
+        # HA-Add-on-Options). Spätere Restarts ignorieren diese, damit
+        # UI-Edits stabil bleiben.
+        seed = _apply_env(seed)
+        try:
+            CONFIG_FILE.write_text(
+                json.dumps(seed, indent=2, ensure_ascii=False),
+                encoding="utf-8",
+            )
+        except OSError:
+            pass
 
     try:
         loaded = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
@@ -269,7 +289,7 @@ class AppConfig:
 
     def reload(self) -> None:
         with _LOCK:
-            self._values = _apply_env(_load_raw())
+            self._values = _load_raw()  # _apply_env läuft jetzt nur noch beim First-Install in _load_raw
 
 
 # ----- Singleton --------------------------------------------------------------
@@ -282,7 +302,8 @@ def get_config() -> AppConfig:
     if _cfg is None:
         with _LOCK:
             if _cfg is None:
-                _cfg = AppConfig(_apply_env(_load_raw()))
+                # _apply_env läuft jetzt nur noch beim First-Install in _load_raw
+                _cfg = AppConfig(_load_raw())
     return _cfg
 
 

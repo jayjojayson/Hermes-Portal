@@ -2562,6 +2562,10 @@ def _serve_blog_file(filename: str):
                 '50%{box-shadow:0 0 0 5px rgba(245,158,11,0);}'
             '}'
             '</style>'
+            # Portal-Stylesheet einbinden, damit Aufgaben/News/Briefing dieselben
+            # Card/Button/Color-Klassen kennen wie der Rest. Ohne diese Zeile
+            # rendert die Blog-HTML nur mit ihren eigenen, deutlich kargeren Styles.
+            f'<link rel="stylesheet" href="/static/portal/style.css?v={_ASSET_VERSION}">'
             # Favicon-Backup (falls Blog-HTML keinen <link rel="icon"> hat)
             '<link rel="icon" href="/static/portal/logo.png" type="image/png">'
             '<script>'

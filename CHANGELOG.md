@@ -14,6 +14,46 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.6] — 2026-05-23
+
+Drei wichtige Bug-Fixes für den HA-Add-on-Modus. Native-Window-Refactor
+(pywebview) wandert in v1.1.0.
+
+### Fixed
+- **Wiki-Posts gaben 404 in HA** — Wiki-Index zeigte Einträge an, aber
+  jeder Klick auf einen Beitrag landete auf „404 Not Found". Ursache:
+  Templates wie `index.html` benutzen hardcodierte `href="/entity/…"`
+  ohne `url_for()` → kein Ingress-Prefix → HA-Route findet die URL nicht.
+  Fix: globaler JS-Patcher in `base.html` rewritet jetzt alle
+  `<a href="/…">`, `<img src="/…">`, `<link href="/…">` und
+  `<script src="/…">` auf DOM-Ready + via `MutationObserver` auch
+  dynamisch nachgeladene Inhalte. Statt 100+ Templates anzufassen.
+- **Pfade in Settings → 🛰️ App resetten nach Reload** — gespeicherte
+  Werte wurden bei jedem Page-Load von `HP_*`-Env-Variablen (HA-Add-on-
+  Options) überschrieben, weil `_apply_env` immer lief. Jetzt: Env-Vars
+  sind nur noch **Initial-Seed beim allerersten Container-Start**,
+  spätere UI-Änderungen sind sticky. **Migration**: wenn die alte
+  config.json schon falsche Pfade enthält, einmal in der UI auf
+  korrekte Werte setzen + speichern.
+- **Aufgaben / News / Briefing-Layout immer noch karg** — vom Hermes-Agent
+  gelieferte Blog-HTMLs hatten in v1.0.5 zwar korrekte Ingress-URLs, aber
+  unser `portal/style.css` war nicht eingebunden. `_serve_blog_file`
+  injiziert das CSS jetzt mit Cache-Buster, damit Cards, Buttons, Farben
+  konsistent aussehen.
+
+### Notes
+- **Logo auf App-Tab + Personality-Verweis**: war derselbe Ingress-Bug
+  (`<img src="/static/portal/logo.png">` ohne Prefix). Wird durch den
+  erweiterten `img[src^="/"]`-Rewriter oben automatisch gefixt — kein
+  Template-Touch nötig.
+- **macOS-DMG „App startet nicht / nichts passiert"**: zur Diagnose
+  bitte nach Start einmal in `~/Desktop/hermes-portal-started.txt`
+  schauen — wenn die Datei da ist, ist Python gestartet (Crash danach);
+  wenn nicht, killt sich der PyInstaller-Bootloader. Echte Lösung
+  (native Fenster statt Browser, kein Terminal) folgt in **v1.1.0**.
+
+---
+
 ## [1.0.5] — 2026-05-23
 
 HA-Blog-Layout-Fix + UI-Polish + tiefere macOS-Crash-Diagnostik +
@@ -487,7 +527,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.5...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.6...HEAD
+[1.0.6]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.2...v1.0.3

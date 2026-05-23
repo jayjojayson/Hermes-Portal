@@ -35,34 +35,87 @@
         // -------------------------------------------------------------
         // HA-Ingress-Global-Patcher
         // -------------------------------------------------------------
-        // Statt 46 hardcodierte fetch('/api/…')-Aufrufe einzeln anzufassen,
-        // wrappen wir hier window.fetch + Form-Actions so, dass absolute
-        // "/"-URLs automatisch um den Ingress-Prefix ergänzt werden.
+        // Statt 100+ hardcodierte "/..."-URLs in Templates einzeln anzufassen,
+        // wrappen wir hier global:
+        //   - window.fetch         → API-Calls
+        //   - <form action="/…">   → POST-Submits
+        //   - <a href="/…">        → Navigation (Wiki-Links, Edit/Delete/Search …)
+        //   - <img src="/…">       → Logos, Icons (falls in Templates)
+        //   - location-Setter      → JS-Redirects
         // No-op, wenn standalone (HP_INGRESS_PATH leer).
         (function(){
             var prefix = window.HP_INGRESS_PATH || '';
             if (!prefix) return;
-            // 1) fetch
+
+            function needsPrefix(url) {
+                return typeof url === 'string'
+                    && url.charAt(0) === '/'
+                    && url.charAt(1) !== '/'                // protocol-relative ignorieren
+                    && url.indexOf(prefix) !== 0;
+            }
+
+            // 1) fetch — alle API-Calls
             var origFetch = window.fetch;
             window.fetch = function(url, opts){
-                if (typeof url === 'string' && url.charAt(0) === '/' && url.indexOf(prefix) !== 0) {
-                    url = prefix + url;
-                }
+                if (needsPrefix(url)) url = prefix + url;
                 return origFetch.call(this, url, opts);
             };
-            // 2) Form-Action-Attribute auf "/" rewriten
-            function fixForms(){
-                var forms = document.querySelectorAll('form[action^="/"]');
-                for (var i=0; i<forms.length; i++) {
-                    var act = forms[i].getAttribute('action');
-                    if (act && act.indexOf(prefix) !== 0) {
-                        forms[i].setAttribute('action', prefix + act);
+
+            // 2) DOM-Attribute rewriten (href / src / action) auf DOM-Ready
+            function fixAttrs(){
+                var selectors = [
+                    {sel: 'a[href^="/"]',    attr: 'href'},
+                    {sel: 'form[action^="/"]', attr: 'action'},
+                    {sel: 'img[src^="/"]',    attr: 'src'},
+                    {sel: 'link[href^="/"]',  attr: 'href'},
+                    {sel: 'script[src^="/"]', attr: 'src'}
+                ];
+                selectors.forEach(function(s){
+                    var nodes = document.querySelectorAll(s.sel);
+                    for (var i=0; i<nodes.length; i++) {
+                        var val = nodes[i].getAttribute(s.attr);
+                        if (needsPrefix(val)) {
+                            nodes[i].setAttribute(s.attr, prefix + val);
+                        }
                     }
-                }
+                });
             }
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', fixForms);
-            } else { fixForms(); }
+                document.addEventListener('DOMContentLoaded', fixAttrs);
+            } else { fixAttrs(); }
+
+            // 3) Dynamisch nachgeladene Inhalte (innerHTML, appendChild)
+            //    werden über einen MutationObserver erfasst, damit auch
+            //    JS-gerenderte Links (z.B. recent-entries im Dashboard)
+            //    den Prefix bekommen.
+            if (typeof MutationObserver !== 'undefined') {
+                var mo = new MutationObserver(function(muts){
+                    for (var i=0; i<muts.length; i++) {
+                        var added = muts[i].addedNodes;
+                        for (var j=0; j<added.length; j++) {
+                            var n = added[j];
+                            if (n.nodeType !== 1) continue;  // nur Elements
+                            // Direkter Treffer
+                            ['href','src','action'].forEach(function(a){
+                                if (n.hasAttribute && n.hasAttribute(a) && needsPrefix(n.getAttribute(a))) {
+                                    n.setAttribute(a, prefix + n.getAttribute(a));
+                                }
+                            });
+                            // Descendants
+                            if (n.querySelectorAll) {
+                                fixAttrs.call(null);  // re-run global scan, idempotent
+                            }
+                        }
+                    }
+                });
+                if (document.body) {
+                    mo.observe(document.body, {childList: true, subtree: true});
+                } else {
+                    document.addEventListener('DOMContentLoaded', function(){
+                        mo.observe(document.body, {childList: true, subtree: true});
+                    });
+                }
+            }
         })();
     </script>
 

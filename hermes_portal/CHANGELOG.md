@@ -3,6 +3,18 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.6
+
+- **Wiki-Beiträge öffnen** jetzt korrekt (404 in HA behoben — globaler
+  Ingress-Prefix-Patcher für `<a>`/`<img>`/`<link>`/`<script>` + dynamische
+  DOM-Mutations via MutationObserver).
+- **Pfade in Settings → 🛰️ App resetten nicht mehr** — HA-Add-on-Options
+  überschreiben jetzt nur noch beim allerersten Container-Start die
+  Defaults, UI-Edits sind danach sticky.
+- **Aufgaben / News / Briefing** bekommen jetzt unser Portal-Stylesheet
+  eingebunden — Cards, Buttons, Farben sehen aus wie der Rest.
+- **App-Tab-Logo** wird wieder angezeigt (war derselbe Ingress-Bug).
+
 ## 1.0.5
 
 - **Aufgaben / News / Briefing zeigen Layout + Header korrekt** im HA-
