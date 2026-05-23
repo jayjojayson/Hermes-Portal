@@ -1561,11 +1561,39 @@ function initMonaco() {
     require.config({ paths: { vs: window.hpUrl('/static/vendor/monaco/vs') } });
     MONACO_READY = new Promise(function(resolve) {
         require(['vs/editor/editor.main'], function() {
-            // Theme an Portal-Dark anpassen
+            // Theme an Portal-Dark/-Light anpassen.
+            // Farbwerte sind angelehnt an --bg-primary / --bg-secondary
+            // aus style.css, damit der Editor optisch im Portal-Look sitzt.
             try {
                 monaco.editor.defineTheme('hermes-dark', {
                     base: 'vs-dark', inherit: true, rules: [],
-                    colors: { 'editor.background': '#0f1115' }
+                    colors: {
+                        'editor.background':             '#0f1115',
+                        'editor.foreground':             '#e4e6eb',
+                        'editorLineNumber.foreground':   '#3a3f4a',
+                        'editorLineNumber.activeForeground': '#8a8f9b',
+                        'editor.lineHighlightBackground':'#1a1d24',
+                        'editorCursor.foreground':       '#5cc8ff',
+                        'editor.selectionBackground':    '#234e6a',
+                        'editorGutter.background':       '#0f1115',
+                        'editorWidget.background':       '#1a1d24',
+                        'editorWidget.border':           '#2a2e38',
+                        'scrollbarSlider.background':    '#2a2e3899',
+                        'scrollbarSlider.hoverBackground':'#3a3f4ac0',
+                    }
+                });
+                monaco.editor.defineTheme('hermes-light', {
+                    base: 'vs', inherit: true, rules: [],
+                    colors: {
+                        'editor.background':             '#f8fafc',
+                        'editor.foreground':             '#1e293b',
+                        'editorLineNumber.foreground':   '#c0c8d4',
+                        'editorLineNumber.activeForeground': '#64748b',
+                        'editor.lineHighlightBackground':'#eef2f7',
+                        'editorCursor.foreground':       '#0284c7',
+                        'editor.selectionBackground':    '#bae6fd',
+                        'editorGutter.background':       '#f8fafc',
+                    }
                 });
             } catch (e) {}
             resolve();
@@ -1579,7 +1607,7 @@ function ensureMonacoEditor(language) {
         if (!MONACO_EDITOR) {
             MONACO_EDITOR = monaco.editor.create(host, {
                 value: '', language: language || 'plaintext',
-                theme: (document.documentElement.getAttribute('data-theme') === 'light') ? 'vs' : 'hermes-dark',
+                theme: (document.documentElement.getAttribute('data-theme') === 'light') ? 'hermes-light' : 'hermes-dark',
                 automaticLayout: true, minimap: { enabled: false },
                 fontSize: 13, lineNumbers: 'on', tabSize: 2,
                 scrollBeyondLastLine: false, renderWhitespace: 'selection',

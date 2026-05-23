@@ -3860,17 +3860,37 @@ def api_briefing_render():
 
     prefix = (request.script_root or "")
 
-    # Portal-Stylesheet + Scrollbar-Hide-CSS einbinden, damit das iframe
-    # konsistent aussieht und nicht intern scrollt.
+    # ──────────────────────────────────────────────────────────────────
+    # Im Briefing-iframe brauchen wir KEINE zweite Nav (Portal-Header
+    # läuft schon außen rum). Stripping in dieser Reihenfolge:
+    # ──────────────────────────────────────────────────────────────────
+    # 1) <div id="site-header"></div> Placeholder rausschmeißen
+    html_text = re.sub(
+        r'<div[^>]*\bid=["\']site-header["\'][^>]*>.*?</div>',
+        '', html_text, flags=re.DOTALL | re.IGNORECASE,
+    )
+    # 2) Alle <script>-Tags die site-header.js laden entfernen
+    html_text = re.sub(
+        r'<script[^>]*\bsrc=["\'][^"\']*site-header\.js[^"\']*["\'][^>]*>\s*</script>',
+        '', html_text, flags=re.IGNORECASE,
+    )
+    # 3) Komplette <header>-Elemente, die der Agent ggf. eingebaut hat
+    html_text = re.sub(
+        r'<header[^>]*>.*?</header>',
+        '', html_text, flags=re.DOTALL | re.IGNORECASE,
+    )
+
+    # Portal-Stylesheet + Scrollbar-Hide-CSS + Top-Padding-Reset einbinden
     style_href = (prefix or "") + "/static/portal/style.css?v=" + _ASSET_VERSION
     head_inject = (
         f'<link rel="stylesheet" href="{style_href}">'
         '<style>'
-        # iframe-internes Scrollen unterdrücken — das Portal-Iframe wird
-        # vom Parent auf 100vh gesetzt, das reicht für 99% der Briefings
+        # iframe-internes Scrollen unterdrücken
         'html,body{margin:0;padding:1.5rem;overflow-x:hidden;}'
         'html::-webkit-scrollbar,body::-webkit-scrollbar{width:6px;height:6px;}'
         'html::-webkit-scrollbar-thumb,body::-webkit-scrollbar-thumb{background:#444;border-radius:3px;}'
+        # Erste Überschrift soll direkt am Top sitzen (kein Header-Spacer)
+        'body > *:first-child{margin-top:0;}'
         '</style>'
     )
     if "</head>" in html_text:

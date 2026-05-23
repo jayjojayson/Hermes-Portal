@@ -194,18 +194,35 @@ def main() -> int:
     # pywebview gibt es nur in Desktop-Builds (Mac/Windows/Linux-AppImage);
     # HA-Container/Docker brauchen es nicht.
     try:
+        # Auf macOS muss die Cocoa-Main-Loop im Main-Thread laufen,
+        # deshalb sind wir hier (alles vorher → Background-Thread).
         import webview  # type: ignore
+        try:
+            version = __import__("__version__").VERSION
+        except Exception:
+            version = ""
+        title = "Hermes Portal" + (f" v{version}" if version else "")
         win = webview.create_window(
-            "Hermes Portal",
+            title,
             url,
             width=1400,
             height=900,
             min_size=(900, 600),
             resizable=True,
+            # Background passend zum Portal-Dark; vermeidet weiße
+            # „Server-startet-noch"-Phase bevor die Seite gerendert ist.
+            background_color="#0f1115",
         )
         # webview.start() blockt bis der User das Fenster schließt.
-        # Dann läuft die main() weiter → return → Programm beendet.
-        webview.start()
+        # gui-Argument: auf Mac wkwebview (built-in), Windows edgechromium
+        # (built-in seit Win10), Linux qt (falls QtWebEngine installiert).
+        gui_kw = {}
+        if sys.platform == "darwin":
+            gui_kw["gui"] = "cocoa"
+        elif sys.platform == "win32":
+            gui_kw["gui"] = "edgechromium"
+        # Auf Linux ohne explizites gui — pywebview wählt selbst (GTK oder QT)
+        webview.start(**gui_kw)
         return 0
     except ImportError:
         # Kein pywebview gebündelt → Fallback: Browser öffnen + auf Server-Thread warten

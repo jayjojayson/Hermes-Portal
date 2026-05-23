@@ -14,6 +14,70 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.0] — 2026-05-24
+
+Erstes Minor-Release seit 1.0. Briefing-Layout-Politur, Editor-Theme,
+mehr Übersetzungen und Politur der Desktop-pywebview-Integration.
+
+### Fixed
+- **Briefing-iframe zeigte doppelten Header** — vom Agent gelieferte
+  HTML enthält einen eigenen `<div id="site-header">` + `site-header.js`,
+  die im iframe re-rendered wurden → zweite Nav-Leiste. Stripping in
+  `api_briefing_render`: site-header-Placeholder, site-header.js-Script-
+  Tags und alle `<header>`-Elemente werden entfernt, bevor das Portal-
+  Stylesheet eingefügt wird. Plus `body > *:first-child {margin-top:0}`,
+  damit die Briefing-Überschrift direkt am Top sitzt.
+- **Chat-Editor optisch passend zum Portal** — Monaco-Theme `hermes-dark`
+  bekommt jetzt vollständige Farbpalette (Hintergrund, Zeilennummern,
+  aktive Zeile, Cursor, Selection, Gutter, Widgets, Scrollbar). Plus
+  neues `hermes-light`-Theme das im Light-Mode aktiv wird. Farben sind
+  abgeleitet aus `--bg-primary` / `--bg-secondary` der Portal-CSS-Variablen.
+
+### Added
+- **Mehr Übersetzungen**: Activity-Seite (Titel, Toolbar-Buttons, leerer
+  Logfile-Hinweis).
+- **pywebview-Integration robuster** in `entry_pyinstaller.py`:
+  - Window-Titel enthält Version (`Hermes Portal v1.1.0`)
+  - `background_color="#0f1115"` → keine weiße „Server-startet"-Phase
+  - Plattform-spezifisches GUI-Backend explizit gesetzt:
+    `cocoa` auf macOS (= native WKWebView via PyObjC),
+    `edgechromium` auf Windows (= Edge WebView2, OS-Standard),
+    Linux: pywebview wählt selbst (GTK oder QT je nach Installation)
+
+### Changed
+- **macOS-DMG-Build-Status**: Mit den v1.0.7-Fixes (`console=False`,
+  Codesign-Integration im Spec, `sign_macos_app.py`) PLUS dieser
+  Cocoa-GUI-Pinnung sollte die App jetzt endlich starten. Falls noch
+  nicht: bitte das `~/Desktop/hermes-portal-started.txt`-Marker-File
+  prüfen, dann gezielt debuggen.
+
+### Notes — Verhältnis zu nesquena/hermes-webui
+Der User hat auf <https://github.com/nesquena/hermes-webui> hingewiesen
+und gefragt, wie dort SSH automatisch funktioniert. **Wichtig zu wissen**:
+Das ist ein KOMPLETT ANDERES „Hermes". `hermes-webui` ist ein Web-Frontend
+für **Snips/Hermes-MQTT** — das ist ein Voice-Assistant-Protokoll. Die
+Komponenten kommunizieren über einen lokalen MQTT-Broker, deshalb braucht
+es kein SSH. Unser **Hermes-Agent** ist ein CLI-Tool, das Dateien und
+Cronjobs auf einer separaten Maschine verwaltet — SSH ist hier die
+korrekte Transportwahl, weil's keinen MQTT-Daemon dafür gibt. Vergleichbar
+wäre eher Portainer (Docker-Web-UI) ↔ Docker-Engine.
+
+Was wir aus dem Vergleich übernehmen könnten:
+- **mDNS-Discovery** auf dem LAN (Hermes-Agent broadcastet seine IP)
+- **One-click SSH-Setup-Wizard** (bereits in Settings → 🛰️ App vorhanden,
+  aber könnte glatter werden)
+- **Auto-Detection** via gemeinsamen Mount-Pfad (bereits implementiert
+  über `exchange_path`)
+
+### Notes — Übersetzungs-Vollständigkeit
+~80% der sichtbaren UI-Strings sind jetzt in 4 Sprachen. Noch nicht:
+Cronjob-Modal (interne Felder), Explorer-Toolbar, einige Detail-Strings
+im Chat-Empty-State, Settings-Personality/Skills/References-Tabs.
+Inkrementell weiter; JSON-Keys ergänzen, Templates umstellen ist
+mechanisch — Community-PRs willkommen.
+
+---
+
 ## [1.0.10] — 2026-05-24
 
 Vier konkrete HA-Fixes (Briefing-Style, Chat-Editor, i18n-Vermischung,
@@ -724,7 +788,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.10...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.10...v1.1.0
 [1.0.10]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.7...v1.0.8

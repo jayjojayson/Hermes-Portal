@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Aktivität – Hermes Live-Log{% endblock %}
+{% block title %}{{ t('activity.title') }} — {{ portal_name }}{% endblock %}
 {% block page_key %}activity{% endblock %}
 
 {% block extra_head %}
@@ -165,36 +165,36 @@
 {% block content %}
 <div class="act-hero">
     <div>
-        <h1>Aktivität <span class="accent">// hermes log</span></h1>
+        <h1>{{ t('activity.title') }} <span class="accent">// hermes log</span></h1>
         <div class="meta">
             {% if log_path %}
             <span class="dot"></span>
             <span>Live-Tail · <code>{{ log_path }}</code></span>
             {% else %}
-            <span>⚠ kein Logfile gefunden</span>
+            <span>⚠ {{ t('activity.no_log') }}</span>
             {% endif %}
         </div>
     </div>
 </div>
 
 <div class="act-toolbar">
-    <button class="tb-btn active" id="btnAutoscroll" type="button" title="Bei neuen Zeilen ans Ende scrollen">⏬ Autoscroll</button>
-    <button class="tb-btn" id="btnPause" type="button" title="Polling pausieren">⏸ Pause</button>
-    <input type="text" id="filterInput" placeholder="Filter (z. B. ERROR, prompt, name)…">
+    <button class="tb-btn active" id="btnAutoscroll" type="button" title="{{ t('activity.autoscroll') }}">⏬ {{ t('activity.autoscroll') }}</button>
+    <button class="tb-btn" id="btnPause" type="button" title="Pause">⏸ Pause</button>
+    <input type="text" id="filterInput" placeholder="Filter (ERROR, prompt, …)">
     <select id="levelSelect" class="tb-btn" style="padding:5px 10px;">
-        <option value="all">alle Level</option>
+        <option value="all">{{ t('activity.lines') }}</option>
         <option value="info">≥ info</option>
         <option value="warn">≥ warn</option>
-        <option value="error">nur error</option>
+        <option value="error">{{ t('common.error') }}</option>
     </select>
     <span class="spacer"></span>
-    <button class="tb-btn" id="btnClear" type="button" title="Sichtbare Zeilen leeren (kein Effekt auf Datei)">🧹 Clear View</button>
+    <button class="tb-btn" id="btnClear" type="button" title="{{ t('common.refresh') }}">🧹 {{ t('common.refresh') }}</button>
     <span class="info" id="logInfo">–</span>
 </div>
 
 <div class="log-pane{% if not log_path %} empty-pane{% endif %}" id="logPane">
     {% if not log_path %}
-    <div>⚠ Kein Hermes-Logfile gefunden.</div>
+    <div>⚠ {{ t('activity.no_log') }}</div>
     <div style="font-size:0.85em; max-width:560px; text-align:center;">
         Setze die Umgebungsvariable <code>HERMES_LOG=/pfad/zum/log</code> beim Start des Wiki-Servers,
         oder lege das Log unter einem der bekannten Pfade ab.

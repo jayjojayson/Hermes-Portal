@@ -3,6 +3,15 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.0
+
+- **Briefing-iframe**: doppelter Header (vom Agent-HTML) wird
+  rausgestrippt, Briefing-Überschrift sitzt direkt am Top.
+- **Chat-Editor**: vollständiges Monaco-Theme (Dark/Light) passend
+  zum Portal-Look — Hintergrund, Gutter, Cursor, Selection.
+- **Activity-Seite** übersetzt.
+- **Mehr Detail-Strings** in 4 Sprachen.
+
 ## 1.0.10
 
 - **Briefing-Seite** sieht im Portal-Style aus (Portal-CSS injiziert,
