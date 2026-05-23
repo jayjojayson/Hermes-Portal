@@ -2487,10 +2487,13 @@ def _serve_blog_file(filename: str):
             # Dateien werden vom Hermes-Agent erzeugt (Cronjob). Wenn das
             # Portal solo läuft (z. B. HA-Add-on im local-Mode ohne aktive
             # Agent-VM auf demselben Share), gibt es die Dateien noch nicht.
+            # Page-Label aus i18n: nutzt aktuelle Sprache → page_label sieht
+            # auch in der Fallback-Meldung übersetzt aus.
+            _lang = cfg.get("language") or "en"
             page_label = {
-                "index.html":     "News",
-                "aufgaben.html":  "Aufgaben",
-                "briefing.html":  "Briefing",
+                "index.html":    _i18n.t("nav.news",     _lang),
+                "aufgaben.html": _i18n.t("nav.aufgaben", _lang),
+                "briefing.html": _i18n.t("nav.briefing", _lang),
             }.get(filename, filename)
             return render_template(
                 "blog_missing.html",

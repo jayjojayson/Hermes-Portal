@@ -1,41 +1,25 @@
 {% extends "base.html" %}
-{% block title %}{{ page_label }} — noch nicht erzeugt{% endblock %}
-{% block page_key %}{{ 'news' if page_label == 'News' else ('briefing' if page_label == 'Briefing' else 'aufgaben') }}{% endblock %}
+{% block title %}{{ page_label }} — {{ t('blog_missing.title')|replace('%s', page_label) }}{% endblock %}
+{% block page_key %}{{ 'news' if page_label in ['News','Noticias','Actualités'] else ('briefing' if page_label in ['Briefing','Informe'] else 'aufgaben') }}{% endblock %}
 
 {% block content %}
 <div class="card" style="max-width: 720px; margin: 4rem auto; padding: 2.5rem;">
-  <h1 style="margin-top:0;">{{ page_label }} sind noch nicht verfügbar</h1>
+  <h1 style="margin-top:0;">{{ t('blog_missing.title')|replace('%s', page_label) }}</h1>
 
-  <p>
-    <strong>{{ page_label }}</strong> werden vom <em>Hermes-Agent</em>
-    erzeugt — entweder per Cronjob (News, Briefing) oder beim Speichern
-    einer Aufgabe in der App.
-    Sobald der Agent die entsprechende Datei produziert hat, erscheint
-    sie automatisch hier.
-  </p>
+  <p>{{ t('blog_missing.body')|replace('%s', page_label) }}</p>
 
-  <h3>Häufige Ursachen</h3>
+  <h3>{{ t('blog_missing.causes.title') }}</h3>
   <ul>
-    <li><strong>Hermes-Agent läuft noch nicht</strong> auf dem konfigurierten
-      Host. Prüfe in <a href="{{ url_for('settings_index') }}">Settings → 🛰️ App</a>
-      die Verbindungs-Einstellungen.</li>
-    <li><strong>Connection-Mode = <code>local</code>, aber kein Hermes auf dem
-      gleichen Host.</strong> Im HA-Add-on z. B. sinnvoll, wenn dein Hermes-Agent
-      auf einer separaten VM läuft → in Settings auf <code>ssh</code> umstellen
-      und IP/Key eintragen.</li>
-    <li><strong>Pfad falsch:</strong> Portal sucht hier:
-      <code>{{ full_path }}</code></li>
-    <li><strong>Cronjob ist noch nicht gelaufen.</strong> Du kannst den
-      Briefing-Cron manuell anstoßen unter
-      <a href="{{ url_for('briefing_page') }}">☕ Briefing → „Jetzt erzeugen"</a>.</li>
+    <li>{{ t('blog_missing.causes.no_agent') }}
+        <a href="{{ url_for('settings_index') }}">Settings → 🛰️ {{ t('settings.tab.app') }}</a></li>
+    <li>{{ t('blog_missing.causes.local') }}</li>
+    <li>{{ t('blog_missing.causes.path') }}
+        <code>{{ full_path }}</code></li>
+    <li>{{ t('blog_missing.causes.cron') }}
+        <a href="{{ url_for('briefing_page') }}">☕ {{ t('briefing.title') }} → „{{ t('briefing.button.run_now') }}"</a></li>
   </ul>
 
-  <h3>Diese Seite ausblenden</h3>
-  <p>
-    Wenn du {{ page_label }} dauerhaft nicht nutzen willst, kannst du den
-    Menüpunkt unter
-    <a href="{{ url_for('settings_index') }}">Settings → 🛰️ App → „📑 Menü-Punkte sichtbar"</a>
-    abschalten. Header und Sidebar verstecken den Eintrag dann.
-  </p>
+  <h3>{{ t('blog_missing.hide.title') }}</h3>
+  <p>{{ t('blog_missing.hide.body')|replace('%s', page_label) }}</p>
 </div>
 {% endblock %}

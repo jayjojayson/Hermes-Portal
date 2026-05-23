@@ -3,6 +3,14 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.9
+
+- **i18n vollständig** für Dashboard, Settings (alle Sektionen + Hilfe-
+  Texte), Blog-Missing-Page. ~600 Übersetzungen in en/de/es/fr.
+- Tageszeit-abhängige Greetings („Buenos días" / „Good morning" / …).
+- Detail-Templates (Wiki-Index, Chat, Briefing-Settings, Activity,
+  Explorer) folgen in den nächsten Patches.
+
 ## 1.0.8
 
 - **Briefing-Seite** zeigt wieder den Inhalt (iframe-Ingress-Fix).

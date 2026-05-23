@@ -378,9 +378,9 @@
         <h1 id="greeting-h1">—</h1>
         <div class="now" id="dashClock">—</div>
     </div>
-    <div id="hermesStatus" class="status-pill unknown" title="Hermes-Agent Status">
+    <div id="hermesStatus" class="status-pill unknown" title="{{ t('dashboard.hermes_status') }}">
         <span class="dot"></span>
-        <span class="txt">Hermes Status …</span>
+        <span class="txt">{{ t('dashboard.hermes_status') }} …</span>
     </div>
 </div>
 
@@ -389,21 +389,21 @@
     <!-- Hermes + System -->
     <div class="dash-card col-6 glow" id="card-hermes">
         <div class="head">
-            <h3>🧠 Hermes</h3>
+            <h3>🧠 {{ t('dashboard.hermes') }}</h3>
             <span class="head-meta" id="hermesActivity">–</span>
         </div>
         <div class="hermes-block" id="hermesBlock">
             <div>
                 <div class="stat-num" id="hermesOpenTasks" style="color:var(--accent-2);">–</div>
-                <div class="label">Offene Aufgaben</div>
+                <div class="label">{{ t('dashboard.open_tasks') }}</div>
             </div>
             <div>
                 <div class="stat-num" id="hermesNextJobIn">–</div>
-                <div class="label" id="hermesNextJobLabel">Nächster Job</div>
+                <div class="label" id="hermesNextJobLabel">{{ t('dashboard.next_job') }}</div>
             </div>
             <div>
                 <div class="stat-num" id="hermesDoneTasks" style="color:var(--accent);">–</div>
-                <div class="label">Erledigt</div>
+                <div class="label">{{ t('dashboard.done') }}</div>
             </div>
         </div>
         <!-- Letzte 2 Aufgaben aus aufgaben.md -->
@@ -412,17 +412,17 @@
 
     <div class="dash-card col-6" id="card-system">
         <div class="head">
-            <h3>📡 System</h3>
-            <span class="head-meta" id="sysUptime">uptime —</span>
+            <h3>📡 {{ t('dashboard.system') }}</h3>
+            <span class="head-meta" id="sysUptime">{{ t('dashboard.uptime') }} —</span>
         </div>
         <div class="sys-row">
             <div class="item">
-                <div class="lbl">CPU</div>
+                <div class="lbl">{{ t('dashboard.cpu') }}</div>
                 <div class="val"><span id="sysCpu">–</span><span class="sub" id="sysLoad"></span></div>
                 <div class="sys-bar" id="sysCpuBar"><div class="fill"></div></div>
             </div>
             <div class="item">
-                <div class="lbl">RAM</div>
+                <div class="lbl">{{ t('dashboard.ram') }}</div>
                 <div class="val"><span id="sysRam">–</span><span class="sub" id="sysRamGb"></span></div>
                 <div class="sys-bar" id="sysRamBar"><div class="fill"></div></div>
             </div>
@@ -432,7 +432,7 @@
                 <div class="sys-bar" id="sysDiskBar"><div class="fill"></div></div>
             </div>
             <div class="item">
-                <div class="lbl">Logfile</div>
+                <div class="lbl">{{ t('dashboard.logfile') }}</div>
                 <div class="val" style="font-size:0.78em; color:var(--text-dim); word-break:break-all;" id="sysLogPath">–</div>
             </div>
         </div>
@@ -441,15 +441,15 @@
     <!-- Quick Prompt -->
     <div class="dash-card col-6">
         <div class="head">
-            <h3>⚡ Quick-Prompt an Hermes</h3>
-            <a class="more" href="/blog/aufgaben.html">alle Aufgaben →</a>
+            <h3>⚡ {{ t('dashboard.quick_prompt') }}</h3>
+            <a class="more" href="/blog/aufgaben.html">{{ t('dashboard.all_tasks') }}</a>
         </div>
         <form class="qp-form" id="qpForm">
-            <input type="text" id="qpTitle" placeholder="Kurztitel der Aufgabe (z. B. „Status-Bericht erstellen")" maxlength="200" required>
-            <textarea id="qpBody" placeholder="Optional: Details, Kontext, Anforderungen …"></textarea>
+            <input type="text" id="qpTitle" placeholder="{{ t('dashboard.placeholder.task_title') }}" maxlength="200" required>
+            <textarea id="qpBody" placeholder="{{ t('dashboard.placeholder.task_details') }}"></textarea>
             <div class="qp-actions">
                 <span class="qp-status" id="qpStatus"></span>
-                <button class="btn btn-primary" type="submit">→ An Hermes senden</button>
+                <button class="btn btn-primary" type="submit">{{ t('dashboard.button.send_to_hermes') }}</button>
             </div>
         </form>
     </div>
@@ -457,13 +457,13 @@
     <!-- Cronjobs -->
     <div class="dash-card col-6">
         <div class="head">
-            <h3>⏰ Cronjobs</h3>
-            <a class="more" href="/settings/#tab-cronjobs">alle Jobs →</a>
+            <h3>⏰ {{ t('dashboard.cronjobs') }}</h3>
+            <a class="more" href="/settings/#tab-cronjobs">{{ t('dashboard.all_jobs') }}</a>
         </div>
         <div class="kpi-row" style="margin-bottom:0.8rem;">
             <div class="kpi">
                 <span class="num" id="kpiJobs">–</span>
-                <span class="lbl">aktive cronjobs</span>
+                <span class="lbl">{{ t('dashboard.active_cronjobs') }}</span>
             </div>
         </div>
         <ul class="dash-list" id="nextJobsList" style="margin-bottom:0;"></ul>
@@ -472,27 +472,27 @@
     <!-- Token Usage -->
     <div class="dash-card col-6 briefing-card">
         <div class="head">
-            <h3>⚡ Token Nutzung</h3>
+            <h3>⚡ {{ t('dashboard.token_usage') }}</h3>
             <span class="head-meta" id="usageDate">–</span>
-            <a href="/settings/#tab-usage" class="more">Details →</a>
+            <a href="/settings/#tab-usage" class="more">{{ t('dashboard.details') }}</a>
         </div>
         <!-- Mini Stunden-Chart -->
         <div class="usage-mini-chart" id="usageMiniChart">
-            <div style="color:var(--text-dim);font-size:0.8rem;align-self:center;">Lade …</div>
+            <div style="color:var(--text-dim);font-size:0.8rem;align-self:center;">{{ t('common.loading') }}</div>
         </div>
         <!-- KPI Zeile -->
         <div class="usage-kpi-row">
             <div class="usage-kpi">
                 <span class="u-num" id="usageTotalTokens">–</span>
-                <span class="u-lbl">Total Tokens</span>
+                <span class="u-lbl">{{ t('dashboard.total_tokens') }}</span>
             </div>
             <div class="usage-kpi">
                 <span class="u-num" id="usageOutTokens">–</span>
-                <span class="u-lbl">Output Tokens</span>
+                <span class="u-lbl">{{ t('dashboard.output_tokens') }}</span>
             </div>
             <div class="usage-kpi">
                 <span class="u-num" id="usageApiCalls">–</span>
-                <span class="u-lbl">API Calls</span>
+                <span class="u-lbl">{{ t('dashboard.api_calls') }}</span>
             </div>
         </div>
     </div>
@@ -500,32 +500,32 @@
     <!-- Latest News -->
     <div class="dash-card col-6">
         <div class="head">
-            <h3>📰 Neueste News</h3>
-            <a class="more" href="/blog/">alle News →</a>
+            <h3>📰 {{ t('dashboard.latest_news') }}</h3>
+            <a class="more" href="/blog/">{{ t('dashboard.all_news') }}</a>
         </div>
         <div class="news-mini" id="newsList">
-            <div class="empty">Lade News …</div>
+            <div class="empty">{{ t('dashboard.loading_news') }}</div>
         </div>
     </div>
 
     <!-- Wiki recent + Activity preview -->
     <div class="dash-card col-6">
         <div class="head">
-            <h3>📚 Zuletzt im Wiki</h3>
-            <a class="more" href="/wiki/">zum Wiki →</a>
+            <h3>📚 {{ t('dashboard.recent_wiki') }}</h3>
+            <a class="more" href="/wiki/">{{ t('dashboard.to_wiki') }}</a>
         </div>
         <ul class="dash-list" id="wikiRecent">
-            <li class="empty">Lade Wiki-Log …</li>
+            <li class="empty">{{ t('dashboard.loading_wiki') }}</li>
         </ul>
     </div>
 
     <div class="dash-card col-6">
         <div class="head">
-            <h3>⚡ Hermes-Aktivität</h3>
-            <a class="more" href="/activity/">Live-Log öffnen →</a>
+            <h3>⚡ {{ t('dashboard.hermes_activity') }}</h3>
+            <a class="more" href="/activity/">{{ t('dashboard.live_log') }}</a>
         </div>
         <ul class="dash-list" id="activityPreview">
-            <li class="empty">Lade aktuelle Aktivität …</li>
+            <li class="empty">{{ t('dashboard.loading_activity') }}</li>
         </ul>
     </div>
 
@@ -565,17 +565,22 @@
     }
 
     function setGreeting() {
+        // i18n: Greetings via window.t (set in base.html). Fallback auf deutsch
+        // bleibt erhalten, falls Bundle nicht geladen oder Key fehlt.
+        var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
         var h = new Date().getHours();
         var greeting;
         if (h >= 5 && h < 11) {
-            greeting = 'Guten Morgen';
-        } else if (h >= 11 && h < 14) {
-            greeting = 'Mahlzeit';
-        } else if (h >= 14 && h < 18) {
-            greeting = 'Hallo';
+            greeting = T('greeting.morning');
+        } else if (h >= 11 && h < 18) {
+            greeting = T('greeting.afternoon');
+        } else if (h >= 18 && h < 23) {
+            greeting = T('greeting.evening');
         } else {
-            greeting = 'Guten Abend';
+            greeting = T('greeting.night');
         }
+        // Fallback wenn Key 1:1 zurückkommt (= keine Übersetzung)
+        if (greeting.indexOf('greeting.') === 0) greeting = 'Hallo';
         var h1 = $('#greeting-h1');
         if (h1) {
             h1.innerHTML = '<span style="color:var(--accent-2);">' + greeting + ',</span> <span id="username-span">{{ user_name }}</span>';

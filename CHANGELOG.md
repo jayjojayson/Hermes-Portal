@@ -14,6 +14,49 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.9] — 2026-05-23
+
+i18n-Vollausbau-Release. Übersetzungs-Tables auf ~150 Keys pro Sprache
+ausgebaut (× 4 Sprachen = ~600 Übersetzungen), Dashboard + Settings +
+Blog-Missing-Page komplett auf `t()`-Helper umgestellt.
+
+### Added
+- **Komplette Übersetzungen** für alle 4 Sprachen (en/de/es/fr) inkl.:
+  - **Dashboard**: Greetings (Tageszeit-abhängig), Hermes-Card,
+    System-Card (CPU/RAM/Disk/Logfile), Quick-Prompt, Cronjobs-Box,
+    Token-Usage, News, Wiki-Recent, Activity-Preview.
+  - **Settings → 🛰️ App**: alle Sektionen (Sprache, Visibility, Identity,
+    Connection, Paths), alle Field-Labels, alle Hilfe-Texte (Folder-
+    Struktur-Erklärung, Briefing-Template-Tipp, RSS-Verhalten).
+  - **Settings-Tabs**: Cronjobs, Personality & Memory, Skills,
+    References, Usage, App, Support.
+  - **Blog-Missing-Page**: vollständig übersetzt (Title, Body, Causes,
+    Hide-Hint).
+  - **Common-Strings**: Save/Cancel/Delete/Edit/New/Reload/Search/…
+    plus „Loading…", „No data", „Never", „Today" etc.
+- **Greeting-Logik** in `dashboard.html` nutzt jetzt `window.t()` mit
+  Fallback auf Tageszeit-spezifische Schlüssel
+  (`greeting.morning/afternoon/evening/night`).
+
+### Changed
+- **JSON-Tables** in `_wiki_server/i18n/{en,de,es,fr}.json` von ~30 auf
+  ~150 Keys aufgestockt. Jeder neue Key, der noch nicht in einer Sprache
+  übersetzt ist, fällt automatisch auf den Englisch-Wert zurück (und
+  dann auf den Key-Namen). So bleibt das UI nutzbar während Community-
+  Übersetzungen nachgereicht werden.
+
+### Notes
+- **Templates noch nicht komplett umgestellt**: index.html (Wiki),
+  chat.html (innere UI), briefing.html (Settings-Block), activity.html,
+  explorer.html — die nutzen weiterhin teilweise hardcodierte deutsche
+  Strings. Die JSON-Keys sind aber bereits da → Community-PRs zum
+  Umstellen sind willkommen, kein Code-Change nötig, nur
+  `<text>` → `{{ t('xyz') }}`.
+- **Sprache wechseln**: Settings → 🛰️ App → 🌐 Sprache. Nach Save
+  reloadet die Seite automatisch und die neue Sprache greift.
+
+---
+
 ## [1.0.8] — 2026-05-23
 
 Zwei HA-Bug-Fixes (Briefing-iframe, Chat-Editor) + grosser Schritt
@@ -619,7 +662,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.8...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.9...HEAD
+[1.0.9]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.8...v1.0.9
 [1.0.8]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.5...v1.0.6
