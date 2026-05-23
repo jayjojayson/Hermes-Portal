@@ -14,6 +14,57 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.1] — 2026-05-24
+
+Drei UX-Korrekturen aus dem v1.1.0-Feedback plus i18n-Aufstockung
+auf 276 Keys × 4 Sprachen (~1.100 Übersetzungen total).
+
+### Fixed
+- **Briefing-Seite jetzt wirklich „wie News/Aufgaben"** — vorher saß das
+  Briefing in einem iframe mit Card-Border, oben drüber stand
+  „☕ Briefing · Modus: ssh · …". Jetzt rendert `/briefing/` über
+  `_serve_blog_file` direkt das Agent-HTML, der Portal-Header sitzt
+  oben, dann gleich die Briefing-Überschrift (`📰 Tägliches Briefing —
+  XX. Mai 2026`) — kein zusätzlicher Wrapper, kein iframe.
+- **Chat-Editor-Hintergrund**: in v1.1.0 hatte ich denselben Farbwert
+  wie vorher gesetzt (`#0f1115`) → optisch null Unterschied. Jetzt
+  `#1a1d24` (= `--bg-secondary`, matched die File-Tree-Spalte rechts
+  daneben) → Editor + Tree wirken als ein zusammenhängender Block.
+  Plus tiefere Theme-Palette (Indent-Guides, Scrollbar-Active-Farbe).
+
+### Added
+- **Floating Action Buttons auf der Briefing-Seite** (bottom-right):
+  „▶ Briefing jetzt erzeugen" (löst `POST /api/briefing/run` + auto-
+  Reload nach Erfolg) und „🔄 Neu laden". Ersetzen die wegfallenden
+  Toolbar-Buttons aus der alten briefing.html.
+- **Briefing-Konfiguration** (GitHub-User, Wetter-Lat/Lon/TZ, BVG-Stop,
+  Forum-RSS) als neue Section in **Settings → 🛰️ App** — vorher nur
+  über das alte briefing.html erreichbar. Werte werden als ENV-Vars
+  (`BRIEFING_*`) ans Briefing-Script weitergereicht.
+- **i18n-Tables stark ausgebaut** auf 276 Keys × 4 Sprachen:
+  - **Explorer**: Toolbar (Upload/Mkdir/Refresh/Up), Tabellen-Spalten
+    (Name/Size/Modified/Actions), Mkdir-Prompt, Upload-States.
+  - **Cronjob-Modal**: alle Felder (Name/Command/Prompt/Schedule), alle
+    Preset-Buttons (Hourly/Daily/Weekly/Monthly/Custom), Status-Labels,
+    Action-Buttons (Run/Pause/Resume/Delete).
+  - **Personality/Skills/References/Usage/Support-Tabs**: Section-Titel,
+    Intros, leere-Zustands-Texte, File-Beschriftungen.
+
+### Notes
+- **Mac-DMG bleibt vorerst tot**: User berichtet, dass NICHT MAL der
+  Startup-Marker auf dem Desktop landet → Python startet nicht, der
+  PyInstaller-Bootloader stirbt vor allem User-Code. Diagnostik aus
+  der Ferne ohne macOS-Build-Maschine ist Sackgasse. **Workaround
+  für mac-User**: bis v1.2.0 Docker-Variante nutzen, dort funktioniert
+  alles. Plan v1.2.0 → Wechsel von PyInstaller auf **Briefcase**
+  (Python's offizieller cross-platform packager mit getrennten Code-
+  pfaden je OS — vermeidet die PyInstaller-Bootloader-Sackgasse).
+- **Templates noch hardcodiert deutsch**: einige Detail-Strings im
+  Wiki-Edit-Modus, Tags-Page, Search-Result-Page. Wer's braucht, kann
+  die JSON-Keys einfach ergänzen — die Infrastruktur greift.
+
+---
+
 ## [1.1.0] — 2026-05-24
 
 Erstes Minor-Release seit 1.0. Briefing-Layout-Politur, Editor-Theme,
@@ -788,7 +839,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.1...HEAD
+[1.1.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.10...v1.1.0
 [1.0.10]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.9...v1.0.10
 [1.0.9]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.8...v1.0.9

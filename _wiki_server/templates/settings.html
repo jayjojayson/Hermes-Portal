@@ -1009,6 +1009,39 @@
         </div>
 
         <div class="settings-section">
+            <div class="settings-section-title">☕ {{ t('briefing.section.config') }}</div>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.75rem 0;">
+                {{ t('briefing.title') }} — GitHub, Weather, Forum-RSS, BVG (Berlin transit).
+            </p>
+            <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem;">
+                <label class="app-field">
+                    <span>{{ t('briefing.field.github_user') }}</span>
+                    <input id="app-briefing_github_user" class="app-input" placeholder="octocat">
+                </label>
+                <label class="app-field">
+                    <span>{{ t('briefing.field.weather_lat') }}</span>
+                    <input id="app-briefing_weather_lat" class="app-input" placeholder="52.52">
+                </label>
+                <label class="app-field">
+                    <span>{{ t('briefing.field.weather_lon') }}</span>
+                    <input id="app-briefing_weather_lon" class="app-input" placeholder="13.40">
+                </label>
+                <label class="app-field">
+                    <span>{{ t('briefing.field.weather_tz') }}</span>
+                    <input id="app-briefing_weather_tz" class="app-input" placeholder="Europe/Berlin">
+                </label>
+                <label class="app-field">
+                    <span>{{ t('briefing.field.forum_rss') }}</span>
+                    <input id="app-briefing_forum_rss" class="app-input" placeholder="https://example.com/forum.rss">
+                </label>
+                <label class="app-field">
+                    <span>{{ t('briefing.field.bvg_stop') }}</span>
+                    <input id="app-briefing_bvg_stop" class="app-input" placeholder="900000100003">
+                </label>
+            </div>
+        </div>
+
+        <div class="settings-section">
             <div class="settings-section-title">📰 RSS-Feeds (News)</div>
             <div id="app-rss-list" style="display:flex; flex-direction:column; gap:8px;"></div>
             <div style="margin-top:0.6rem;">
@@ -1629,6 +1662,8 @@ var APP_FIELDS = [
     'category_entity_label','category_concept_label',
     'exchange_path','wiki_subpath','hermes_home','hermes_bin',
     'briefing_script','briefing_output',
+    'briefing_github_user','briefing_weather_lat','briefing_weather_lon',
+    'briefing_weather_tz','briefing_forum_rss','briefing_bvg_stop',
     'language'
 ];
 // Boolean-Felder (Checkboxen) werden separat gehandhabt

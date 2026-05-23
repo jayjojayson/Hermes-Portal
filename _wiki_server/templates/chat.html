@@ -178,7 +178,8 @@ body.chat-splitter-dragging * { user-select: none !important; }
     flex-direction: column;
     min-width: 0;
     border-left: 1px solid var(--border);
-    background: var(--bg-primary);
+    /* Matched mit Monaco-Theme hermes-dark editor.background (#1a1d24) */
+    background: var(--bg-secondary, #1a1d24);
 }
 .chat-editor-col.open { display: flex; }
 .chat-editor-header {
@@ -1565,21 +1566,29 @@ function initMonaco() {
             // Farbwerte sind angelehnt an --bg-primary / --bg-secondary
             // aus style.css, damit der Editor optisch im Portal-Look sitzt.
             try {
+                // Farben angelehnt an --bg-secondary / --border-soft aus
+                // style.css → Editor sitzt optisch in derselben „Schicht"
+                // wie das File-Tree-Panel rechts daneben.
                 monaco.editor.defineTheme('hermes-dark', {
                     base: 'vs-dark', inherit: true, rules: [],
                     colors: {
-                        'editor.background':             '#0f1115',
+                        'editor.background':             '#1a1d24',
                         'editor.foreground':             '#e4e6eb',
-                        'editorLineNumber.foreground':   '#3a3f4a',
-                        'editorLineNumber.activeForeground': '#8a8f9b',
-                        'editor.lineHighlightBackground':'#1a1d24',
+                        'editorLineNumber.foreground':   '#4a5060',
+                        'editorLineNumber.activeForeground': '#a0a8b8',
+                        'editor.lineHighlightBackground':'#22262f',
+                        'editor.lineHighlightBorder':    '#22262f',
                         'editorCursor.foreground':       '#5cc8ff',
-                        'editor.selectionBackground':    '#234e6a',
-                        'editorGutter.background':       '#0f1115',
-                        'editorWidget.background':       '#1a1d24',
+                        'editor.selectionBackground':    '#2d5a78',
+                        'editor.inactiveSelectionBackground':'#234055',
+                        'editorGutter.background':       '#1a1d24',
+                        'editorWidget.background':       '#22262f',
                         'editorWidget.border':           '#2a2e38',
-                        'scrollbarSlider.background':    '#2a2e3899',
-                        'scrollbarSlider.hoverBackground':'#3a3f4ac0',
+                        'editorIndentGuide.background':  '#2a2e38',
+                        'editorIndentGuide.activeBackground':'#3a3f4a',
+                        'scrollbarSlider.background':    '#3a3f4a99',
+                        'scrollbarSlider.hoverBackground':'#4a5060c0',
+                        'scrollbarSlider.activeBackground':'#5cc8ffc0',
                     }
                 });
                 monaco.editor.defineTheme('hermes-light', {

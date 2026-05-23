@@ -3,6 +3,17 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.1
+
+- **Briefing-Seite** rendert jetzt direkt das Agent-HTML (wie News/
+  Aufgaben), kein iframe-Border, kein doppelter Wrapper-Header.
+- **Floating Action Buttons** auf der Briefing-Seite: ▶ Erzeugen / 🔄 Reload.
+- **Chat-Editor-Hintergrund**: jetzt #1a1d24 (matched File-Tree-Spalte).
+- **i18n auf 276 Keys × 4 Sprachen**: Explorer, Cronjob-Modal,
+  Personality/Skills/References/Usage/Support-Tabs.
+- **Briefing-Konfiguration** (GitHub, Wetter, BVG) wieder zugänglich
+  in Settings → 🛰️ App.
+
 ## 1.1.0
 
 - **Briefing-iframe**: doppelter Header (vom Agent-HTML) wird

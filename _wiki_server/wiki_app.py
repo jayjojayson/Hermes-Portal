@@ -3804,8 +3804,62 @@ def api_settings_app_test():
 
 @app.route("/briefing/")
 def briefing_page():
-    """Briefing-Frontend mit Vorschau + Toolbar + Briefing-Settings."""
-    return render_template("briefing.html")
+    """Briefing wird wie News/Aufgaben direkt als HTML ausgeliefert —
+    Portal-Header oben, dann gleich die Briefing-Überschrift, kein iframe-
+    Border, kein zusätzlicher „☕ Briefing"-Wrapper-Title. Eine kleine
+    floating Action-Bar (Generate / Reload / Settings) wird unten rechts
+    injiziert für User-Aktionen.
+    """
+    # Per _serve_blog_file holen — das macht URL-Rewrite, Style-Injection,
+    # Header-Stripping etc. Komplett konsistent mit News/Aufgaben-Pages.
+    response = _serve_blog_file("briefing.html")
+    # Wenn _serve_blog_file ein 404-Tuple zurückliefert: durchreichen
+    if isinstance(response, tuple) and len(response) >= 2 and response[1] == 404:
+        return response
+
+    # FAB + Briefing-Settings-Drawer in das gerenderte HTML einbauen.
+    html, status, headers = (response[0], 200, {"Content-Type": "text/html; charset=utf-8"})
+    if isinstance(response, tuple):
+        html = response[0]
+        if len(response) >= 2:
+            status = response[1]
+        if len(response) >= 3:
+            headers = response[2]
+
+    if isinstance(html, str):
+        prefix = (request.script_root or "")
+        lang = cfg.get("language") or "en"
+        fab_html = (
+            '<div id="hp-briefing-fab" style="position:fixed;right:1.25rem;bottom:1.25rem;z-index:9999;'
+            'display:flex;flex-direction:column;gap:0.5rem;align-items:flex-end;font-family:inherit;">'
+            f'<button onclick="hpBriefingRun(this)" title="{_i18n.t("briefing.button.run_now", lang)}" '
+            'style="padding:0.55rem 1.1rem;border-radius:24px;border:0;background:#5cc8ff;color:#0f1115;'
+            'font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.4);font-size:0.9rem;">'
+            f'▶ {_i18n.t("briefing.button.run_now", lang)}</button>'
+            f'<button onclick="location.reload()" title="{_i18n.t("briefing.button.reload", lang)}" '
+            'style="padding:0.4rem 0.9rem;border-radius:24px;border:1px solid #2a2e38;'
+            'background:#1a1d24;color:#e4e6eb;cursor:pointer;font-size:0.85rem;">'
+            f'🔄 {_i18n.t("briefing.button.reload", lang)}</button>'
+            '</div>'
+            '<script>'
+            'function hpBriefingRun(btn){'
+              'var orig=btn.innerHTML;btn.disabled=true;btn.innerHTML="⏳…";'
+              'fetch((window.HP_INGRESS_PATH||"")+"/api/briefing/run",{method:"POST"})'
+              '.then(function(r){return r.json();})'
+              '.then(function(d){'
+                'btn.innerHTML=orig;btn.disabled=false;'
+                'if(d.status==="ok"){setTimeout(function(){location.reload();},800);}'
+                'else{alert("'+ _i18n.t("common.error", lang) +': "+(d.error||d.stderr||"unknown"));}'
+              '}).catch(function(e){btn.innerHTML=orig;btn.disabled=false;alert(e);});'
+            '}'
+            '</script>'
+        )
+        if "</body>" in html:
+            html = html.replace("</body>", fab_html + "</body>", 1)
+        else:
+            html = html + fab_html
+
+    return html, status, headers
 
 
 @app.route("/api/briefing/info")
