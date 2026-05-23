@@ -921,6 +921,25 @@
         </div>
 
         <div class="settings-section">
+            <div class="settings-section-title">🌐 Sprache · Language · Idioma · Langue</div>
+            <p style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.75rem 0;">
+                Sprache der Portal-Oberfläche (Navigation, Buttons, Settings-Beschriftungen).
+                <strong>Inhalte vom Hermes-Agenten</strong> (News, Aufgaben, Briefing-HTML)
+                werden <em>nicht</em> übersetzt — die kommen wie sie sind.
+            </p>
+            <label class="app-field" style="max-width:340px;">
+                <span>Sprache der Oberfläche</span>
+                <select id="app-language" class="app-input">
+                    {% for l in i18n_available %}
+                    <option value="{{ l.code }}"{% if l.code == current_lang %} selected{% endif %}>
+                        {{ l.native }} ({{ l.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </label>
+        </div>
+
+        <div class="settings-section">
             <div class="settings-section-title">📑 Menü-Punkte sichtbar</div>
             <p style="font-size:0.85rem; color:var(--text-secondary); margin:0 0 0.75rem 0;">
                 Nicht jeder nutzt alle Features. Hier kannst du einzelne Menüpunkte
@@ -949,6 +968,34 @@
 
         <div class="settings-section">
             <div class="settings-section-title">📁 Pfade auf dem Hermes-Agent</div>
+            <details class="app-help" style="margin:0 0 1rem 0; padding:0.75rem 1rem; background:var(--panel-bg-soft, rgba(255,255,255,0.03)); border:1px solid var(--border-soft); border-radius:8px;">
+                <summary style="cursor:pointer; font-weight:600; color:var(--accent-primary);">💡 Empfohlene Ordner-Struktur auf dem Hermes-Agent</summary>
+                <div style="margin-top:0.6rem; font-size:0.9rem; line-height:1.55; color:var(--text-secondary);">
+                    <p>Im konfigurierten <strong>Austausch-Ordner</strong> (z.B. <code>/mnt/austausch</code>)
+                       sollten diese Unterordner existieren:</p>
+                    <pre style="background:rgba(0,0,0,0.25); padding:0.5rem 0.75rem; border-radius:6px; font-size:0.85rem; line-height:1.5; overflow-x:auto;">{{ '/mnt/austausch/
+├── wiki/
+│   ├── scripts/
+│   │   └── daily_briefing.py    ← deine Briefing-Generator-Script
+│   └── blog/
+│       ├── briefing.html         ← Output deines Briefing-Scripts
+│       ├── index.html            ← News-Übersicht (vom Agent generiert)
+│       └── aufgaben.html         ← Aufgabenliste (vom Portal verwaltet)' }}</pre>
+                    <p><strong>Tipp für eigenes <code>briefing.html</code>:</strong>
+                       Da jedes Briefing andere Inhalte hat (Wetter, RSS, GitHub, BVG …),
+                       sieht es immer anders aus — das Portal blendet daher Header/Footer
+                       <em>nicht</em> ein, sondern zeigt die Datei roh im iframe.
+                       Eine Vorlage findest du im Repo unter
+                       <code>_wiki_server/templates/briefing_default.html</code>
+                       — kopier sie als Startpunkt zu dir und lass den Agent
+                       sie mit deinen Daten füllen.</p>
+                    <p><strong>RSS-Feeds:</strong> Die Liste in „📰 RSS-Feeds für Briefing"
+                       weiter unten wird als ENV-Variable <code>BRIEFING_FORUM_RSS</code>
+                       an dein Briefing-Script übergeben — <em>nicht automatisch</em> in
+                       deinen News-Generator. Wenn du News-RSS-Feeds änderst, musst du das
+                       in deinem eigenen <code>daily_news.py</code>-Script tun.</p>
+                </div>
+            </details>
             <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
                 <label class="app-field">
                     <span>Austausch-Ordner</span>
@@ -1589,7 +1636,8 @@ var APP_FIELDS = [
     'user_name','agent_name',
     'category_entity_label','category_concept_label',
     'exchange_path','wiki_subpath','hermes_home','hermes_bin',
-    'briefing_script','briefing_output'
+    'briefing_script','briefing_output',
+    'language'
 ];
 // Boolean-Felder (Checkboxen) werden separat gehandhabt
 var APP_BOOL_FIELDS = ['show_wiki', 'show_news', 'show_briefing', 'show_aufgaben'];

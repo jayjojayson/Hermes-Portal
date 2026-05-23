@@ -1551,7 +1551,11 @@ function initMonaco() {
         setTimeout(initMonaco, 150);
         return;
     }
-    require.config({ paths: { vs: '/static/vendor/monaco/vs' } });
+    // HA-Ingress: window.hpUrl() prepended ggf. den Token-Prefix vor den
+    // Pfad. Ohne diese Zeile lädt der Monaco-AMD-Loader sämtliche Module
+    // gegen die HA-Origin → 404 → Editor bleibt leer und das spätere
+    // MONACO_READY.then(...) wirft „Cannot read properties of null".
+    require.config({ paths: { vs: window.hpUrl('/static/vendor/monaco/vs') } });
     MONACO_READY = new Promise(function(resolve) {
         require(['vs/editor/editor.main'], function() {
             // Theme an Portal-Dark anpassen

@@ -50,9 +50,9 @@ zur Verfügung:
 ## 🚀 Installation
 
 > **Empfehlung:** Hast du Docker? → **Variante A** (1 Befehl, läuft überall).
-> Lieber natives Setup? → **Variante B/C/D** je nach OS.
+> Lieber natives Setup? → **nachfoglende Variante** je nach OS.
 
-### 📦 Variante A — Docker (empfohlen, alle Plattformen)
+### 📦 Docker (empfohlen, alle Plattformen)
 
 ```bash
 # 1) Repo klonen
@@ -76,7 +76,61 @@ SSH-Verbindung zur Hermes-VM, Agent-Name, Pfade, RSS-Feeds.
 
 ---
 
-### 🍎 Variante B — macOS (natives Binary, kein Docker)
+### 🏠 — Home Assistant Add-on
+
+<details>
+<summary><strong>🔌 Hermes Portal — Home Assistant Add-on</strong></summary>
+
+Installation  
+In Home Assistant: Einstellungen → Add-ons → Add-on Store → ⋮ → Repositories.  
+URL eintragen: `https://github.com/jayjojayson/Hermes-Portal`  
+
+(Das Repo ist seit v0.7.0 ein voll installierbares HA-Add-on: `repository.yaml`  
++ `hermes_portal/` im Root, das Add-on baut sich beim Install self-contained  
+direkt aus dem Git-Tag — kein `prepare.sh` mehr nötig.)  
+
+Add-on **Hermes Portal** auswählen und installieren.  
+Konfiguration setzen (siehe Optionen unten), dann starten.  
+
+Öffne den Reiter über die Sidebar (Ingress) oder direkt:  
+
+`http://<ha-ip>:8090`
+
+---
+
+### Konfiguration
+
+| Option | Beschreibung | Default |
+|---|---|---|
+| `agent_name` | Name deines Hermes-Agents (statt "Wally") | `Hermes` |
+| `user_name` | Wie der Agent dich anspricht | `Du` |
+| `connection_mode` | `local` (im HA-Host) oder `ssh` (Hermes auf anderem PC) | `ssh` |
+| `agent_host` | IP/Hostname des Hermes-Agents (bei SSH-Mode) | `""` |
+| `ssh_user` | SSH-User auf dem Hermes-Host | `root` |
+| `ssh_port` | SSH-Port | `22` |
+| `ssh_password` | Optional, falls kein Key verwendet wird | `""` |
+| `exchange_path` | Pfad zum Austausch-Ordner auf dem Hermes-Host | `/share` |
+
+Weitere Settings (RSS-Feeds, Persönlichkeit, Pfade) konfigurierst du nach dem Start direkt in der Portal-UI unter ⚙️ Settings → 🛰️ App.  
+
+---
+
+### SSH-Key statt Passwort
+
+In der Portal-UI unter `Settings → App` den Pfad  
+`/data/.ssh/id_ed25519` eintragen.  
+
+Lege den Key in deinem HA unter  
+`/addon_configs/<slug>/ssh/` ab, dann ist er im Container unter  
+`/data/.ssh/` verfügbar.  
+
+(Volume-Mapping ist im `config.yaml` voreingestellt.)
+
+</details>
+
+---
+
+### 🍎 macOS (natives Binary, kein Docker)
 
 <details>
 <summary><strong>Schritt-für-Schritt-Anleitung</strong> (5 Minuten)</summary>
@@ -139,7 +193,7 @@ Danach in Programme ziehen, startet per Doppelklick.
 
 ---
 
-### 🐧 Variante C — Linux (Debian/Ubuntu/Fedora)
+### 🐧 Linux (Debian/Ubuntu/Fedora)
 
 <details>
 <summary><strong>Schritt-für-Schritt-Anleitung</strong> (5 Minuten)</summary>
@@ -192,7 +246,7 @@ herunterladen, entpacken, `./hermes-portal/hermes-portal` starten.
 
 ---
 
-### 🪟 Variante D — Windows
+### 🪟 Windows
 
 <details>
 <summary><strong>Schritt-für-Schritt-Anleitung mit Python</strong> (10 Minuten)</summary>
@@ -230,38 +284,6 @@ Firewall fragt einmal nach Netzwerk-Zugriff → erlauben.
 Portable Variante: `Hermes-Portal-Windows.zip` herunterladen, entpacken,
 `hermes-portal.exe` direkt starten.
 
-</details>
-
----
-
-### 🏠 Variante E — Home Assistant Add-on
-
-<details>
-<summary><strong>🔌 Hermes Portal — Home Assistant Add-on</strong></summary>
-Installation
-In Home Assistant: Einstellungen → Add-ons → Add-on Store → ⋮ → Repositories.  
-URL eintragen: `https://github.com/jayjojayson/Hermes-Portal`  
-(Das Repo ist seit v0.7.0 ein voll installierbares HA-Add-on: `repository.yaml`
-+ `hermes_portal/` im Root, das Add-on baut sich beim Install self-contained
-direkt aus dem Git-Tag — kein `prepare.sh` mehr nötig.)  
-Add-on **Hermes Portal** auswählen und installieren.  
-Konfiguration setzen (siehe Optionen unten), dann starten.  
-Öffne den Reiter über die Sidebar (Ingress) oder direkt http://<ha-ip>:8090.  
-Konfiguration:  
-Option	Beschreibung	Default  
-agent_name	Name deines Hermes-Agents (statt "Wally")	Hermes  
-user_name	Wie der Agent dich anspricht	Du  
-connection_mode	local (im HA-Host) oder ssh (Hermes auf anderem PC)	ssh
-agent_host	IP/Hostname des Hermes-Agents (bei SSH-Mode)	""
-ssh_user	SSH-User auf dem Hermes-Host	root  
-ssh_port	SSH-Port	22  
-ssh_password	Optional, falls kein Key verwendet wird	""  
-exchange_path	Pfad zum Austausch-Ordner auf dem Hermes-Host	/share  
-
-Weitere Settings (RSS-Feeds, Persönlichkeit, Pfade) konfigurierst du nach dem Start direkt in der Portal-UI unter ⚙️ Settings → 🛰️ App.  
-
-SSH-Key statt Passwort  
-In der Portal-UI unter Settings → App den Pfad /data/.ssh/id_ed25519 eintragen. Lege den Key in deinem HA /addon_configs/<slug>/ssh/ ab, dann ist er im Container unter /data/.ssh/ verfügbar (Volume-Mapping ist im config.yaml voreingestellt).
 </details>
 
 ---

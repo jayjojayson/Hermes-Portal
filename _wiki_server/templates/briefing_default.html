@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!--
+  ═══════════════════════════════════════════════════════════════════
+  Hermes Portal — Briefing-Vorlage (Beispiel)
+  ───────────────────────────────────────────────────────────────────
+  Dies ist ein eigenständiges, in sich geschlossenes HTML-Dokument.
+  Es wird im Briefing-Tab des Portals als iframe geladen — daher
+  KEIN Portal-Header, KEIN Portal-Footer, KEINE Nav. Das gibt deinem
+  Agenten freie Hand für Layout, Farben, Module.
+
+  Speicherort auf dem Hermes-Agent:
+      <austausch>/wiki/blog/briefing.html
+
+  Generierung:
+      <austausch>/wiki/scripts/daily_briefing.py
+      (per Cronjob oder „Jetzt erzeugen"-Button im Portal)
+
+  Variablen, die das Portal als ENV an dein Script weiterreicht:
+      BRIEFING_GITHUB_USER, BRIEFING_WEATHER_LAT, BRIEFING_WEATHER_LON,
+      BRIEFING_WEATHER_TZ, BRIEFING_FORUM_RSS, BRIEFING_BVG_STOP,
+      BRIEFING_OUTPUT_PATH
+
+  Diese Vorlage ist dark-mode-tauglich, mobil-responsive und nutzt
+  nur System-Fonts (keine externen Web-Fonts nötig).
+  ═══════════════════════════════════════════════════════════════════
+-->
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Briefing — {{ heute }}</title>
+    <style>
+        :root {
+            --bg:        #0f1115;
+            --card:      #1a1d24;
+            --border:    #2a2e38;
+            --text:      #e4e6eb;
+            --text-dim:  #8a8f9b;
+            --accent:    #5cc8ff;
+            --good:      #22c55e;
+            --warn:      #f59e0b;
+            --bad:       #ef4444;
+        }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #ffffff; --card: #f8fafc; --border: #e2e8f0;
+                --text: #1e293b; --text-dim: #64748b;
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 1.5rem;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        h1 { margin: 0 0 0.5rem 0; font-size: 1.75rem; }
+        h2 { margin: 1.5rem 0 0.75rem; font-size: 1.15rem; color: var(--accent); }
+        .meta { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.2rem;
+        }
+        .card h2:first-child { margin-top: 0; }
+        ul { margin: 0; padding-left: 1.2rem; }
+        li { margin: 0.3rem 0; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .pill {
+            display: inline-block;
+            padding: 0.1rem 0.55rem;
+            border-radius: 999px;
+            background: rgba(92, 200, 255, 0.15);
+            color: var(--accent);
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <h1>☕ Briefing — {{ heute }}</h1>
+    <div class="meta">Erzeugt: {{ generated_at }}</div>
+
+    <div class="grid">
+
+        <div class="card">
+            <h2>🌤️ Wetter</h2>
+            <p>Hier kommt deine Wetter-Vorhersage rein —
+               Höchst-/Tiefst-Temperatur, Niederschlag, Sonnenstunden …</p>
+            <ul>
+                <li>Heute: 22 °C / 14 °C, Sonne</li>
+                <li>Morgen: 19 °C / 12 °C, Wolken</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>🚇 ÖPNV</h2>
+            <p>Abfahrten von deiner Haltestelle:</p>
+            <ul>
+                <li>U1 → Warschauer Str. <span class="pill">3 min</span></li>
+                <li>M10 → Hauptbahnhof <span class="pill">7 min</span></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>📰 Wichtiges aus deinen Feeds</h2>
+            <ul>
+                <li><a href="#">Headline 1 — Quelle</a></li>
+                <li><a href="#">Headline 2 — Quelle</a></li>
+                <li><a href="#">Headline 3 — Quelle</a></li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>💻 GitHub-Aktivität</h2>
+            <ul>
+                <li>3 neue Issues in deinen Projekten</li>
+                <li>1 PR wartet auf Review</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>📅 Termine heute</h2>
+            <ul>
+                <li>10:00 — Standup</li>
+                <li>14:00 — 1:1 mit Jan</li>
+            </ul>
+        </div>
+
+        <div class="card">
+            <h2>✅ Offene Aufgaben</h2>
+            <ul>
+                <li>Hermes Portal v1.0.8 testen</li>
+                <li>Garten gießen</li>
+            </ul>
+        </div>
+
+    </div>
+</body>
+</html>

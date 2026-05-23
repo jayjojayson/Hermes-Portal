@@ -53,6 +53,11 @@ DEFAULTS: Dict[str, Any] = {
     "show_briefing":  True,
     "show_aufgaben":  True,
 
+    # --- Sprache der UI -------------------------------------------------
+    # Sprachen unter _wiki_server/i18n/<code>.json. Default 'en' weil es
+    # die meisten User verstehen. Weitere: de, es, fr — Beiträge willkommen.
+    "language":       "en",
+
     # --- Verbindung zum Hermes-Agent --------------------------------------
     "connection_mode":     "local",        # "local" oder "ssh"
     "agent_host":          "127.0.0.1",    # IP/Hostname des Hermes-Agents

@@ -51,7 +51,7 @@
 
     <div class="brf-banner" id="brf-banner" style="display:none;"></div>
 
-    <iframe class="brf-iframe" id="brf-frame" src="/api/briefing/render" title="Briefing-Vorschau"></iframe>
+    <iframe class="brf-iframe" id="brf-frame" src="{{ url_for('api_briefing_render') }}" title="Briefing-Vorschau"></iframe>
 
     <div class="brf-settings">
         <details>
@@ -134,7 +134,8 @@ function loadBriefingInfo() {
 
 function reloadFrame() {
     var f = document.getElementById('brf-frame');
-    if (f) f.src = '/api/briefing/render?_=' + Date.now();
+    // hpUrl() (aus base.html) prepended unter HA-Ingress den TOKEN-Prefix.
+    if (f) f.src = window.hpUrl('/api/briefing/render') + '?_=' + Date.now();
 }
 
 function runBriefing() {

@@ -3,6 +3,17 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.0.8
+
+- **Briefing-Seite** zeigt wieder den Inhalt (iframe-Ingress-Fix).
+- **Chat-Editor** lädt Monaco korrekt unter Ingress (Pfad-Prefix-Fix).
+- **🌐 Mehrsprachiges UI** — Sprache wählbar in Settings → 🛰️ App:
+  Englisch (Default), Deutsch, Spanisch, Französisch. Inhalte vom
+  Agenten (News, Briefing) werden nicht übersetzt.
+- **Hilfe-Box** in Settings → App erklärt die empfohlene
+  Ordner-Struktur (`/wiki/scripts`, `/wiki/blog`) und das RSS-Feed-
+  Verhalten (Portal vs. News-Generator).
+
 ## 1.0.7
 
 - Keine HA-spezifischen Änderungen — Release ist primär ein macOS-

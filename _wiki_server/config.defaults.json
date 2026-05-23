@@ -11,6 +11,8 @@
   "show_briefing": true,
   "show_aufgaben": true,
 
+  "language": "en",
+
   "connection_mode": "local",
   "agent_host": "127.0.0.1",
   "ssh_user": "root",

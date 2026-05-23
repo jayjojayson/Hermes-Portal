@@ -14,6 +14,59 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.0.8] — 2026-05-23
+
+Zwei HA-Bug-Fixes (Briefing-iframe, Chat-Editor) + grosser Schritt
+Richtung Mehrsprachigkeit. Macht das Portal für nicht-deutsche User
+endlich nutzbar.
+
+### Added
+- **🌐 Mehrsprachiges UI** — Sprache wählbar in Settings → 🛰️ App →
+  „Sprache · Language · Idioma · Langue".
+  - **Englisch (Default), Deutsch, Spanisch, Französisch** — Neuinstalls
+    starten jetzt auf Englisch (weil das die meisten User verstehen),
+    bestehende User behalten ihre bisherige Sprache.
+  - Übersetzungen liegen als flache JSON-Tables in `_wiki_server/i18n/`
+    — Community-Beiträge per PR willkommen (neue Sprache = neue
+    `<code>.json` reinlegen, taucht automatisch im Switcher auf).
+  - Aktuell sind übersetzt: Nav-Labels, Settings-Tab-Titel, Standard-
+    Buttons (Save/Cancel/…). Restliche Strings folgen Stück für Stück.
+  - JS-Side via `window.t('nav.dashboard')` Helper + `window.HP_I18N`
+    Lookup-Tabelle in `base.html`.
+- **`_wiki_server/i18n.py`** — leichtgewichtiges Übersetzungs-Modul
+  (kein Babel/gettext-Overhead), Fallback-Reihenfolge:
+  `lang → en → key`.
+- **`_wiki_server/templates/briefing_default.html`** — Beispiel-Vorlage
+  für eigene Briefing-HTML. User können das als Startpunkt zu sich auf
+  den Agent kopieren und ihr `daily_briefing.py` darauf aufsetzen.
+- **Hilfe-Box „Empfohlene Ordner-Struktur"** in Settings → 🛰️ App →
+  Pfade-Section. Erklärt die `<austausch>/wiki/{scripts,blog}/`-Struktur,
+  verweist auf `briefing_default.html`, klärt RSS-Feed-Verhalten
+  (Portal-Feed ≠ News-Generator-Feed des Agents).
+
+### Fixed
+- **Briefing-Seite zeigte 404** in HA — `<iframe src="/api/briefing/render">`
+  war hardcodiert, der v1.0.6-Patcher hatte `<iframe>` nicht in seiner
+  Selector-Liste. Jetzt nutzt das Template `url_for(...)`, plus der
+  Patcher kennt `iframe`/`source` als zusätzliche Selektoren.
+- **Chat-Editor blieb leer** mit `TypeError: Cannot read properties of
+  null (reading 'then')` — Monaco-AMD-Loader hatte hardcodierten Pfad
+  `paths: { vs: '/static/vendor/monaco/vs' }`, lud also unter Ingress
+  alle Module gegen die HA-Origin → 404 → `monaco.editor` undefined →
+  `MONACO_READY` blieb `null`. Jetzt: `paths: { vs: window.hpUrl(...) }`.
+
+### Notes
+- **macOS-DMG**: aus dem Test-Loop ausgenommen — wir bauen für v1.1.0
+  ohnehin komplett auf native pywebview-Window-Architektur um, der
+  Browser-+-Terminal-Hybrid-Build aus v1.0.x wird obsolet.
+- **RSS-Feeds in Settings ≠ News-Generator-Feeds**: das hat die
+  Hilfe-Box jetzt explizit dokumentiert. Portal speichert die Feed-
+  Liste in `config.json`, gibt aber nur den `briefing_forum_rss` als
+  ENV an dein Briefing-Script weiter. Für die News-Generierung musst
+  du weiterhin deinen agent-seitigen `daily_news.py` manuell pflegen.
+
+---
+
 ## [1.0.7] — 2026-05-23
 
 Echte native Desktop-App-Experience auf macOS und Windows — kein Browser-
@@ -566,7 +619,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.7...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.8...HEAD
+[1.0.8]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.7...v1.0.8
 [1.0.7]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.0.4...v1.0.5

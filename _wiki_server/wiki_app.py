@@ -32,6 +32,7 @@ import yaml
 from config import get_config, reload_config, public_config_dict, DEFAULTS as CONFIG_DEFAULTS
 from hermes_client import get_client, reset_client, HAS_PARAMIKO
 from __version__ import VERSION as PORTAL_VERSION
+import i18n as _i18n
 
 cfg = get_config()
 
@@ -94,6 +95,7 @@ _ASSET_VERSION = _compute_asset_version()
 @app.context_processor
 def inject_globals():
     """Stellt die App-Config in jedem Template als ``cfg`` zur Verfügung."""
+    lang = (cfg.get("language") or "en")
     return {
         "cfg": cfg,
         "agent_name": cfg.agent_name,
@@ -105,6 +107,11 @@ def inject_globals():
         "portal_asset_version":   _ASSET_VERSION,
         "current_year":           datetime.now().year,
         "portal_version":         PORTAL_VERSION,
+        # i18n: t() für Templates, current_lang für UI, i18n_table für JS-Bridge
+        "t":            lambda key: _i18n.t(key, lang),
+        "current_lang": lang,
+        "i18n_table":   _i18n.translation_table(lang),
+        "i18n_available": _i18n.available_languages(),
     }
 
 

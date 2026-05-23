@@ -49,29 +49,35 @@
     };
 
     // ---- Nav configuration -------------------------------------------
+    // Labels werden bei navItems() durch t('nav.<key>') übersetzt.
     var NAV_ALL = [
-        { key: 'dashboard',label: 'Dashboard',href: '/',                          icon: '🏠' },
-        { key: 'wiki',     label: 'Wiki',     href: '/wiki/',                     icon: '📚' },
-        { key: 'news',     label: 'News',     href: '/blog/',                     icon: '📰' },
-        { key: 'briefing', label: 'Briefing', href: '/briefing/',                 icon: '☕' },
-        { key: 'aufgaben', label: 'Aufgaben', href: '/blog/aufgaben.html',        icon: '✅' },
-        { key: 'explorer', label: 'Explorer', href: '/explorer/',                 icon: '📂' },
-        { key: 'chat',     label: 'Chat',     href: '/chat/',                     icon: '💬' },
-        { key: 'activity', label: 'Aktivität',href: '/activity/',                 icon: '⚡' },
-        { key: 'settings', label: 'Settings', href: '/settings/',                 icon: '⚙️' }
+        { key: 'dashboard',i18n: 'nav.dashboard', fallback: 'Dashboard', href: '/',                   icon: '🏠' },
+        { key: 'wiki',     i18n: 'nav.wiki',      fallback: 'Wiki',      href: '/wiki/',              icon: '📚' },
+        { key: 'news',     i18n: 'nav.news',      fallback: 'News',      href: '/blog/',              icon: '📰' },
+        { key: 'briefing', i18n: 'nav.briefing',  fallback: 'Briefing',  href: '/briefing/',          icon: '☕' },
+        { key: 'aufgaben', i18n: 'nav.aufgaben',  fallback: 'Tasks',     href: '/blog/aufgaben.html', icon: '✅' },
+        { key: 'explorer', i18n: 'nav.explorer',  fallback: 'Explorer',  href: '/explorer/',          icon: '📂' },
+        { key: 'chat',     i18n: 'nav.chat',      fallback: 'Chat',      href: '/chat/',              icon: '💬' },
+        { key: 'activity', i18n: 'nav.activity',  fallback: 'Activity',  href: '/activity/',          icon: '⚡' },
+        { key: 'settings', i18n: 'nav.settings',  fallback: 'Settings',  href: '/settings/',          icon: '⚙️' }
     ];
     // HA-Ingress-Prefix (leerer String, wenn standalone)
     var INGRESS = (typeof window !== 'undefined' && window.HP_INGRESS_PATH) || '';
     function withPrefix(p) { return INGRESS + p; }
 
-    // Filter + Ingress-Prefix anwenden.
+    // Filter + Ingress-Prefix + i18n-Label-Lookup anwenden.
     // Respektiert window.HP_NAV_HIDE = { news: true, briefing: true }
+    // Label-Auflösung: window.t(item.i18n) || item.fallback
     function navItems() {
         var hide = window.HP_NAV_HIDE || {};
+        var translate = (typeof window.t === 'function') ? window.t : function(k){ return k; };
         return NAV_ALL.filter(function(item) {
             return !hide[item.key];
         }).map(function(item) {
-            return { key: item.key, label: item.label, icon: item.icon, href: withPrefix(item.href) };
+            var label = item.i18n ? translate(item.i18n) : item.fallback;
+            // Falls translate() den Key 1:1 zurückgibt (kein Treffer) → Fallback
+            if (label === item.i18n) label = item.fallback || item.i18n;
+            return { key: item.key, label: label, icon: item.icon, href: withPrefix(item.href) };
         });
     }
     // Legacy-Alias für Stellen, die NAV als Top-Level-Konstante nutzten

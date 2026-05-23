@@ -23,6 +23,11 @@
         window.HP_BRAND = {{ agent_name|tojson }};
         window.HP_PORTAL_NAME = {{ portal_name|tojson }};
         window.HP_VERSION = {{ portal_version|tojson }};
+        // i18n-Tabelle für JS (site-header.js, dynamische Buttons usw.)
+        window.HP_LANG = {{ current_lang|tojson }};
+        window.HP_I18N = {{ i18n_table|tojson }};
+        // Bequemer Lookup mit Key-Fallback (wie t() in Python).
+        window.t = function(key){ return (window.HP_I18N && window.HP_I18N[key]) || key; };
         window.HP_NAV_HIDE = {
             wiki:     {{ ('false' if cfg.get('show_wiki',     True) else 'true')|safe }},
             news:     {{ ('false' if cfg.get('show_news',     True) else 'true')|safe }},
@@ -64,11 +69,13 @@
             // 2) DOM-Attribute rewriten (href / src / action) auf DOM-Ready
             function fixAttrs(){
                 var selectors = [
-                    {sel: 'a[href^="/"]',    attr: 'href'},
-                    {sel: 'form[action^="/"]', attr: 'action'},
+                    {sel: 'a[href^="/"]',     attr: 'href'},
+                    {sel: 'form[action^="/"]',attr: 'action'},
                     {sel: 'img[src^="/"]',    attr: 'src'},
                     {sel: 'link[href^="/"]',  attr: 'href'},
-                    {sel: 'script[src^="/"]', attr: 'src'}
+                    {sel: 'script[src^="/"]', attr: 'src'},
+                    {sel: 'iframe[src^="/"]', attr: 'src'},
+                    {sel: 'source[src^="/"]', attr: 'src'}
                 ];
                 selectors.forEach(function(s){
                     var nodes = document.querySelectorAll(s.sel);
