@@ -15,49 +15,76 @@
 .news-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 1rem;
+    gap: 1.2rem;
     margin-top: 1rem;
 }
+/* Komplette Karte ist klickbar — führt zur Tagesbericht-Detailseite,
+   die der Hermes-Agent als Einzel-HTML mit ausführlichem Layout abgelegt
+   hat (morgendlicher / mittags / nachmittags-spotlight). */
 .news-card {
     background: var(--bg-secondary, #1a1d24);
     border: 1px solid var(--border-color, #2a2e38);
-    border-radius: 10px;
-    padding: 1rem 1.1rem;
+    border-radius: 12px;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    transition: transform 0.15s, border-color 0.15s;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+    cursor: pointer;
 }
 .news-card:hover {
     border-color: var(--accent, #5cc8ff);
-    transform: translateY(-2px);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
 }
-.news-card .meta {
-    font-size: 0.75rem; color: var(--text-secondary);
-    display: flex; gap: 10px; flex-wrap: wrap;
+/* Hero-Bild oben — feste Höhe, contain via object-fit cover (croppen ist OK) */
+.news-card .hero {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: #0f1115 center/cover no-repeat;
+    display: block;
+    border-bottom: 1px solid var(--border-color, #2a2e38);
 }
-.news-card .meta .cat {
-    background: rgba(99,102,241,0.15); color: var(--accent, #5cc8ff);
-    padding: 1px 8px; border-radius: 999px;
+.news-card .hero-placeholder {
+    width: 100%;
+    aspect-ratio: 16/9;
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(92,200,255,0.10));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3rem; opacity: 0.4;
+}
+.news-card .body {
+    padding: 0.9rem 1rem 1rem 1rem;
+    display: flex; flex-direction: column; gap: 8px; flex: 1;
 }
 .news-card h3 {
     margin: 0; font-size: 1.02rem; line-height: 1.35;
+    color: var(--text-primary);
 }
-.news-card h3 a {
-    color: var(--text-primary); text-decoration: none;
-}
-.news-card h3 a:hover { color: var(--accent, #5cc8ff); }
 .news-card .summary {
-    font-size: 0.86rem; color: var(--text-secondary); line-height: 1.4;
+    font-size: 0.85rem; color: var(--text-secondary); line-height: 1.45;
     margin: 0;
     display: -webkit-box;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
+.news-card .meta {
+    font-size: 0.74rem; color: var(--text-secondary);
+    margin-top: auto;
+    padding-top: 8px; border-top: 1px dashed var(--border-color, #2a2e38);
+    display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+}
+.news-card .meta .date { color: var(--text-dim, #8a8f9b); }
+.news-card .meta .cat {
+    background: rgba(99,102,241,0.18); color: var(--accent, #5cc8ff);
+    padding: 1px 8px; border-radius: 999px; font-size: 0.72rem;
+}
+.news-card .meta .tag {
+    color: var(--text-dim); font-size: 0.72rem;
+}
 .news-card .source {
-    font-size: 0.72rem; color: var(--text-dim, #8a8f9b);
-    margin-top: auto; padding-top: 4px;
+    font-size: 0.7rem; color: var(--text-dim, #8a8f9b);
 }
 
 .news-empty {
@@ -185,16 +212,33 @@
             }
             var html = '<div class="news-grid">';
             items.forEach(function(it) {
-                html += '<div class="news-card">';
-                var metaBits = [];
-                if (it.date) metaBits.push('<span>🗓 ' + esc(it.date) + '</span>');
-                if (it.category) metaBits.push('<span class="cat">' + esc(it.category) + '</span>');
-                if (metaBits.length) html += '<div class="meta">' + metaBits.join('') + '</div>';
-                html += '<h3><a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' +
-                        esc(it.title || '—') + '</a></h3>';
+                // Komplette Karte ist <a> auf die Detailseite (Agent-
+                // generierter Einzel-Beitrag). KEIN target=_blank — wir
+                // wollen in derselben Tab navigieren, sonst landet der
+                // User mehrfach auf der News-Übersicht.
+                var href = it.detail_url || it.source_url || '#';
+                html += '<a class="news-card" href="' + esc(href) + '">';
+                if (it.image) {
+                    html += '<div class="hero" style="background-image:url(\'' +
+                            esc(it.image).replace(/'/g, '%27') + '\')"></div>';
+                } else {
+                    html += '<div class="hero-placeholder">📰</div>';
+                }
+                html += '<div class="body">';
+                html += '<h3>' + esc(it.title || '—') + '</h3>';
                 if (it.summary) html += '<p class="summary">' + esc(it.summary) + '</p>';
+                var metaBits = [];
+                if (it.date) metaBits.push('<span class="date">🗓 ' + esc(it.date) + '</span>');
+                (it.categories || []).slice(0, 3).forEach(function(cat) {
+                    metaBits.push('<span class="cat">' + esc(cat) + '</span>');
+                });
+                (it.tags || []).slice(0, 3).forEach(function(tag) {
+                    metaBits.push('<span class="tag">#' + esc(tag) + '</span>');
+                });
+                if (metaBits.length) html += '<div class="meta">' + metaBits.join('') + '</div>';
                 if (it.source) html += '<div class="source">📡 ' + esc(it.source) + '</div>';
-                html += '</div>';
+                html += '</div>';  // .body
+                html += '</a>';
             });
             html += '</div>';
             c.innerHTML = html;

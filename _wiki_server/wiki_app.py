@@ -1177,22 +1177,91 @@ def news_page():
     )
 
 
+def _resolve_blog_asset(rel: str) -> str:
+    """Pfad eines Bild-/HTML-Assets im Blog-Dir auf eine URL mappen, die
+    der Portal-Browser auflösen kann. Absolute URLs (http/https) bleiben.
+    Pfade die mit ``/blog/`` beginnen werden durchgereicht. Alles andere
+    bekommt das ``/blog/``-Prefix vorangestellt.
+    """
+    if not rel:
+        return ""
+    s = str(rel).strip()
+    if not s:
+        return ""
+    if s.startswith(("http://", "https://", "//", "data:")):
+        return s
+    if s.startswith("/blog/") or s.startswith("/static/"):
+        return s
+    # Relative Pfade wie "images/foo.jpg" oder "morgens.jpg" → /blog/images/foo.jpg
+    return "/blog/" + s.lstrip("/")
+
+
+def _post_detail_url(p: dict) -> str:
+    """Findet die URL zur Detail-Seite eines Posts (vom Hermes-Agent als
+    Einzel-HTML-Datei im Blog-Dir abgelegt). Probiert mehrere Felder, weil
+    blog_generator.py-Forks unterschiedliche Namen benutzen.
+    """
+    # 1) Expliziter Pfad
+    for key in ("path", "filename", "file", "html"):
+        v = p.get(key)
+        if v and isinstance(v, str):
+            return _resolve_blog_asset(v)
+    # 2) Slug → /blog/<slug>.html
+    slug = p.get("slug") or p.get("id")
+    if slug and isinstance(slug, str):
+        return "/blog/" + slug.lstrip("/").rstrip(".html") + ".html"
+    # 3) Fallback: url (kann auch eine externe Quelle sein — dann
+    # öffnet der Browser eben die Original-Quelle)
+    return p.get("url") or p.get("link") or ""
+
+
+def _post_image_url(p: dict) -> str:
+    """Bild-URL aus den verschiedenen üblichen Feldern extrahieren."""
+    for key in ("image", "image_url", "cover", "cover_image", "thumb",
+                "thumbnail", "hero", "hero_image", "featured_image",
+                "og_image"):
+        v = p.get(key)
+        if v and isinstance(v, str):
+            return _resolve_blog_asset(v)
+    return ""
+
+
 @app.route("/api/news")
 def api_news():
-    """News-Items lesen — `posts.json` aus dem Blog-Verzeichnis."""
+    """News-Items lesen — ``posts.json`` aus dem Blog-Verzeichnis.
+
+    Liefert eine angereicherte Liste: Detail-URL zeigt auf die vom
+    Hermes-Agent erzeugte Einzel-HTML-Seite (Morgen/Mittag/Abend-Berichte
+    sind dort ausführlich formatiert), Bild-URL wird zu einem absoluten
+    ``/blog/...``-Pfad aufgelöst. Source-URL (Originalartikel) bleibt
+    getrennt, damit der Browser nicht in die externe Quelle springt
+    wenn der User die Tageszusammenfassung lesen will.
+    """
     client = get_client()
     items = []
     data = client.read_json(str(BLOG_DIR / "posts.json"), default=None)
     if data is not None:
         arr = data if isinstance(data, list) else data.get("posts", [])
         for p in arr[:60]:  # max. 60 Karten — mehr braucht keiner
+            # Kategorien können als String, Liste oder unter "category"/
+            # "categories" liegen — alle Varianten unterstützen
+            cats = p.get("categories") or p.get("category") or []
+            if isinstance(cats, str):
+                cats = [c.strip() for c in cats.split(",") if c.strip()]
+            tags = p.get("tags") or []
+            if isinstance(tags, str):
+                tags = [t.strip() for t in tags.split(",") if t.strip()]
             items.append({
-                "title":    p.get("title", "—"),
-                "url":      p.get("url") or p.get("link") or p.get("path") or "",
-                "date":     p.get("date", ""),
-                "summary":  p.get("summary") or p.get("description", "")[:280],
-                "category": p.get("category", ""),
-                "source":   p.get("source") or p.get("feed_name", ""),
+                "title":       p.get("title", "—"),
+                "detail_url":  _post_detail_url(p),
+                "source_url":  (p.get("url") if str(p.get("url", "")).startswith("http") else "")
+                                or (p.get("link") if str(p.get("link", "")).startswith("http") else ""),
+                "date":        p.get("date", ""),
+                "summary":     (p.get("summary") or p.get("description") or "")[:320],
+                "categories":  cats,
+                "tags":        tags,
+                "image":       _post_image_url(p),
+                "source":      p.get("source") or p.get("feed_name", ""),
             })
     return jsonify({"items": items, "count": len(items)})
 

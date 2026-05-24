@@ -3,6 +3,17 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.2.1
+
+- **🖼 News-Karten mit Hero-Bildern** — Backend zieht jetzt alle gängigen
+  Bild-Felder aus `posts.json` (image/cover/thumb/hero/og_image), löst
+  relative Pfade zu `/blog/…` auf und liefert Kategorien + Tags als
+  Listen. Karten haben 16:9-Hero, Titel, Summary, Datum + Pills.
+- **🔗 Klick auf Karte führt zur Detailseite** — vorher öffnete sich die
+  News-Übersicht selbst im neuen Tab. Jetzt: ganze Karte ist Link auf
+  die vom Hermes-Agent erzeugte Einzel-Beitrags-HTML
+  (`/blog/<slug>.html`), gleiche Tab.
+
 ## 1.2.0
 
 - **📰 News-Seite komplett Portal-nativ** (`/news/`) — Karten-Grid aus

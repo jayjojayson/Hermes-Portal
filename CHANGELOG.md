@@ -14,6 +14,33 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.2.1] — 2026-05-25
+
+🖼 **News-Karten mit Hero-Bildern + funktionierende Detail-Links.**
+
+### Fixed
+- **📰 News-Karten haben Bilder zurück** — v1.2.0 hat das nackte
+  Text-Grid gerendert, weil das Backend `posts.json` nur auf
+  `title/url/summary/category/source` reduziert hat. Ab v1.2.1 zieht das
+  Backend alle üblichen Bild-Felder (`image`, `cover`, `thumb`, `hero`,
+  `og_image`, …), Kategorien als Liste, Tags und löst relative Pfade
+  zu `/blog/<asset>` auf. Karten zeigen jetzt 16:9-Hero (oder
+  Platzhalter-Gradient + 📰-Icon, wenn der Beitrag kein Bild hat).
+- **🔗 Karte klickt zur Tagesbericht-Detailseite** — vorher öffnete der
+  Klick im neuen Tab die News-Übersicht selbst, weil ich
+  `target="_blank"` auf den Titel-Link gesetzt hatte und nur die erste
+  beste URL aus `posts.json` (oft die externe Quelle) als href
+  verwendete. Jetzt:
+  - Komplette Karte ist `<a>` (größere Click-Target)
+  - Backend liefert `detail_url` aus `path`/`filename`/`slug` und
+    löst auf `/blog/<datei>.html` auf (die vom Hermes-Agent
+    formatierten Morgens/Mittags/Abends-Berichte)
+  - Kein `target="_blank"` mehr — navigiert in derselben Tab
+  - Original-Quelle bleibt als `source_url` separat im Payload,
+    falls künftig ein „🔗 Originalartikel"-Button gewünscht ist
+
+---
+
 ## [1.2.0] — 2026-05-25
 
 📰 **Portal-native News-Seite, Status-Pill-Fix, Chat-Welcome-i18n,
