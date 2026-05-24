@@ -156,8 +156,9 @@
 
         var recent = getRecent();
         var recentHtml = '';
+        var _Tsb = (typeof window.t === 'function') ? window.t : function(k){ return k; };
         if (recent.length === 0) {
-            recentHtml = '<div class="sb-empty">— noch keine —</div>';
+            recentHtml = '<div class="sb-empty">— ' + _Tsb('sidebar.recent.empty') + ' —</div>';
         } else {
             recentHtml = recent.map(function(r) {
                 var label = (r.title || r.path).slice(0, 32);
@@ -233,10 +234,12 @@
             btn.innerHTML = !isCollapsed ? '◀' : '▶';
         }
 
-        // Show/hide hover strip
-        var strip = document.getElementById('sidebar-hover-strip');
-        if (strip) {
-            strip.style.display = !isCollapsed ? 'none' : 'block';
+        // Show/hide floating open-button (replaces hover-strip in v1.1.8
+        // — Hover-Strip kollidierte mit Home-Assistant-Sidebar am linken
+        // Rand, klick-basierter Button ist eindeutiger)
+        var floatBtn = document.getElementById('sidebar-float-open');
+        if (floatBtn) {
+            floatBtn.style.display = !isCollapsed ? 'flex' : 'none';
         }
     }
 
@@ -248,8 +251,8 @@
         setSidebarState(true);
         var btn = document.getElementById('sidebar-toggle');
         if (btn) btn.innerHTML = '◀';
-        var strip = document.getElementById('sidebar-hover-strip');
-        if (strip) strip.style.display = 'none';
+        var floatBtn = document.getElementById('sidebar-float-open');
+        if (floatBtn) floatBtn.style.display = 'none';
     }
 
     function determineActive() {
@@ -336,15 +339,25 @@
             if (firstLabel) firstLabel.appendChild(toggleBtn);
         }
 
-        // ---- Hover strip (left edge, reopens collapsed sidebar)
-        var hoverStrip = document.getElementById('sidebar-hover-strip');
-        if (!hoverStrip) {
-            hoverStrip = document.createElement('div');
-            hoverStrip.id = 'sidebar-hover-strip';
-            hoverStrip.className = 'sidebar-hover-strip';
-            hoverStrip.setAttribute('title', 'Sidebar aufklappen');
-            hoverStrip.addEventListener('mouseenter', openSidebar);
-            document.body.appendChild(hoverStrip);
+        // ---- Floating open-button (replaces hover-strip in v1.1.8 —
+        // sonst öffnete sich die Portal-Sidebar versehentlich, wenn man
+        // im Home-Assistant-Frontend zur HA-eigenen Sidebar am linken
+        // Rand fuhr. Klick-Button vermeidet das Mouse-Over-Konflikt.
+        // Alten Hover-Strip explizit entfernen, falls noch vorhanden
+        // (Upgrade-Pfad aus älteren Versionen).
+        var legacyStrip = document.getElementById('sidebar-hover-strip');
+        if (legacyStrip) legacyStrip.remove();
+        var floatBtn = document.getElementById('sidebar-float-open');
+        if (!floatBtn) {
+            floatBtn = document.createElement('button');
+            floatBtn.id = 'sidebar-float-open';
+            floatBtn.className = 'sidebar-float-open-btn';
+            floatBtn.setAttribute('type', 'button');
+            floatBtn.setAttribute('aria-label', 'Sidebar aufklappen');
+            floatBtn.setAttribute('title', 'Sidebar aufklappen');
+            floatBtn.innerHTML = '▶';
+            floatBtn.addEventListener('click', openSidebar);
+            document.body.appendChild(floatBtn);
         }
 
         // Set initial state
@@ -362,12 +375,12 @@
             sb.classList.add('collapsed');
             document.body.classList.add('collapsed');
             toggleBtn.innerHTML = '▶';
-            hoverStrip.style.display = 'block';
+            floatBtn.style.display = 'flex';
         } else {
             sb.classList.remove('collapsed');
             document.body.classList.remove('collapsed');
             toggleBtn.innerHTML = '◀';
-            hoverStrip.style.display = 'none';
+            floatBtn.style.display = 'none';
         }
         // Attach click handler
         toggleBtn.onclick = toggleSidebar;

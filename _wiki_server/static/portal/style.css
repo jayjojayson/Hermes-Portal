@@ -391,21 +391,40 @@ body[data-page] > header:not(.site-header) { display: none; }
 }
 
 /* Hover strip to reopen collapsed sidebar */
-.sidebar-hover-strip {
+/* Schwebender Pfeil-Button zum Aufklappen der eingeklappten Sidebar.
+   Ersetzt seit v1.1.8 den unsichtbaren Hover-Strip am linken Rand —
+   der kollidierte mit der Home-Assistant-Sidebar, die sich auch am
+   linken Rand öffnet. Click-basierter Button ist eindeutiger. */
+.sidebar-float-open-btn {
     position: fixed;
-    left: 0;
-    top: 64px;
-    bottom: 0;
-    width: 8px;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
     z-index: 48;
+    width: 32px;
+    height: 60px;
+    border-radius: 0 8px 8px 0;
+    background: var(--bg-secondary, #1a1d24);
+    border: 1px solid var(--border-color, #2a2e38);
+    border-left: none;
+    color: var(--text-secondary, #b0b6c0);
     cursor: pointer;
-    background: transparent;
-    transition: background 0.2s;
+    font-size: 0.95rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    transition: background 0.15s, color 0.15s, transform 0.15s;
 }
-.sidebar-hover-strip:hover {
-    background: rgba(122, 162, 255, 0.15);
+.sidebar-float-open-btn:hover {
+    background: var(--accent, #5cc8ff);
+    color: #fff;
+    transform: translateY(-50%) translateX(2px);
 }
-.site-sidebar:not(.collapsed) ~ .sidebar-hover-strip {
+body.collapsed .sidebar-float-open-btn {
+    display: flex;
+}
+body:not(.collapsed) .sidebar-float-open-btn {
     display: none;
 }
 .site-sidebar .sb-group {

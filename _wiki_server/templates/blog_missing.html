@@ -3,6 +3,158 @@
 {% block page_key %}{{ 'news' if page_label in ['News','Noticias','Actualités'] else ('briefing' if page_label in ['Briefing','Informe'] else 'aufgaben') }}{% endblock %}
 
 {% block content %}
+{# Für die Aufgaben-Seite zeigen wir einen Portal-nativen Fallback an —
+   ein bedienbarer Mini-Editor für aufgaben.md, damit der User nicht erst
+   den Hermes-Agent konfigurieren muss, um Aufgaben pflegen zu können.
+   News/Briefing bleiben beim klassischen „Datei fehlt"-Hinweis, weil die
+   Inhalte vom Agent erzeugt werden und vom User nicht direkt editiert
+   werden können. #}
+{% if filename == 'aufgaben.html' %}
+<div class="card" style="max-width: 980px; margin: 2rem auto; padding: 2rem;">
+  <h1 style="margin-top:0;">📋 {{ t('aufgaben.title') }}</h1>
+
+  <!-- Inline „neue Aufgabe"-Form (auto-sync — schreibt sofort nach
+       aufgaben.md auf dem Hermes-Agent, kein separater Sync-Button nötig) -->
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin: 1rem 0;
+              padding: 1rem; background: var(--bg-secondary, #1a1d24);
+              border-radius: 8px; border: 1px solid var(--border-color, #2a2e38);">
+    <input type="text" id="new-task-title"
+           placeholder="{{ t('aufgaben.new_placeholder') }}"
+           style="flex:1 1 200px; padding: 0.5rem 0.75rem;
+                  border: 1px solid var(--border-color, #2a2e38);
+                  border-radius: 6px; background: var(--bg-primary);
+                  color: var(--text-primary); font-size: 0.95rem;"
+           onkeydown="if(event.key==='Enter') addInlineTask()">
+    <button class="btn-sm btn-sm-primary"
+            onclick="addInlineTask()" style="padding: 0.5rem 1rem;">
+      ➕ {{ t('aufgaben.add_button') }}
+    </button>
+  </div>
+
+  <div id="aufgaben-list" style="min-height: 200px;">
+    <p style="color: var(--text-secondary);">{{ t('aufgaben.loading') }}</p>
+  </div>
+
+  <details style="margin-top: 2rem; padding-top: 1rem;
+                  border-top: 1px dashed var(--border-color, #2a2e38);">
+    <summary style="cursor: pointer; font-size: 0.88rem;
+                    color: var(--text-secondary);">
+      💡 {{ t('aufgaben.about_title') }}
+    </summary>
+    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+      {{ t('aufgaben.about_body') }}
+      <code>{{ full_path }}</code>
+    </p>
+  </details>
+</div>
+
+<script>
+(function() {
+    var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+
+    function esc(s) {
+        var d = document.createElement('div'); d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    function parseAufgaben(md) {
+        // Sehr leichter Parser: extrahiert Aufgaben aus „## Offene Aufgaben"
+        // und „## Erledigte Aufgaben"-Sektionen, jeweils anhand der „### "-
+        // Überschriften innerhalb. Reicht für die per Portal angelegten Tasks.
+        var sections = { open: [], done: [] };
+        if (!md) return sections;
+        var current = null;
+        md.split(/\r?\n/).forEach(function(line) {
+            var m = line.match(/^##\s+(.+?)\s*$/);
+            if (m) {
+                var name = m[1].toLowerCase();
+                if (name.indexOf('offen') === 0 || name.indexOf('open') === 0) current = 'open';
+                else if (name.indexOf('erledigt') === 0 || name.indexOf('done') === 0 || name.indexOf('complete') === 0) current = 'done';
+                else current = null;
+                return;
+            }
+            var h3 = line.match(/^###\s+(.+?)\s*$/);
+            if (h3 && current) sections[current].push(h3[1].trim());
+        });
+        return sections;
+    }
+
+    function render() {
+        var listEl = document.getElementById('aufgaben-list');
+        if (!listEl) return;
+        listEl.innerHTML = '<p style="color: var(--text-secondary);">' +
+            esc(T('aufgaben.loading')) + '</p>';
+
+        fetch('/api/aufgaben', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var sections = parseAufgaben(data.content || '');
+            if (!sections.open.length && !sections.done.length) {
+                listEl.innerHTML = '<p style="text-align:center; padding: 2rem; color: var(--text-secondary);">' +
+                    esc(T('aufgaben.empty')) + '</p>';
+                return;
+            }
+            var html = '';
+            if (sections.open.length) {
+                html += '<h3 style="margin-top: 1.5rem;">🔲 ' + esc(T('aufgaben.section.open')) +
+                        ' <span style="color: var(--text-secondary); font-weight: normal;">(' +
+                        sections.open.length + ')</span></h3>';
+                html += '<ul style="list-style: none; padding: 0;">';
+                sections.open.forEach(function(t) {
+                    html += '<li style="padding: 0.5rem 0.75rem; margin: 0.25rem 0; ' +
+                            'background: var(--bg-secondary, #1a1d24); border-radius: 6px; ' +
+                            'border-left: 3px solid var(--accent, #5cc8ff);">' +
+                            esc(t) + '</li>';
+                });
+                html += '</ul>';
+            }
+            if (sections.done.length) {
+                html += '<h3 style="margin-top: 1.5rem;">✅ ' + esc(T('aufgaben.section.done')) +
+                        ' <span style="color: var(--text-secondary); font-weight: normal;">(' +
+                        sections.done.length + ')</span></h3>';
+                html += '<ul style="list-style: none; padding: 0;">';
+                sections.done.forEach(function(t) {
+                    html += '<li style="padding: 0.5rem 0.75rem; margin: 0.25rem 0; ' +
+                            'background: var(--bg-secondary, #1a1d24); border-radius: 6px; ' +
+                            'opacity: 0.6; text-decoration: line-through;">' +
+                            esc(t) + '</li>';
+                });
+                html += '</ul>';
+            }
+            listEl.innerHTML = html;
+        })
+        .catch(function(e) {
+            listEl.innerHTML = '<p style="color: var(--error-color, #ef4444);">' +
+                esc(T('aufgaben.load_error')) + ' ' + esc(e.message || e) + '</p>';
+        });
+    }
+
+    window.addInlineTask = function() {
+        var inp = document.getElementById('new-task-title');
+        if (!inp) return;
+        var title = (inp.value || '').trim();
+        if (!title) return;
+        fetch('/api/quick-prompt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title, body: '' }),
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.ok || d.status === 'ok') {
+                inp.value = '';
+                render();
+            } else {
+                alert(T('aufgaben.add_error') + ' ' + (d.error || ''));
+            }
+        })
+        .catch(function(e) { alert(T('aufgaben.add_error') + ' ' + (e.message || e)); });
+    };
+
+    render();
+})();
+</script>
+{% else %}
 <div class="card" style="max-width: 720px; margin: 4rem auto; padding: 2.5rem;">
   <h1 style="margin-top:0;">{{ t('blog_missing.title')|replace('%s', page_label) }}</h1>
 
@@ -22,4 +174,5 @@
   <h3>{{ t('blog_missing.hide.title') }}</h3>
   <p>{{ t('blog_missing.hide.body')|replace('%s', page_label) }}</p>
 </div>
+{% endif %}
 {% endblock %}

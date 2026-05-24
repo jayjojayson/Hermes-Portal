@@ -76,8 +76,11 @@ exe = EXE(
     # macOS: console=False vermeidet Crash beim Finder-Doppelklick (kein
     # Controlling-Terminal → PyInstaller-Bootloader stürzt mit console=True
     # in einigen Versionen lautlos ab, genau das Symptom in v1.0.3-1.0.6).
-    # Windows/Linux: bleibt True für Power-User die per CLI starten.
-    console=False if sys.platform == "darwin" else True,
+    # Windows: console=False, damit beim Doppelklick im Explorer kein
+    # schwarzes Terminal-Fenster aufpoppt (User-Request v1.1.8 — das war
+    # ein UX-Bug, in HA/Mac/Linux gibt's das Problem nicht).
+    # Linux: bleibt True für CLI-Start aus dem Terminal.
+    console=False if sys.platform in ("darwin", "win32") else True,
     icon=os.path.join("static", "portal", "logo.png") if os.path.exists(os.path.join("static", "portal", "logo.png")) else None,
     codesign_identity=_codesign,
     entitlements_file=None,

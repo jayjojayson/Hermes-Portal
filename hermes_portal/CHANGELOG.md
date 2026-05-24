@@ -3,6 +3,25 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.8
+
+- **🚀 Update-Banner** auf allen Pages — meldet automatisch, wenn auf GitHub
+  eine neuere Version verfügbar ist (HA-User updaten weiterhin über den
+  Supervisor; der Banner ist primär für Desktop-/Docker-Installationen,
+  zeigt aber auch hier den Hinweis korrekt).
+- **🔐 Private-Key anzeigen für Migration** — neuer „Reveal"-Button im
+  SSH-Wizard (Settings → 🛰️ App), zum Übernehmen des Portal-Keys auf
+  weitere Installationen ohne `authorized_keys` anzufassen.
+- **📋 Aufgaben-Page funktioniert direkt** — Default-`aufgaben.md` wird
+  beim ersten Aufruf automatisch angelegt; eine native Tasks-Page mit
+  „➕ Aufgabe hinzufügen"-Form steht als Fallback bereit, wenn der
+  Hermes-Agent noch kein `aufgaben.html` generiert hat.
+- **⬅️ Sidebar via Klick-Button öffnen** statt Hover am linken Rand —
+  vermeidet Konflikte mit der Home-Assistant-Sidebar im HA-Frontend.
+- **💬 Chat-Eingabefeld leert sich nach Send** (vorher blieb der Text drin).
+- **🌐 Dashboard- und Sidebar-Empty-States** komplett in en/de/es/fr.
+- **🚮 Slash-Command-Dropdown im Chat entfernt** (war nicht funktional).
+
 ## 1.1.7
 
 - **📥 SSH-Key importieren statt generieren** — bestehenden Private-Key

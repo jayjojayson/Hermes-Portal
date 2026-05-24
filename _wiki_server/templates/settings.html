@@ -897,6 +897,30 @@
                         <span id="ssh-fingerprint" style="font-size:0.78rem; color:var(--text-secondary); margin-left:auto; font-family:var(--mono);"></span>
                     </div>
 
+                    <!-- Reveal Private Key (für Migration auf andere Geräte) -->
+                    <details style="margin-top:0.75rem; padding:0.6rem; border:1px solid var(--warning-color, #f59e0b); border-radius:8px; background:rgba(245,158,11,0.05);">
+                        <summary style="cursor:pointer; font-size:0.86rem; color:var(--warning-color, #f59e0b); font-weight:600;">
+                            🔐 {{ t('ssh.wizard.reveal_title') }}
+                        </summary>
+                        <p style="font-size:0.83rem; color:var(--text-secondary); margin:0.5rem 0;">
+                            ⚠️ {{ t('ssh.wizard.reveal_warning') }}
+                        </p>
+                        <div id="ssh-priv-actions" style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button class="btn-sm btn-sm-warning" onclick="revealSshPrivateKey()" id="ssh-priv-reveal-btn">
+                                👁 {{ t('ssh.wizard.reveal_button') }}
+                            </button>
+                        </div>
+                        <div id="ssh-priv-box" style="display:none; margin-top:0.6rem;">
+                            <textarea id="ssh-privkey" class="app-input" readonly
+                                style="width:100%; font-family:var(--mono); font-size:0.78rem; height:12rem; min-height:12rem; resize:vertical; white-space:pre; overflow:auto; box-sizing:border-box;"></textarea>
+                            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap; margin-top:0.4rem;">
+                                <button class="btn-sm btn-sm-secondary" onclick="copySshPrivkey()">📋 {{ t('ssh.wizard.copy_privkey') }}</button>
+                                <button class="btn-sm btn-sm-secondary" onclick="hideSshPrivateKey()">✕ {{ t('ssh.wizard.hide_button') }}</button>
+                                <span id="ssh-priv-feedback" style="font-size:0.82rem; color:var(--success-color, #22c55e); opacity:0; transition:opacity 0.3s;">{{ t('ssh.wizard.copied') }}</span>
+                            </div>
+                        </div>
+                    </details>
+
                     <details style="margin-top:0.75rem;">
                         <summary style="cursor:pointer; font-size:0.86rem;">📖 {{ t('ssh.wizard.manual_title') }}</summary>
                         <ol style="font-size:0.85rem; line-height:1.6; color:var(--text-secondary); margin-top:0.5rem;">
@@ -2097,6 +2121,61 @@ function copySshPubkey() {
     try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(pub.value);
+            ok = true;
+        } else {
+            ok = document.execCommand('copy');
+        }
+    } catch (e) { ok = false; }
+    if (fb) {
+        fb.textContent = ok ? 'Kopiert!' : 'Kopieren fehlgeschlagen';
+        fb.style.opacity = '1';
+        setTimeout(function() { fb.style.opacity = '0'; }, 1500);
+    }
+}
+
+// --- Private-Key sichtbar machen (für Migration auf andere Geräte) ----
+function revealSshPrivateKey() {
+    var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+    if (!confirm(T('ssh.wizard.reveal_confirm'))) return;
+    fetch('/api/settings/app/ssh/reveal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: true }),
+    })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, data: d }; }); })
+    .then(function(res){
+        if (!res.ok || res.data.status !== 'ok') {
+            alert((res.data && res.data.error) || 'Reveal failed');
+            return;
+        }
+        var box = document.getElementById('ssh-priv-box');
+        var ta  = document.getElementById('ssh-privkey');
+        if (ta)  ta.value = res.data.private_key || '';
+        if (box) box.style.display = 'block';
+        var btn = document.getElementById('ssh-priv-reveal-btn');
+        if (btn) btn.style.display = 'none';
+    })
+    .catch(function(e){ alert('Reveal failed: ' + (e.message || e)); });
+}
+
+function hideSshPrivateKey() {
+    var box = document.getElementById('ssh-priv-box');
+    var ta  = document.getElementById('ssh-privkey');
+    if (ta)  ta.value = '';
+    if (box) box.style.display = 'none';
+    var btn = document.getElementById('ssh-priv-reveal-btn');
+    if (btn) btn.style.display = '';
+}
+
+function copySshPrivkey() {
+    var priv = document.getElementById('ssh-privkey');
+    var fb = document.getElementById('ssh-priv-feedback');
+    if (!priv) return;
+    priv.select();
+    var ok = false;
+    try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(priv.value);
             ok = true;
         } else {
             ok = document.execCommand('copy');

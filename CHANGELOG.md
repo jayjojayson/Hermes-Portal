@@ -14,6 +14,56 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.8] — 2026-05-24
+
+🎯 **Update-Banner, Aufgaben-Out-of-the-Box, Windows ohne Terminal, Private-Key-Reveal
++ kleinere UX-Bugfixes.**
+
+### Added
+- **🚀 Update-Banner überall** — schwebende Toast oben rechts auf jeder Page,
+  wenn eine neuere Hermes-Portal-Version auf GitHub veröffentlicht wurde
+  (User-Wunsch: „In der Mac App wurde mir keine Update auf die neue Version
+  angezeigt"). Klick-Link führt zur Release-Page, „✕" dismissed für genau
+  diese Version (localStorage). Backend-Endpoint `/api/version/check` mit
+  1h-Cache existierte schon — nur die UI fehlte.
+- **🔐 Private-Key anzeigen für Migration** — neuer „Reveal private key"-Button
+  unter Settings → 🛰️ App → SSH-Wizard. Aufklappbares Warn-Panel mit
+  Bestätigung, danach Klartext-Textarea + Copy-Button. So lässt sich der
+  Portal-eigene SSH-Key auf andere Geräte kopieren, ohne die `authorized_keys`
+  des Agents anzufassen. Endpoint: `POST /api/settings/app/ssh/reveal`.
+- **📋 Aufgaben-Page funktioniert direkt** — Default-`aufgaben.md` wird
+  automatisch in `BLOG_DIR/aufgaben.md` angelegt, wenn sie noch fehlt
+  (Template: `_wiki_server/templates/aufgaben_default.md`). Wenn der
+  Hermes-Agent keine `aufgaben.html` generiert hat, zeigt das Portal jetzt
+  selbst eine bedienbare Tasks-Page mit „➕ Aufgabe hinzufügen"-Form ganz
+  oben — Auto-Sync nach `aufgaben.md`, kein separater Sync-Button mehr.
+- **⬅️ Sidebar-Öffnen via klickbarem Pfeil-Button** — ersetzt den
+  unsichtbaren Hover-Strip am linken Rand, der sich versehentlich öffnete,
+  wenn man im Home-Assistant-Frontend die HA-eigene Sidebar bedienen
+  wollte. Klick-Button ist eindeutig + visuell sichtbar.
+
+### Fixed
+- **💬 Chat-Eingabefeld leert sich nach Send** — vorher blieb der Text
+  drin (kosmetischer Bug seit v1.0).
+- **🌐 Dashboard-Empty-States übersetzt** — „Kein anstehender Job",
+  „Keine News verfügbar.", „Keine Aufgaben gefunden.", „Noch keine
+  Wiki-Beiträge vorhanden.", „Kein Hermes-Logfile erreichbar."
+  + Sidebar-„noch keine" + Chat-Sessions-leere-Liste laufen jetzt über
+  `t()` und folgen der UI-Sprache (en/de/es/fr).
+- **🪟 Windows: kein Terminal-Fenster mehr** beim Doppelklick auf die App
+  (PyInstaller-Spec: `console=False` jetzt auch für `win32`, vorher nur
+  `darwin`).
+
+### Removed
+- **🚮 Slash-Command-Dropdown im Chat** entfernt (User-Wunsch: „Da die
+  CLI-Kommandos im Chat nicht funktionieren, entfernen wir diese Funktion
+  wieder vollständig"). Button neben dem Ordner-Picker ist weg, samt
+  Dropdown-Markup + JS. Slash-Befehle können weiterhin manuell getippt
+  und nativ an den Agent gesendet werden — sie werden Portal-seitig
+  nicht mehr interceptiert oder als Schnellauswahl angeboten.
+
+---
+
 ## [1.1.7] — 2026-05-24
 
 🔑 **SSH-Key paste-import + Settings-Save-Bar i18n + README-Konsolidierung.**

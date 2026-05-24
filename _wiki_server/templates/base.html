@@ -177,6 +177,60 @@
     {# Placeholder – wird von site-header.js befüllt #}
     <div id="site-header"></div>
 
+    {# Update-Banner: erscheint, wenn /api/version/check eine neuere Version
+       meldet. Dismissibility via localStorage pro Version, damit man sich
+       das gleiche Update nicht zwei Mal wegklicken muss. Background-Fetch
+       läuft erst 2 Sekunden nach Page-Load, um den First-Paint nicht zu
+       blockieren. #}
+    <div id="hp-update-banner" style="display:none; position:fixed; top:14px; right:14px; z-index:9999;
+         max-width:380px; padding:12px 14px; border-radius:10px;
+         background:rgba(34,197,94,0.12); border:1px solid #22c55e;
+         color:#bbf7d0; box-shadow:0 4px 24px rgba(0,0,0,0.25);
+         font-size:0.88rem;">
+        <span id="hp-update-banner-text"></span>
+        <a id="hp-update-banner-link" href="#" target="_blank" rel="noopener"
+           style="color:#86efac; text-decoration:underline; margin-left:6px;"></a>
+        <button onclick="window.__hpDismissUpdate()"
+                style="background:transparent; border:none; color:#bbf7d0;
+                       float:right; cursor:pointer; font-size:1.1rem;
+                       padding:0 0 0 8px; line-height:1;">✕</button>
+    </div>
+    <script>
+    (function() {
+        var BAN_KEY = 'hp_update_dismissed_v';
+        function show(latest, url) {
+            var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+            var dismissed = '';
+            try { dismissed = localStorage.getItem(BAN_KEY) || ''; } catch (e) {}
+            if (dismissed === latest) return;
+            var bar = document.getElementById('hp-update-banner');
+            var txt = document.getElementById('hp-update-banner-text');
+            var lnk = document.getElementById('hp-update-banner-link');
+            if (!bar || !txt || !lnk) return;
+            var msg = T('update.banner.available') || 'A new version is available:';
+            txt.textContent = '🚀 ' + msg + ' v' + latest;
+            lnk.href = url;
+            lnk.textContent = T('update.banner.view') || 'View release →';
+            bar.style.display = 'block';
+            window.__hpDismissUpdate = function() {
+                try { localStorage.setItem(BAN_KEY, latest); } catch (e) {}
+                bar.style.display = 'none';
+            };
+        }
+        function check() {
+            fetch('/api/version/check', { cache: 'no-store' })
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                if (d && d.update_available && d.latest) show(d.latest, d.url);
+            })
+            .catch(function() { /* offline / rate-limited — kein Drama */ });
+        }
+        // Erst 2s nach Load — First-Paint nicht blockieren
+        if (document.readyState === 'complete') setTimeout(check, 2000);
+        else window.addEventListener('load', function() { setTimeout(check, 2000); });
+    })();
+    </script>
+
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
     <div class="flash">

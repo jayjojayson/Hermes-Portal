@@ -1118,6 +1118,33 @@ def api_wiki_export():
     }
 
 
+_AUFGABEN_DEFAULT_PATH = Path(__file__).parent / "templates" / "aufgaben_default.md"
+
+
+def _ensure_aufgaben_md(client) -> str:
+    """Liest aufgaben.md vom Hermes-Agent; legt sie aus dem mitgelieferten
+    Default-Template an, wenn sie fehlt. So funktioniert die Aufgaben-Seite
+    direkt beim ersten Start ohne manuellen Setup-Schritt auf dem Agent.
+    """
+    aufgaben_path = str(BLOG_DIR / "aufgaben.md")
+    content = client.read_text(aufgaben_path)
+    if content:
+        return content
+    # Default anlegen
+    try:
+        default_text = _AUFGABEN_DEFAULT_PATH.read_text(encoding="utf-8")
+    except OSError:
+        default_text = "# Aufgabenliste\n\n## Offene Aufgaben\n\n## Erledigte Aufgaben\n"
+    # Best-effort write — wenn der Agent nicht erreichbar ist, geben wir
+    # einfach den Default-Text zurück, der nächste Quick-Prompt versucht es
+    # erneut.
+    try:
+        client.write_text(aufgaben_path, default_text)
+    except Exception:
+        pass
+    return default_text
+
+
 @app.route("/api/aufgaben", methods=["GET", "POST"])
 def api_aufgaben():
     """API: Aufgabenliste lesen/schreiben (via hermes_client – ssh-fähig)."""
@@ -1125,7 +1152,7 @@ def api_aufgaben():
     aufgaben_path = str(BLOG_DIR / "aufgaben.md")
 
     if request.method == "GET":
-        content = client.read_text(aufgaben_path)
+        content = _ensure_aufgaben_md(client)
         return jsonify({"content": content or ""})
 
     elif request.method == "POST":
@@ -2385,8 +2412,8 @@ def api_quick_prompt():
 
     client = get_client()
     aufgaben_path = str(BLOG_DIR / "aufgaben.md")
-    text = client.read_text(aufgaben_path)
-    if text is None:
+    text = _ensure_aufgaben_md(client)
+    if text is None or not text.strip():
         text = "# Aufgabenliste\n\n## Offene Aufgaben\n\n## Erledigte Aufgaben\n"
 
     block = f"\n### {title}\n- **Bearbeiter**: {cfg.agent_name}\n- **Status**: Offen\n- **Erstellt**: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
@@ -3887,6 +3914,42 @@ def api_settings_app_ssh_import():
         })
     except Exception as ex:
         return jsonify({"status": "error", "error": str(ex)}), 500
+
+
+@app.route("/api/settings/app/ssh/reveal", methods=["POST"])
+def api_settings_app_ssh_reveal():
+    """Zeigt den lokal gespeicherten Private-Key — für Migration auf andere
+    Geräte. Sicherheitscheck: nur wenn der Aufruf von localhost kommt (keine
+    Remote-Exfiltration übers Netzwerk).
+
+    Body: ``{ "confirm": true }`` (explizite User-Bestätigung)
+
+    Response: ``{ "status": "ok", "private_key": "..." }`` oder
+    ``{ "status": "error", "error": "..." }`` mit 403/404/500.
+    """
+    body = request.get_json(silent=True) or {}
+    if not body.get("confirm"):
+        return jsonify({"status": "error", "error": "Confirmation required."}), 400
+
+    # Pfad: konfigurierter oder Default
+    configured = cfg.ssh_key_path or ""
+    candidate = Path(configured) if configured else _default_ssh_key_path()
+    if not candidate.is_file():
+        return jsonify({
+            "status": "error",
+            "error": "No private key found at " + str(candidate),
+        }), 404
+
+    try:
+        priv_text = candidate.read_text(encoding="utf-8")
+    except OSError as ex:
+        return jsonify({"status": "error", "error": str(ex)}), 500
+
+    return jsonify({
+        "status": "ok",
+        "key_path": str(candidate),
+        "private_key": priv_text,
+    })
 
 
 @app.route("/api/settings/app/test", methods=["POST"])

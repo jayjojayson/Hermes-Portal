@@ -610,13 +610,14 @@
         setEl('kpiJobs', fmtNum(data.active_cronjobs || 0));
 
         // Nächster Job
+        var _T0 = (typeof window.t === 'function') ? window.t : function(k){ return k; };
         var nj = (data.next_jobs && data.next_jobs[0]) || null;
         if (nj) {
             $('#hermesNextJobIn').textContent = nj.next_run_human || '–';
-            $('#hermesNextJobLabel').textContent = '⏭ ' + (nj.name || 'Nächster Job');
+            $('#hermesNextJobLabel').textContent = '⏭ ' + (nj.name || _T0('dashboard.next_job'));
         } else {
             $('#hermesNextJobIn').textContent = '–';
-            $('#hermesNextJobLabel').textContent = 'Kein anstehender Job';
+            $('#hermesNextJobLabel').textContent = _T0('dashboard.no_next_job');
         }
 
         // System
@@ -699,7 +700,7 @@
                 '<a href="' + esc(n.url) + '">' + esc(n.title) + '</a>';
             nl.appendChild(el);
         });
-        if (!nl.children.length) nl.innerHTML = '<div class="empty">Keine News verfügbar.</div>';
+        if (!nl.children.length) nl.innerHTML = '<div class="empty">' + esc(_T0('dashboard.no_news')) + '</div>';
 
         // Letzte 2 Aufgaben aus aufgaben.md in der Hermes-Box
         var hjl = $('#hermesNextJobs');
@@ -713,7 +714,7 @@
                 '<span class="ttl" style="' + titleStyle + '">' + esc(t.title) + '</span>';
             hjl.appendChild(li);
         });
-        if (!hjl.children.length) hjl.innerHTML = '<li class="empty">Keine Aufgaben gefunden.</li>';
+        if (!hjl.children.length) hjl.innerHTML = '<li class="empty">' + esc(_T0('dashboard.no_tasks')) + '</li>';
 
         // Nächste 3 Cronjobs in der Cronjobs-Box.
         // Tooltip enthält zusätzlich die ABSOLUTE Lokal-Zeit (Browser-TZ).
@@ -746,7 +747,7 @@
                 '<span class="tag-action">' + iconType + ' ' + esc(w.section) + '</span>';
             wr.appendChild(li);
         });
-        if (!wr.children.length) wr.innerHTML = '<li class="empty">Noch keine Wiki-Beiträge vorhanden.</li>';
+        if (!wr.children.length) wr.innerHTML = '<li class="empty">' + esc(_T0('dashboard.no_recent_wiki')) + '</li>';
     }
 
     function renderActivityPreview(lines) {
@@ -763,7 +764,11 @@
                 '<span class="ttl" title="' + esc(line) + '" style="font-family:var(--mono); font-size:0.82em; color:var(--text-dim);">' + esc(rest.slice(0, 120)) + '</span>';
             ap.appendChild(li);
         });
-        if (!ap.children.length) ap.innerHTML = '<li class="empty">Kein Hermes-Logfile erreichbar. <a href="/activity/">Konfigurieren →</a></li>';
+        if (!ap.children.length) {
+            var _Ta = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+            ap.innerHTML = '<li class="empty">' + esc(_Ta('dashboard.no_activity')) +
+                ' <a href="/activity/">' + esc(_Ta('dashboard.activity.configure')) + ' →</a></li>';
+        }
     }
 
     function loadAll() {
