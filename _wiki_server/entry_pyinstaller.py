@@ -16,32 +16,37 @@ from __future__ import annotations
 # dyld-Library-Loading, Gatekeeper-Library-Validation). Diagnostik nur,
 # kostet beim normalen Start ~5 ms.
 # ──────────────────────────────────────────────────────────────────────
-try:
-    import os as _os_marker
-    import sys as _sys_marker
-    from pathlib import Path as _Path_marker
-    from datetime import datetime as _dt_marker
-    _marker = _Path_marker.home() / "Desktop" / "hermes-portal-started.txt"
-    _marker.write_text(
-        f"Hermes Portal Startup-Marker\n"
-        f"────────────────────────────\n"
-        f"Zeit:       {_dt_marker.now().isoformat()}\n"
-        f"PID:        {_os_marker.getpid()}\n"
-        f"Python:     {_sys_marker.version.split(chr(10))[0]}\n"
-        f"Executable: {_sys_marker.executable}\n"
-        f"argv:       {_sys_marker.argv}\n"
-        f"CWD:        {_os_marker.getcwd()}\n"
-        f"HOME:       {_os_marker.environ.get('HOME', '<unset>')}\n"
-        f"_MEIPASS:   {getattr(_sys_marker, '_MEIPASS', '<not frozen>')}\n"
-        f"frozen:     {getattr(_sys_marker, 'frozen', False)}\n"
-        f"\nWenn diese Datei existiert aber die App trotzdem nicht startet:\n"
-        f"  → Crash passiert NACH Python-Start. Schau in:\n"
-        f"     ~/Desktop/Hermes-Portal-Crash.log\n"
-        f"     ~/Desktop/hermes-portal-trace.log\n",
-        encoding="utf-8",
-    )
-except Exception:
-    pass
+# Marker + Trace nur noch wenn explizit angefordert (HP_DEBUG=1) — in den
+# v1.0.x-Releases waren die Default-an, weil wir Mac-Startup-Crashes
+# diagnostizieren mussten. App läuft jetzt stabil, also Desktop sauber halten.
+import os as _os_marker
+_HP_DEBUG_STARTUP = _os_marker.environ.get("HP_DEBUG", "").lower() in ("1", "true", "yes")
+if _HP_DEBUG_STARTUP:
+    try:
+        import sys as _sys_marker
+        from pathlib import Path as _Path_marker
+        from datetime import datetime as _dt_marker
+        _marker = _Path_marker.home() / "Desktop" / "hermes-portal-started.txt"
+        _marker.write_text(
+            f"Hermes Portal Startup-Marker\n"
+            f"────────────────────────────\n"
+            f"Zeit:       {_dt_marker.now().isoformat()}\n"
+            f"PID:        {_os_marker.getpid()}\n"
+            f"Python:     {_sys_marker.version.split(chr(10))[0]}\n"
+            f"Executable: {_sys_marker.executable}\n"
+            f"argv:       {_sys_marker.argv}\n"
+            f"CWD:        {_os_marker.getcwd()}\n"
+            f"HOME:       {_os_marker.environ.get('HOME', '<unset>')}\n"
+            f"_MEIPASS:   {getattr(_sys_marker, '_MEIPASS', '<not frozen>')}\n"
+            f"frozen:     {getattr(_sys_marker, 'frozen', False)}\n"
+            f"\nWenn diese Datei existiert aber die App trotzdem nicht startet:\n"
+            f"  → Crash passiert NACH Python-Start. Schau in:\n"
+            f"     ~/Desktop/Hermes-Portal-Crash.log\n"
+            f"     ~/Desktop/hermes-portal-trace.log\n",
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -52,7 +57,13 @@ except Exception:
 # ──────────────────────────────────────────────────────────────────────
 _TRACE_PATH = None
 def _trace(step):
-    """Append-only step-log nach ~/Desktop/hermes-portal-trace.log."""
+    """Append-only step-log nach ~/Desktop/hermes-portal-trace.log.
+
+    Standardmäßig deaktiviert seit v1.2.0 — Desktop-Spam vermeiden.
+    Mit ``HP_DEBUG=1`` als Env-Var beim Start wieder aktivierbar.
+    """
+    if not _HP_DEBUG_STARTUP:
+        return
     global _TRACE_PATH
     try:
         if _TRACE_PATH is None:

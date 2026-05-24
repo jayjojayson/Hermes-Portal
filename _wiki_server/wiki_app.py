@@ -1161,6 +1161,42 @@ def _ensure_aufgaben_md(client) -> str:
     return default_text
 
 
+@app.route("/news/")
+@app.route("/news")
+def news_page():
+    """Portal-native News-Seite (seit v1.2.0). Liest die vom Hermes-Agent
+    via ``blog_generator.py`` erzeugte ``posts.json`` und rendert sie mit
+    eigenem, vollständig übersetztem Template. Wenn noch keine posts.json
+    existiert, zeigt die Seite einen freundlichen Hinweis mit Cron-Prompt-
+    Vorlage statt einer leeren Fläche.
+    """
+    return render_template(
+        "news.html",
+        rss_feeds=cfg.rss_feeds,
+        generator_path=str(BLOG_DIR / "blog_generator.py"),
+    )
+
+
+@app.route("/api/news")
+def api_news():
+    """News-Items lesen — `posts.json` aus dem Blog-Verzeichnis."""
+    client = get_client()
+    items = []
+    data = client.read_json(str(BLOG_DIR / "posts.json"), default=None)
+    if data is not None:
+        arr = data if isinstance(data, list) else data.get("posts", [])
+        for p in arr[:60]:  # max. 60 Karten — mehr braucht keiner
+            items.append({
+                "title":    p.get("title", "—"),
+                "url":      p.get("url") or p.get("link") or p.get("path") or "",
+                "date":     p.get("date", ""),
+                "summary":  p.get("summary") or p.get("description", "")[:280],
+                "category": p.get("category", ""),
+                "source":   p.get("source") or p.get("feed_name", ""),
+            })
+    return jsonify({"items": items, "count": len(items)})
+
+
 @app.route("/aufgaben/")
 @app.route("/aufgaben")
 def aufgaben_page():

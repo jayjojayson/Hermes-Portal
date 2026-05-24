@@ -569,11 +569,38 @@ WICHTIG:
 - Aufgaben werden ohne Rückfragen an <user_name> durchgeführt.
 ```
 
-Schedule z.B. alle 30 Minuten (`*/30 * * * *`) oder stündlich. Das
-Portal kümmert sich um Lesen/Schreiben der `aufgaben.md`, der Cronjob
-sorgt dafür, dass Hermes danach handelt. Neue Installationen bekommen
-beim ersten Aufruf automatisch eine Default-`aufgaben.md` angelegt —
-auf der Agent-Seite muss nichts vorbereitet werden.
+Empfohlene Frequenz: **alle 2–4 Stunden** (`0 */2 * * *`). Das Portal
+kümmert sich um Lesen/Schreiben der `aufgaben.md`, der Cronjob sorgt
+dafür, dass Hermes danach handelt. Neue Installationen bekommen beim
+ersten Aufruf automatisch eine Default-`aufgaben.md` angelegt — auf der
+Agent-Seite muss nichts vorbereitet werden.
+
+## 📰 News-Seite — Hermes holt deine RSS-Feeds
+
+Die **News**-Seite im Portal zeigt Beiträge, die dein `blog_generator.py`
+auf dem Agent in `posts.json` schreibt. RSS-Quellen werden in
+**Settings → 🛰️ App → RSS feeds** verwaltet. Damit Hermes die News
+regelmäßig aktualisiert, legst du auf dem Agent einen Cronjob an, der
+den Generator 3× täglich startet — morgens, mittags, abends
+(`0 7,12,19 * * *`). Copy-Paste den Prompt direkt von der News-Seite
+(*„⚙️ Damit Hermes die News auch generiert …"* aufklappen); im Kern:
+
+```text
+Führe den Blog-Generator aus: python3 /mnt/austausch/wiki/blog/blog_generator.py
+
+Der Generator lädt RSS-Feeds, filtert politische Inhalte (is_political()
+Funktion), kategorisiert Nachrichten und erstellt automatisch Blog-Beiträge.
+
+WICHTIG:
+- Keine politischen Nachrichten (Filter ist eingebaut)
+- Nutze nur bekannte Kategorien aus config.yaml
+- Führe das Script einfach aus, es erledigt alles automatisch
+
+Gib eine kurze Zusammenfassung aus, wie viele Beiträge erstellt wurden.
+```
+
+Wenn `posts.json` noch nicht existiert (frische Installation), zeigt die
+News-Seite einen freundlichen Hinweis statt eines Fehlers.
 
 ---
 

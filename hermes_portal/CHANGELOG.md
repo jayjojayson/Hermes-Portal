@@ -3,6 +3,24 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.2.0
+
+- **📰 News-Seite komplett Portal-nativ** (`/news/`) — Karten-Grid aus
+  `posts.json`, Cron-Hinweis mit Copy-Paste-Prompt für `blog_generator.py`
+  (3× täglich), Liste der konfigurierten RSS-Feeds + Direkt-Link zum
+  App-Tab.
+- **🔍 Update-Diagnose** im Support-Tab zeigt die rohe API-Antwort,
+  hilft bei Verbindungsproblemen.
+- **🌐 Hermes-Status-Pill-Bug** gefixt — keine rohen `hermes.status.online`-
+  Keys mehr im UI.
+- **💬 Chat-Welcome komplett übersetzt** in en/de/es/fr (Intro + 4 Quick-
+  Action-Boxen).
+- **⏰ Cronjob-Edit zeigt vollen Prompt** (war auf 120 Zeichen gekürzt
+  geladen worden).
+- **🍎 Mac-Desktop ohne Trace-Logs** — Marker/Trace nur noch mit
+  `HP_DEBUG=1` aktivierbar.
+- **2–4h-Frequenz-Empfehlung** im Aufgaben-Cron-Hinweis.
+
 ## 1.1.9
 
 - **✅ Aufgaben-Seite komplett Portal-nativ** — eigene `/aufgaben/`-Route,

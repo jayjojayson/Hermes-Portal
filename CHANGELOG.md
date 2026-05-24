@@ -14,6 +14,57 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.2.0] — 2026-05-25
+
+📰 **Portal-native News-Seite, Status-Pill-Fix, Chat-Welcome-i18n,
+Cronjob-Edit-Truncation-Fix, Update-Diagnose im Support-Tab, Mac-Desktop
+sauber.**
+
+### Added
+- **📰 News-Seite komplett Portal-nativ** (`/news/`) — eigenes Template
+  ersetzt die früher vom Hermes-Agent generierte `/blog/index.html`.
+  - Karten-Grid mit Titel, Datum, Kategorie, Summary, Quelle.
+  - Reload-Button + Live-Counter.
+  - Aufklappbare Cron-Note unten mit Copy-Paste-Prompt für den
+    `blog_generator.py` (Empfehlung: 3× täglich morgens/mittags/abends).
+  - Liste der konfigurierten RSS-Feeds aus Settings (Direkt-Link
+    zum App-Tab zum Bearbeiten).
+  - Bei leerem `posts.json` automatisches Öffnen der Cron-Note +
+    freundlicher Hinweis statt 404.
+  - Vollständig in en/de/es/fr übersetzt (15 neue i18n-Keys).
+- **🔍 Update-Check-Diagnose** im Support-Tab — aufklappbare Box zeigt
+  das rohe `/api/version/check`-JSON inkl. `error`-Feld. So sieht man
+  als User direkt, ob der API-Call funktioniert oder warum kein
+  Update-Banner erscheint.
+- **📖 README-Block „News page — Hermes fetches your RSS feeds"** (en + de)
+  parallel zum bestehenden Aufgaben-Cronjob-Hinweis.
+- **2–4h-Frequenz-Empfehlung** im Cron-Hinweis der Aufgaben-Seite.
+
+### Fixed
+- **🌐 Hermes-Status-Pill** zeigt nicht mehr `hermes.status.online`
+  als rohen Schlüssel — die i18n-Keys waren beim Refactor versehentlich
+  rausgeflogen. Jetzt korrekt „Hermes online / inaktiv / offline /
+  kein Signal" in allen 4 Sprachen.
+- **💬 Chat-Welcome-Screen vollständig übersetzt** — Intro „Ich bin %agent% —
+  dein persönlicher Chat …" und alle 4 Quick-Action-Boxen
+  (Wiki erkunden / Aktivitäten ansehen / Hilfe anbieten / Leerer Chat)
+  laufen jetzt über `t()`. Auch die Quick-Prompts in
+  Englisch/Spanisch/Französisch lokalisiert (12 neue i18n-Keys).
+- **⏰ Cronjob-Edit: voller Prompt sichtbar** — beim Edit wurde
+  `job.command || job.prompt` geladen, aber `command` ist im Backend
+  auf 120 Zeichen für die Listen-Anzeige gekürzt. Frontend nutzt jetzt
+  `job.prompt || job.command` (Prompt enthält den vollen Text).
+
+### Changed
+- **🍎 Mac-Desktop sauber** — `hermes-portal-started.txt` und
+  `hermes-portal-trace.log` werden nicht mehr standardmäßig auf den
+  Desktop geschrieben. Mit `HP_DEBUG=1` als Env-Var beim Start wieder
+  aktivierbar (für künftige Startup-Crash-Diagnose).
+- **📰 Nav-Link „News"** zeigt jetzt auf `/news/` (Portal-Route) statt
+  `/blog/`. Active-State-Detection erkennt beides als „news"-Page.
+
+---
+
 ## [1.1.9] — 2026-05-25
 
 🎯 **Portal-native Aufgaben-Seite, Mac-Update-Banner-Fix, Status-Pill-i18n,

@@ -557,34 +557,34 @@ body[data-page="chat"] .footer {
         <div class="chat-empty" id="chat-empty">
             <div class="chat-empty-icon">💬</div>
             <h2>{{ t('greeting.afternoon') }}, {{ user_name }}! </h2>
-            <p>Ich bin {{ agent_name }} – dein persönlicher Chat. Frag mich alles über Code, Smart Home, dein Wiki oder etwas ganz anderes.</p>
+            <p>{{ t('chat.welcome.intro')|replace('%agent%', agent_name) }}</p>
             <div class="chat-empty-actions">
-                <button class="chat-empty-btn" onclick="quickPrompt('Erzähl mir was über das Wiki')">
+                <button class="chat-empty-btn" onclick="quickPrompt('{{ t('chat.welcome.action.wiki_prompt') }}')">
                     <span class="action-icon">📚</span>
                     <div>
-                        <strong>Wiki erkunden</strong>
-                        <div style="font-size:0.8rem;color:var(--text-dim)">Was weißt du über unser Wiki?</div>
+                        <strong>{{ t('chat.welcome.action.wiki_title') }}</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">{{ t('chat.welcome.action.wiki_sub') }}</div>
                     </div>
                 </button>
-                <button class="chat-empty-btn" onclick="quickPrompt('Zeig mir die letzten Aktivitäten')">
+                <button class="chat-empty-btn" onclick="quickPrompt('{{ t('chat.welcome.action.activity_prompt') }}')">
                     <span class="action-icon">⚡</span>
                     <div>
-                        <strong>Aktivitäten ansehen</strong>
-                        <div style="font-size:0.8rem;color:var(--text-dim)">Was wurde zuletzt gemacht?</div>
+                        <strong>{{ t('chat.welcome.action.activity_title') }}</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">{{ t('chat.welcome.action.activity_sub') }}</div>
                     </div>
                 </button>
-                <button class="chat-empty-btn" onclick="quickPrompt('Was kann ich für dich tun?')">
+                <button class="chat-empty-btn" onclick="quickPrompt('{{ t('chat.welcome.action.help_prompt') }}')">
                     <span class="action-icon">✨</span>
                     <div>
-                        <strong>Hilfe anbieten</strong>
-                        <div style="font-size:0.8rem;color:var(--text-dim)">Wobei kann ich dir helfen?</div>
+                        <strong>{{ t('chat.welcome.action.help_title') }}</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">{{ t('chat.welcome.action.help_sub') }}</div>
                     </div>
                 </button>
                 <button class="chat-empty-btn" onclick="startEmptyChat()">
                     <span class="action-icon">📝</span>
                     <div>
-                        <strong>Leerer Chat</strong>
-                        <div style="font-size:0.8rem;color:var(--text-dim)">Einfach neu anfangen, ohne Vorgabe</div>
+                        <strong>{{ t('chat.welcome.action.empty_title') }}</strong>
+                        <div style="font-size:0.8rem;color:var(--text-dim)">{{ t('chat.welcome.action.empty_sub') }}</div>
                     </div>
                 </button>
             </div>

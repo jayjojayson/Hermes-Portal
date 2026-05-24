@@ -53,7 +53,7 @@
     var NAV_ALL = [
         { key: 'dashboard',i18n: 'nav.dashboard', fallback: 'Dashboard', href: '/',                   icon: '🏠' },
         { key: 'wiki',     i18n: 'nav.wiki',      fallback: 'Wiki',      href: '/wiki/',              icon: '📚' },
-        { key: 'news',     i18n: 'nav.news',      fallback: 'News',      href: '/blog/',              icon: '📰' },
+        { key: 'news',     i18n: 'nav.news',      fallback: 'News',      href: '/news/',              icon: '📰' },
         { key: 'briefing', i18n: 'nav.briefing',  fallback: 'Briefing',  href: '/briefing/',          icon: '☕' },
         { key: 'aufgaben', i18n: 'nav.aufgaben',  fallback: 'Tasks',     href: '/aufgaben/', icon: '✅' },
         { key: 'explorer', i18n: 'nav.explorer',  fallback: 'Explorer',  href: '/explorer/',          icon: '📂' },
@@ -269,6 +269,7 @@
         if (p.indexOf('/briefing') === 0) return 'briefing';
         if (p.indexOf('/blog/briefing') >= 0) return 'briefing';
         if (p.indexOf('/aufgaben') === 0 || p.indexOf('/blog/aufgaben') >= 0) return 'aufgaben';
+        if (p.indexOf('/news') === 0) return 'news';
         if (p.indexOf('/blog/categories') >= 0 || p.indexOf('/blog/category-') >= 0) return 'news';
         if (p.indexOf('/settings') === 0) return 'settings';
         if (p.indexOf('/blog/anleitung') >= 0) return 'news';

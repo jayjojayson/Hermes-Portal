@@ -213,10 +213,37 @@ IMPORTANT:
 - Tasks are executed without further questions to <user_name>.
 ```
 
-Schedule it e.g. every 30 minutes (`*/30 * * * *`) or hourly. The Portal
+Recommended frequency: **every 2–4 hours** (`0 */2 * * *`). The Portal
 takes care of writing/reading `aufgaben.md`, the cronjob takes care of
 making Hermes act on it. New installations get a default `aufgaben.md`
 auto-created on first access — nothing to set up on the agent side first.
+
+### 📰 News page — Hermes fetches your RSS feeds
+
+The **News** page in Hermes Portal lists posts that your `blog_generator.py`
+on the agent writes into `posts.json`. RSS feed sources live in
+**Settings → 🛰️ App → RSS feeds**. To have Hermes refresh the news, set up
+a cronjob on the agent that runs the generator 3× per day — morning, noon,
+evening (`0 7,12,19 * * *`). Copy-paste the prompt directly from the News
+page (open *"⚙️ Make Hermes generate the news for you"*); it boils down to:
+
+```text
+Run the blog generator: python3 /mnt/austausch/wiki/blog/blog_generator.py
+
+The generator fetches the configured RSS feeds, filters political content
+via the built-in is_political() function, categorises articles and writes
+new blog posts.
+
+IMPORTANT:
+- No political news (filter is built in)
+- Only use known categories from config.yaml
+- Just run the script, it handles everything
+
+Report briefly how many posts were created.
+```
+
+If `posts.json` doesn't exist yet (fresh install), the News page shows
+a friendly hint instead of an error.
 
 ---
 

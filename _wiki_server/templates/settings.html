@@ -1217,25 +1217,57 @@
                    style="color:var(--accent-primary); font-family:var(--mono);">v{{ portal_version }}</a>.
                 <span id="support-update-info" style="margin-left:0.5rem;"></span>
             </p>
+
+            <!-- Diagnose-Box: zeigt das rohe Response von /api/version/check
+                 inkl. error-Feld. Hilft beim Debuggen, wenn der Update-Banner
+                 nicht erscheint (z.B. Mac-SSL-Bug aus v1.1.8). -->
+            <details style="margin-top: 0.75rem; font-size: 0.82rem;">
+                <summary style="cursor: pointer; color: var(--text-secondary);">
+                    🔍 {{ t('support.update_diagnose_title') }}
+                </summary>
+                <pre id="support-update-diag"
+                     style="margin-top: 0.5rem; padding: 0.6rem;
+                            background: var(--bg-primary);
+                            border: 1px solid var(--border-color);
+                            border-radius: 6px; font-size: 0.78rem;
+                            overflow-x: auto; line-height: 1.45;">…</pre>
+                <button class="btn-sm btn-sm-secondary" style="margin-top: 0.4rem;"
+                        onclick="runVersionDiag()">🔄 {{ t('common.refresh') }}</button>
+            </details>
+
             <script>
             (function(){
-                // Update-Check (gleiche API wie der Sidebar-Footer-Badge)
-                fetch(window.hpUrl ? window.hpUrl('/api/version/check') : '/api/version/check',
-                      { cache: 'no-store' })
-                    .then(function(r){ return r.ok ? r.json() : null; })
-                    .then(function(d){
-                        var el = document.getElementById('support-update-info');
-                        if (!el || !d) return;
-                        if (d.update_available) {
-                            el.innerHTML = '· <a href="' + d.url + '" target="_blank" ' +
-                                'rel="noopener" style="color:#f0b400; font-weight:600;">' +
-                                '⬆ {{ t("support.update_available") }} v' + d.latest + '</a>';
-                        } else if (d.latest) {
-                            el.innerHTML = '· <span style="color:var(--text-secondary);">' +
-                                '{{ t("support.up_to_date") }}</span>';
-                        }
-                    })
-                    .catch(function(){});
+                // Update-Check (gleiche API wie der Sidebar-Footer-Badge) +
+                // Diagnose-Dump für den Support-Tab.
+                window.runVersionDiag = function() {
+                    var pre = document.getElementById('support-update-diag');
+                    if (pre) pre.textContent = '…';
+                    fetch(window.hpUrl ? window.hpUrl('/api/version/check') : '/api/version/check',
+                          { cache: 'no-store' })
+                        .then(function(r){ return r.json().then(function(d){ return {ok: r.ok, status: r.status, data: d}; }); })
+                        .then(function(res){
+                            var d = res.data || {};
+                            var el = document.getElementById('support-update-info');
+                            if (el) {
+                                if (d.update_available) {
+                                    el.innerHTML = '· <a href="' + d.url + '" target="_blank" ' +
+                                        'rel="noopener" style="color:#f0b400; font-weight:600;">' +
+                                        '⬆ {{ t("support.update_available") }} v' + d.latest + '</a>';
+                                } else if (d.latest) {
+                                    el.innerHTML = '· <span style="color:var(--text-secondary);">' +
+                                        '{{ t("support.up_to_date") }}</span>';
+                                } else if (d.error) {
+                                    el.innerHTML = '· <span style="color:#ef4444;">⚠️ ' +
+                                        '{{ t("support.update_check_failed") }}</span>';
+                                }
+                            }
+                            if (pre) pre.textContent = JSON.stringify(d, null, 2);
+                        })
+                        .catch(function(e){
+                            if (pre) pre.textContent = 'fetch failed: ' + (e.message || e);
+                        });
+                };
+                runVersionDiag();
             })();
             </script>
         </div>
@@ -2412,7 +2444,11 @@ function openCronModal(id) {
             if (job) {
                 document.getElementById('cron-name').value = job.name || '';
                 document.getElementById('cron-schedule').value = job.schedule || '';
-                document.getElementById('cron-command').value = job.command || job.prompt || '';
+                // job.command ist für die Listen-Anzeige auf 120 Zeichen gekürzt
+                // (siehe load_hermes_tasks im Backend). Für den Editor immer das
+                // volle prompt nehmen, sonst sieht der User nur '… ' und kann den
+                // Multi-Zeilen-Prompt nicht bearbeiten.
+                document.getElementById('cron-command').value = job.prompt || job.command || '';
                 document.getElementById('cron-enabled').checked = job.enabled !== false;
             } else {
                 document.getElementById('cron-name').value = '';

@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}{{ t('news.title') }} — Hermes Portal{% endblock %}
+{% block page_key %}news{% endblock %}
+
+{% block extra_head %}
+<style>
+.news-wrap { max-width: 1100px; margin: 1.5rem auto; padding: 0 1rem; }
+.news-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+.news-header h1 { margin: 0; font-size: 1.6rem; }
+.news-header .pill {
+    background: var(--bg-secondary, #1a1d24); color: var(--text-secondary);
+    padding: 4px 10px; border-radius: 999px; font-size: 0.8rem;
+    border: 1px solid var(--border-color, #2a2e38);
+}
+.news-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+.news-card {
+    background: var(--bg-secondary, #1a1d24);
+    border: 1px solid var(--border-color, #2a2e38);
+    border-radius: 10px;
+    padding: 1rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: transform 0.15s, border-color 0.15s;
+}
+.news-card:hover {
+    border-color: var(--accent, #5cc8ff);
+    transform: translateY(-2px);
+}
+.news-card .meta {
+    font-size: 0.75rem; color: var(--text-secondary);
+    display: flex; gap: 10px; flex-wrap: wrap;
+}
+.news-card .meta .cat {
+    background: rgba(99,102,241,0.15); color: var(--accent, #5cc8ff);
+    padding: 1px 8px; border-radius: 999px;
+}
+.news-card h3 {
+    margin: 0; font-size: 1.02rem; line-height: 1.35;
+}
+.news-card h3 a {
+    color: var(--text-primary); text-decoration: none;
+}
+.news-card h3 a:hover { color: var(--accent, #5cc8ff); }
+.news-card .summary {
+    font-size: 0.86rem; color: var(--text-secondary); line-height: 1.4;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.news-card .source {
+    font-size: 0.72rem; color: var(--text-dim, #8a8f9b);
+    margin-top: auto; padding-top: 4px;
+}
+
+.news-empty {
+    text-align: center; padding: 3rem 1rem;
+    background: var(--bg-secondary); border-radius: 10px;
+    border: 1px dashed var(--border-color);
+    color: var(--text-secondary);
+}
+.news-empty .icon { font-size: 2.4rem; margin-bottom: 0.5rem; }
+.news-empty h3 { margin: 0 0 0.5rem 0; color: var(--text-primary); }
+
+.news-cron-note {
+    margin-top: 2rem; padding: 1rem; border-radius: 10px;
+    background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.4);
+    color: var(--text-secondary); font-size: 0.85rem;
+}
+.news-cron-note strong { color: var(--warning-color, #f59e0b); }
+.news-cron-note pre {
+    background: var(--bg-primary); padding: 0.6rem; border-radius: 6px;
+    margin: 0.5rem 0 0 0; overflow-x: auto; font-size: 0.78rem;
+    border: 1px solid var(--border-color);
+}
+
+.news-feeds-list {
+    margin-top: 1rem;
+    background: var(--bg-secondary, #1a1d24);
+    border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 1rem;
+}
+.news-feeds-list h4 { margin: 0 0 0.5rem 0; font-size: 0.92rem; }
+.news-feeds-list ul { margin: 0; padding-left: 1.2rem; font-size: 0.86rem; }
+.news-feeds-list li { margin: 4px 0; }
+.news-feeds-list code { font-size: 0.78rem; color: var(--text-dim); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="news-wrap">
+    <div class="news-header">
+        <h1>📰 {{ t('news.title') }}</h1>
+        <span class="pill" id="news-count">—</span>
+        <span style="margin-left:auto; font-size: 0.85rem; color: var(--text-secondary);">
+            {{ t('news.subtitle') }}
+        </span>
+        <button class="btn-sm btn-sm-secondary" onclick="loadNews()" style="font-size:0.78rem;">
+            🔄 {{ t('common.refresh') }}
+        </button>
+    </div>
+
+    <div id="news-content">
+        <div style="text-align:center; padding: 2rem; color: var(--text-secondary);">
+            {{ t('news.loading') }}
+        </div>
+    </div>
+
+    <details class="news-cron-note" id="news-cron-note">
+        <summary style="cursor: pointer; color: var(--warning-color, #f59e0b);">
+            ⚙️ {{ t('news.cron_note_title') }}
+        </summary>
+        <p style="margin-top: 0.75rem;">{{ t('news.cron_note_intro')|safe }}</p>
+        <p style="margin-bottom: 0.25rem;">
+            <strong>{{ t('news.cron_example_label') }}</strong>
+        </p>
+        <pre id="news-cron-prompt-example"></pre>
+        <button class="btn-sm btn-sm-primary" style="margin-top: 0.5rem;" onclick="copyNewsCronPrompt()">
+            📋 {{ t('aufgaben.copy_cron_prompt') }}
+        </button>
+        <span id="news-cron-copy-fb" style="margin-left:10px;color:var(--success-color, #22c55e);opacity:0;transition:opacity 0.3s;">
+            ✓ {{ t('ssh.wizard.copied') }}
+        </span>
+
+        <div class="news-feeds-list">
+            <h4>📡 {{ t('news.configured_feeds') }}</h4>
+            {% if rss_feeds %}
+            <ul>
+                {% for feed in rss_feeds %}
+                <li><strong>{{ feed.name or feed.url }}</strong> — <code>{{ feed.url }}</code></li>
+                {% endfor %}
+            </ul>
+            <p style="font-size:0.82rem; margin-top: 0.5rem; color: var(--text-secondary);">
+                {{ t('news.edit_feeds_hint') }}
+                <a href="/settings/#tab-app" style="color: var(--accent);">Settings → 🛰️ App</a>
+            </p>
+            {% else %}
+            <p style="font-size:0.82rem; color: var(--text-secondary);">
+                {{ t('news.no_feeds_configured') }}
+                <a href="/settings/#tab-app" style="color: var(--accent);">Settings → 🛰️ App</a>
+            </p>
+            {% endif %}
+        </div>
+    </details>
+</div>
+
+<script>
+(function() {
+    var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+    var GENERATOR_PATH = {{ generator_path|tojson }};
+
+    function esc(s) {
+        var d = document.createElement('div'); d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    window.loadNews = function() {
+        var c = document.getElementById('news-content');
+        c.innerHTML = '<div style="text-align:center; padding: 2rem; color: var(--text-secondary);">' +
+            esc(T('news.loading')) + '</div>';
+        fetch('/api/news', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var items = data.items || [];
+            document.getElementById('news-count').textContent = items.length +
+                ' ' + (items.length === 1 ? T('news.article_singular') : T('news.article_plural'));
+            if (!items.length) {
+                c.innerHTML =
+                    '<div class="news-empty">' +
+                        '<div class="icon">📰</div>' +
+                        '<h3>' + esc(T('news.empty_title')) + '</h3>' +
+                        '<p>' + esc(T('news.empty_body')) + '</p>' +
+                    '</div>';
+                // Cron-Hinweis bei leerer Liste automatisch öffnen
+                var note = document.getElementById('news-cron-note');
+                if (note) note.open = true;
+                return;
+            }
+            var html = '<div class="news-grid">';
+            items.forEach(function(it) {
+                html += '<div class="news-card">';
+                var metaBits = [];
+                if (it.date) metaBits.push('<span>🗓 ' + esc(it.date) + '</span>');
+                if (it.category) metaBits.push('<span class="cat">' + esc(it.category) + '</span>');
+                if (metaBits.length) html += '<div class="meta">' + metaBits.join('') + '</div>';
+                html += '<h3><a href="' + esc(it.url || '#') + '" target="_blank" rel="noopener">' +
+                        esc(it.title || '—') + '</a></h3>';
+                if (it.summary) html += '<p class="summary">' + esc(it.summary) + '</p>';
+                if (it.source) html += '<div class="source">📡 ' + esc(it.source) + '</div>';
+                html += '</div>';
+            });
+            html += '</div>';
+            c.innerHTML = html;
+        })
+        .catch(function(e) {
+            c.innerHTML = '<div class="news-empty"><div class="icon">⚠️</div>' +
+                '<h3>' + esc(T('news.load_error')) + '</h3>' +
+                '<p>' + esc(e.message || e) + '</p></div>';
+        });
+    };
+
+    function buildNewsCronPrompt() {
+        return T('news.cron_prompt_template').replace(/{path}/g, GENERATOR_PATH);
+    }
+
+    window.copyNewsCronPrompt = function() {
+        var txt = buildNewsCronPrompt();
+        var fb = document.getElementById('news-cron-copy-fb');
+        var ok = false;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(txt);
+                ok = true;
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = txt; document.body.appendChild(ta); ta.select();
+                ok = document.execCommand('copy'); document.body.removeChild(ta);
+            }
+        } catch (e) { ok = false; }
+        if (fb && ok) {
+            fb.style.opacity = '1';
+            setTimeout(function() { fb.style.opacity = '0'; }, 1500);
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var pre = document.getElementById('news-cron-prompt-example');
+        if (pre) pre.textContent = buildNewsCronPrompt();
+        loadNews();
+    });
+})();
+</script>
+{% endblock %}
