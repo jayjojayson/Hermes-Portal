@@ -151,6 +151,9 @@
     "settings.app.connection.no_hosts": "No SSH hosts found in the local network.",
     "settings.app.connection.hosts_found": "SSH host(s) found in the local network",
     "settings.app.connection.ip_picked": "IP set as agent host. Click",
+    "settings.app.connection.container_warning": "Portal runs in a Docker/HA container and only sees its own container subnet:",
+    "settings.app.connection.container_hint":    "Enter your LAN subnet below (e.g. \"192.168.178\" or \"192.168.178.0/24\").",
+    "settings.app.connection.scan_subnet":       "Scan this subnet",
 
     "support.section.support_title":    "Support the project",
     "support.intro":                    "Hermes Portal is an open-source project. If you like it and want to support development — we appreciate every cup of coffee ☕ and every ⭐ star on <a href=\"https://github.com/jayjojayson/Hermes-Portal\" target=\"_blank\" rel=\"noopener\" style=\"color:var(--accent-primary);\">GitHub</a>!",

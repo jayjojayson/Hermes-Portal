@@ -3,6 +3,15 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.6
+
+- **🔎 Find-IP versteht Container** — erkennt HA-Add-on-Subnetz
+  (172.x.x.x) und bietet manuelles LAN-Subnetz-Eingabefeld an, weil
+  das Portal aus dem Container das User-LAN sonst nicht sieht.
+- **📁 Wiki Import/Export-Layout**: Import + Dropdown in einer Zeile,
+  Export-Button separat darunter. Dropdown läuft nicht mehr über den
+  Box-Rand.
+
 ## 1.1.5
 
 - **Slash-Commands gehen wieder nativ an den Agent** — Portal-seitige

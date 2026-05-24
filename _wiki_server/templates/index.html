@@ -294,7 +294,8 @@
     <div class="card wiki-io-card">
         <h4>📦 {{ t('wiki.import_export') }}</h4>
         <p class="stat-desc">.md → Upload · {{ t('wiki.export_zip') }}</p>
-        <div class="wiki-io-buttons">
+        <!-- Zeile 1: Import-Button + Kategorie-Dropdown ───────────── -->
+        <div class="wiki-io-buttons wiki-io-row-1">
             <label class="btn btn-sm btn-primary" style="cursor:pointer;">
                 ⬆️ {{ t('common.import') }}…
                 <input type="file" id="wiki-import-input" multiple accept=".md,.markdown,text/markdown"
@@ -304,6 +305,9 @@
                 <option value="concept">{{ category_concept_label }}</option>
                 <option value="entity">{{ category_entity_label }}</option>
             </select>
+        </div>
+        <!-- Zeile 2: Export-Button — eigenständig darunter ────────── -->
+        <div class="wiki-io-buttons wiki-io-row-2">
             <a href="/api/wiki/export" class="btn btn-sm btn-accent" title="{{ t('wiki.export_zip') }}">
                 ⬇️ {{ t('wiki.export_zip') }}
             </a>
@@ -313,22 +317,21 @@
 </div>
 
 <style>
+/* Zeile 1: Import-Button + Kategorie-Select nebeneinander.
+   Zeile 2: Export-Button eigenständig. */
 .wiki-io-card .wiki-io-buttons {
-    /* Eine Zeile auf Desktop: Import-Button + Select-Dropdown + Export-Button
-       nebeneinander. Bei <520px Viewport (Phone-Portrait) wrap in 2 Zeilen. */
-    display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; margin-top: 4px;
+    display: flex; gap: 6px; align-items: center; margin-top: 4px;
 }
-@media (max-width: 520px) {
-    .wiki-io-card .wiki-io-buttons { flex-wrap: wrap; }
-}
+.wiki-io-card .wiki-io-row-2 { margin-top: 6px; }
 .wiki-io-card .wiki-io-select {
     padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
     background: var(--surface2); color: var(--text); font-size: 0.85rem;
-    /* Verhindert, dass das Select die ganze Zeile beansprucht */
-    flex: 0 0 auto; min-width: 0;
+    /* Soll nicht überlaufen → max-width an Container-Breite ausrichten */
+    flex: 1 1 auto; min-width: 0; max-width: 100%;
+    text-overflow: ellipsis;
 }
-.wiki-io-card .wiki-io-buttons label.btn { white-space: nowrap; flex: 0 0 auto; }
-.wiki-io-card .wiki-io-buttons a.btn     { white-space: nowrap; flex: 0 0 auto; }
+.wiki-io-card .wiki-io-buttons label.btn,
+.wiki-io-card .wiki-io-buttons a.btn { white-space: nowrap; flex: 0 0 auto; }
 .wiki-io-card .wiki-io-status {
     margin-top: 8px; font-size: 0.78rem; line-height: 1.5;
     color: var(--text-dim); min-height: 1.2em;

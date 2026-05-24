@@ -151,6 +151,9 @@
     "settings.app.connection.no_hosts": "Aucun hôte SSH trouvé sur le réseau local.",
     "settings.app.connection.hosts_found": "Hôte(s) SSH trouvé(s) sur le réseau local",
     "settings.app.connection.ip_picked": "IP définie comme hôte de l'agent. Cliquez sur",
+    "settings.app.connection.container_warning": "Le portail s'exécute dans un conteneur Docker/HA et ne voit que son propre sous-réseau :",
+    "settings.app.connection.container_hint":    "Entrez votre sous-réseau LAN ci-dessous (p. ex. « 192.168.178 » ou « 192.168.178.0/24 »).",
+    "settings.app.connection.scan_subnet":       "Scanner ce sous-réseau",
 
     "support.section.support_title":    "Soutenir le projet",
     "support.intro":                    "Hermes Portal est un projet open-source. Si vous l'aimez et souhaitez soutenir le développement — chaque café ☕ et chaque ⭐ étoile sur <a href=\"https://github.com/jayjojayson/Hermes-Portal\" target=\"_blank\" rel=\"noopener\" style=\"color:var(--accent-primary);\">GitHub</a> nous fait plaisir !",

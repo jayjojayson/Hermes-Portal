@@ -3798,16 +3798,37 @@ def api_settings_app_test():
     return jsonify(status)
 
 
+def _is_container_subnet(ip: str) -> bool:
+    """Heuristik: Docker/HA-Add-on-typische Bridge-Ranges erkennen.
+
+    HA-Supervisor verwendet 172.30.32.0/22 für Add-on-Container,
+    Docker Default Bridge ist 172.17.0.0/16 — beide signalisieren,
+    dass wir IM CONTAINER laufen und kein direkter Sichtkontakt zum
+    User-LAN besteht. Dann macht ein /24-Scan keinen Sinn.
+    """
+    try:
+        a, b = (int(p) for p in ip.split(".", 2)[:2])
+    except ValueError:
+        return False
+    # Docker bridges: 172.16.0.0/12 (RFC1918 carve-out)
+    if a == 172 and 16 <= b <= 31:
+        return True
+    return False
+
+
 @app.route("/api/settings/app/discover", methods=["POST"])
 def api_settings_app_discover():
-    """Scant das lokale /24-Subnetz nach Hosts, die auf SSH (Port 22) antworten.
+    """Scant ein /24-Subnetz nach Hosts, die auf SSH (Port 22) antworten.
 
-    Idee: Portal kennt seine eigene IP → derived /24 → parallel TCP-Connect
-    zu allen 254 Hosts mit kurzem Timeout. Hosts, die auf 22 antworten,
-    sind potentielle Hermes-Agenten. Optional: Reverse-DNS für freundliche
-    Namen.
+    Default-Subnetz: das des Portals selbst. Bei HA-Add-on / Docker
+    landet das oft im Container-Bridge-Range (172.x.x.x) und sieht das
+    User-LAN nicht — in dem Fall liefern wir eine klare Warnung +
+    Container-Hinweis zurück.
 
-    Liefert: ``{ ssh_hosts: [{ip, hostname}], scanned_subnet, took_ms }``
+    Override: per POST-Body ``{"subnet": "192.168.178.0/24"}`` kann der
+    User manuell ein anderes Subnetz angeben.
+
+    Liefert: ``{ ssh_hosts, scanned_subnet, own_ip, in_container, took_ms }``
     """
     import socket
     import time as _time
@@ -3826,23 +3847,40 @@ def api_settings_app_discover():
         finally:
             s.close()
 
-    own_ip = _local_ipv4()
-    if not own_ip:
-        return jsonify({"error": "Konnte eigene LAN-IP nicht bestimmen.",
-                        "ssh_hosts": []}), 200
+    own_ip = _local_ipv4() or ""
 
-    parts = own_ip.split(".")
-    if len(parts) != 4:
-        return jsonify({"error": "Unerwartetes IP-Format: " + own_ip,
-                        "ssh_hosts": []}), 200
-    subnet = ".".join(parts[:3])
+    # Body lesen — optional manuelles Subnetz vom User
+    body = request.get_json(silent=True) or {}
+    manual_subnet = str(body.get("subnet") or "").strip()
+
+    # Ziel-Subnetz bestimmen: explizites override > eigene IP
+    if manual_subnet:
+        # Akzeptiere "192.168.178.0/24" und "192.168.178" gleichwertig
+        sn = manual_subnet.rstrip("/")
+        if "/" in sn:
+            sn = sn.split("/", 1)[0]
+        parts = sn.split(".")
+        if len(parts) < 3:
+            return jsonify({"error": f"Ungültiges Subnetz: {manual_subnet}",
+                            "ssh_hosts": []}), 200
+        subnet = ".".join(parts[:3])
+    else:
+        if not own_ip:
+            return jsonify({"error": "Konnte eigene LAN-IP nicht bestimmen.",
+                            "ssh_hosts": []}), 200
+        parts = own_ip.split(".")
+        if len(parts) != 4:
+            return jsonify({"error": "Unerwartetes IP-Format: " + own_ip,
+                            "ssh_hosts": []}), 200
+        subnet = ".".join(parts[:3])
+
+    in_container = (not manual_subnet) and _is_container_subnet(own_ip)
 
     def _check(host):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.settimeout(0.4)
         try:
             if s.connect_ex((host, 22)) == 0:
-                # Hostname auflösen (best-effort, kann sehr lange dauern → eigener Timeout)
                 hostname = ""
                 try:
                     socket.setdefaulttimeout(0.6)
@@ -3860,7 +3898,6 @@ def api_settings_app_discover():
 
     candidates = [f"{subnet}.{i}" for i in range(1, 255) if f"{subnet}.{i}" != own_ip]
     results = []
-    # 50 Worker → 254 Hosts in <2s gescannt
     with ThreadPoolExecutor(max_workers=50) as ex:
         futs = [ex.submit(_check, h) for h in candidates]
         for fut in as_completed(futs, timeout=15):
@@ -3877,6 +3914,7 @@ def api_settings_app_discover():
         "ssh_hosts": results,
         "scanned_subnet": f"{subnet}.0/24",
         "own_ip": own_ip,
+        "in_container": in_container,
         "took_ms": took_ms,
     })
 

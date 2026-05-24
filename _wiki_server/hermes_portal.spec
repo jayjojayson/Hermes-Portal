@@ -92,3 +92,32 @@ coll = COLLECT(
     upx_exclude=[],
     name="hermes-portal",
 )
+
+# ──────────────────────────────────────────────────────────────────────
+# macOS: BUNDLE wickelt das COLLECT-Output in eine echte .app, legt das
+# Python-Framework korrekt unter Contents/Frameworks/Python ab und
+# generiert einen sauberen Info.plist. Vorher haben wir das im Workflow
+# manuell zusammengebaut → Bootloader fand `Contents/Frameworks/Python`
+# nicht → App startete für 1 s und beendete sich (v1.1.5-Bug). BUNDLE
+# fixt genau das.
+# Auf Windows/Linux ist BUNDLE no-op.
+# ──────────────────────────────────────────────────────────────────────
+if sys.platform == "darwin":
+    _version = os.environ.get("HP_VERSION", "0.0.0")
+    app = BUNDLE(
+        coll,
+        name="Hermes Portal.app",
+        icon=os.path.join("static", "portal", "logo.png") if os.path.exists(os.path.join("static", "portal", "logo.png")) else None,
+        bundle_identifier="de.jayjojayson.hermes-portal",
+        version=_version,
+        info_plist={
+            "CFBundleName":             "Hermes Portal",
+            "CFBundleDisplayName":      "Hermes Portal",
+            "CFBundleShortVersionString": _version,
+            "CFBundleVersion":          _version,
+            "LSMinimumSystemVersion":   "11.0",
+            "NSHighResolutionCapable":  True,
+            # Kein Dock-Icon-Verstecken — wir wollen klar sichtbar sein.
+            "LSUIElement":              False,
+        },
+    )

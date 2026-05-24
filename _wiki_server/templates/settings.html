@@ -1812,16 +1812,22 @@ function testAppConnection() {
 }
 
 // ---- LAN-Discovery für SSH-Hosts -------------------------------------
-// Scant das lokale /24 (Server-side) und listet SSH-fähige Hosts.
-// User kann eine IP klicken → wird ins agent_host-Feld eingetragen.
-function discoverSshHosts() {
+// Scant ein /24 (Server-side) und listet SSH-fähige Hosts. Im HA-Add-on /
+// Docker sieht das Portal aber nur sein Container-Subnetz (172.x) — dann
+// muss der User das LAN-Subnetz manuell angeben.
+function discoverSshHosts(subnetOverride) {
     var btn = document.getElementById('ssh-find-ip-btn');
     var box = document.getElementById('ssh-discover-results');
     if (!box) return;
     box.style.display = 'block';
     box.innerHTML = '⏳ ' + (window.t ? window.t('settings.app.connection.scanning') : 'Scanning local network…');
     if (btn) btn.disabled = true;
-    fetch('/api/settings/app/discover', { method: 'POST' })
+    var body = subnetOverride ? JSON.stringify({subnet: subnetOverride}) : '{}';
+    fetch('/api/settings/app/discover', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: body
+    })
     .then(function(r) { return r.json(); })
     .then(function(d) {
         if (btn) btn.disabled = false;
@@ -1829,13 +1835,37 @@ function discoverSshHosts() {
             box.innerHTML = '⚠️ ' + d.error;
             return;
         }
+        // Header mit Subnet-Info + ggf. Container-Hinweis
+        var header = '';
+        if (d.in_container) {
+            // Wir sind im Docker/HA-Container → User-LAN nicht direkt sichtbar
+            header += '<div style="padding:0.5rem 0.7rem; margin-bottom:0.6rem; background:rgba(245,158,11,0.1); ' +
+                      'border-left:3px solid #f59e0b; border-radius:4px; font-size:0.85rem;">' +
+                      '⚠️ ' + (window.t ? window.t('settings.app.connection.container_warning') :
+                              'Portal läuft im Docker/HA-Container und sieht nur das Container-Subnetz.') +
+                      ' <strong>' + d.scanned_subnet + '</strong> — ' +
+                      (window.t ? window.t('settings.app.connection.container_hint') :
+                       'Gib unten dein LAN-Subnetz an (z.B. „192.168.178" oder „192.168.178.0/24").') +
+                      '</div>';
+        }
+        // Manuelle Subnet-Eingabe immer anbieten
+        header += '<div style="display:flex; gap:6px; align-items:center; margin-bottom:0.6rem; flex-wrap:wrap;">' +
+                  '<input type="text" id="manual-subnet" class="app-input" ' +
+                  'style="flex:1; min-width:180px; max-width:240px; padding:5px 8px; font-size:0.82rem;" ' +
+                  'placeholder="z.B. 192.168.178" value="' + (subnetOverride||'') + '">' +
+                  '<button class="btn-sm btn-sm-secondary" onclick="_discoverManual()">🔍 ' +
+                  (window.t ? window.t('settings.app.connection.scan_subnet') : 'Scan this subnet') + '</button>' +
+                  '</div>';
+
         if (!d.ssh_hosts || !d.ssh_hosts.length) {
-            box.innerHTML = '🤷 ' + (window.t ? window.t('settings.app.connection.no_hosts') : 'No SSH hosts found.') +
+            box.innerHTML = header +
+                '🤷 ' + (window.t ? window.t('settings.app.connection.no_hosts') : 'No SSH hosts found.') +
                 ' <span style="color:var(--text-secondary); font-size:0.8em;">(' + d.scanned_subnet + ', ' + d.took_ms + ' ms)</span>';
             return;
         }
         var ownIp = d.own_ip || '';
-        var html = '<div style="margin-bottom:0.4rem;">📡 <strong>' + d.ssh_hosts.length + '</strong> ' +
+        var html = header +
+                   '<div style="margin-bottom:0.4rem;">📡 <strong>' + d.ssh_hosts.length + '</strong> ' +
                    (window.t ? window.t('settings.app.connection.hosts_found') : 'SSH host(s) found') +
                    ' <span style="color:var(--text-secondary); font-size:0.8em;">(' + d.scanned_subnet + ', ' + d.took_ms + ' ms)</span></div>';
         html += '<div style="display:flex; flex-direction:column; gap:4px;">';
@@ -1852,6 +1882,11 @@ function discoverSshHosts() {
         if (btn) btn.disabled = false;
         box.innerHTML = '🔴 ' + e;
     });
+}
+function _discoverManual() {
+    var inp = document.getElementById('manual-subnet');
+    if (!inp || !inp.value.trim()) return;
+    discoverSshHosts(inp.value.trim());
 }
 function _pickDiscoveredIp(ip) {
     var fld = document.getElementById('app-agent_host');

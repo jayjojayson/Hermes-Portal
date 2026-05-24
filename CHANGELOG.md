@@ -14,6 +14,50 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.6] — 2026-05-25
+
+🎯 **Mac-App startet endlich!** Plus Find-IP-Verbesserung für HA-Container
+und Wiki-Layout-Politur.
+
+### Fixed
+- **🍎 macOS PKG: Python-Framework-Pfad korrigiert** — der Bootloader sucht
+  Python unter `Contents/Frameworks/Python` (macOS-Konvention), wir hatten
+  es aber unter `Contents/MacOS/_internal/Python`. Das führte zum
+  `[PYI-15449:ERROR] Failed to load Python shared library`-Crash beim
+  Start. Fix: PyInstaller's `BUNDLE`-Step in `hermes_portal.spec` baut die
+  `.app` jetzt selbst mit korrekter macOS-Struktur (inkl. Symlinks
+  Resources↔Versions). Der Workflow-Schritt „manuell .app aus dist
+  zusammenbauen" entfällt.
+- **📁 Wiki Import/Export-Layout** — Import-Button + Kategorie-Dropdown
+  in Zeile 1, Export-Button alleinstehend in Zeile 2 (vorher alles in
+  einer Zeile + Dropdown ragte über den Box-Rand). Dropdown skaliert
+  jetzt auf Container-Breite mit `max-width: 100%`.
+
+### Changed
+- **🔎 Find IP versteht Container** — erkennt jetzt automatisch, wenn das
+  Portal in einem Docker/HA-Add-on-Subnetz (172.16-31.x.x) läuft und
+  daher nicht das User-LAN sieht. Zeigt eine klare Warnung + bietet ein
+  manuelles Subnet-Eingabefeld („z.B. 192.168.178"). Erklärt das Problem
+  in 4 Sprachen.
+
+### Notes — Slash-Commands
+Der User berichtet: `/new` startet eine neue Session, aber `/usage` und
+`/reset` liefern halluzinierte LLM-Antworten. Das ist **agent-side**: der
+Hermes-CLI behandelt manche Slash-Commands als spezielle Anweisungen
+(z.B. `/new` triggert Session-Reset im Wrapper), andere reicht er als
+normalen Prompt weiter zum LLM. Das Portal sendet ALLE Slash-Commands
+unverändert an den Agent — die Antwortqualität hängt vom Agent-Setup ab.
+Workaround: dem Agent-Maintainer melden, dass `/usage` / `/reset` etc.
+auch im `-z`-Mode handled werden sollten (statt nur in REPL).
+
+### Notes — Mac-Diagnose-Erfolg
+Der `~/Desktop/hermes-portal-trace.log` aus v1.1.5 hat die Ursache
+sauber lokalisiert: der Bootloader-Error war eindeutig in der ersten
+Phase (vor Python-Init), exakt was wir vermutet hatten. BUNDLE im
+Spec-File ist genau die Reparatur, die PyInstaller dafür vorsieht.
+
+---
+
 ## [1.1.5] — 2026-05-25
 
 Slash-Command-Revert + LAN-Discovery + Wiki-IO-Layout + Support-Tab i18n
@@ -1015,7 +1059,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.5...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.6...HEAD
+[1.1.6]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.5...v1.1.6
 [1.1.5]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.2...v1.1.3

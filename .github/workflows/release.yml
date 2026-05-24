@@ -90,56 +90,37 @@ jobs:
       - name: Build with PyInstaller
         shell: bash
         working-directory: _wiki_server
+        # HP_VERSION wird im BUNDLE-Step der Spec für CFBundleVersion +
+        # CFBundleShortVersionString gelesen — wichtig für PKG-Identität.
+        env:
+          HP_VERSION: ${{ steps.ver.outputs.version }}
         run: pyinstaller --noconfirm hermes_portal.spec
 
       # ==================================================================
       # ==================================================================
-      # macOS: .app-Bundle bauen → ad-hoc signieren → in .pkg-Installer
-      # verpacken via productbuild. PKG ist Apples nativer Installer-
-      # Mechanismus — User klickt durch, App wird automatisch nach
-      # /Applications kopiert. Keine xattr-Quarantine-Tanz mehr.
+      # macOS: PyInstaller's BUNDLE-Step hat das .app schon korrekt
+      # gebaut (mit Contents/Frameworks/Python, Info.plist, .icns aus
+      # logo.png). Wir müssen nur noch:
+      #   1. xattrs strippen (quarantine)
+      #   2. Ad-hoc signieren
+      #   3. PKG-Installer drumherum bauen
       # ==================================================================
-      - name: Build macOS .app + .pkg installer
+      - name: Sign + package macOS .app → .pkg installer
         if: matrix.kind == 'pkg'
         shell: bash
         run: |
           set -e
-          APP="Hermes Portal.app"
-          rm -rf "$APP"
-          mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-          cp -R _wiki_server/dist/hermes-portal/. "$APP/Contents/MacOS/"
+          APP="_wiki_server/dist/Hermes Portal.app"
+          if [ ! -d "$APP" ]; then
+            echo "❌ BUNDLE-Step in spec hat keine .app erzeugt: $APP fehlt"
+            ls -la _wiki_server/dist/ || true
+            exit 1
+          fi
 
-          # Logo → .icns (sips + iconutil sind macOS-Bordmittel)
-          ICONSET="logo.iconset"
-          rm -rf "$ICONSET"; mkdir "$ICONSET"
-          SRC="_wiki_server/static/portal/logo.png"
-          for SZ in 16 32 64 128 256 512; do
-            sips -z $SZ $SZ "$SRC" --out "$ICONSET/icon_${SZ}x${SZ}.png" >/dev/null
-            DBL=$((SZ * 2))
-            sips -z $DBL $DBL "$SRC" --out "$ICONSET/icon_${SZ}x${SZ}@2x.png" >/dev/null
-          done
-          iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/logo.icns"
-          rm -rf "$ICONSET"
-
-          # Info.plist
-          cat > "$APP/Contents/Info.plist" <<PLIST
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-            <key>CFBundleName</key><string>Hermes Portal</string>
-            <key>CFBundleDisplayName</key><string>Hermes Portal</string>
-            <key>CFBundleIdentifier</key><string>de.jayjojayson.hermes-portal</string>
-            <key>CFBundleVersion</key><string>${{ steps.ver.outputs.version }}</string>
-            <key>CFBundleShortVersionString</key><string>${{ steps.ver.outputs.version }}</string>
-            <key>CFBundleExecutable</key><string>hermes-portal</string>
-            <key>CFBundleIconFile</key><string>logo.icns</string>
-            <key>CFBundlePackageType</key><string>APPL</string>
-            <key>LSMinimumSystemVersion</key><string>11.0</string>
-            <key>NSHighResolutionCapable</key><true/>
-          </dict>
-          </plist>
-          PLIST
+          echo "→ PyInstaller-Bundle-Struktur:"
+          ls -la "$APP/Contents/"
+          echo "→ Frameworks (sollte 'Python' enthalten):"
+          ls -la "$APP/Contents/Frameworks/" || echo "(kein Frameworks/, BUNDLE-Step hat versagt)"
 
           # Alle xattrs strippen (quarantine, finder-flags, etc.)
           xattr -cr "$APP"
