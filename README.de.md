@@ -1,15 +1,8 @@
 <p align="center">
-  <a href="README.md"><img src="https://img.shields.io/badge/🇬🇧-English-000?style=flat" alt="English README"></a>
-</p>
-
-<p align="center">
   <img src="hermes-portal-logo.png" alt="Hermes Portal Logo" width="180">
 </p>
 
 <h1 align="center">Hermes Portal GUI</h1>
-
-> 🇬🇧 **English readme** → [README.md](README.md)
-
 
 <p align="center">
   <strong>Modernes Web-Frontend für den Hermes-Agent</strong><br>
@@ -21,6 +14,7 @@
   <a href="https://github.com/jayjojayson/Hermes-Portal/releases"><img src="https://img.shields.io/github/downloads/jayjojayson/Hermes-Portal/total?color=60a5fa&label=Downloads" alt="Downloads"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/jayjojayson/Hermes-Portal?color=f59e0b" alt="License"></a>
   <a href="https://github.com/jayjojayson/Hermes-Portal/discussions"><img src="https://img.shields.io/badge/💬-Discussions-2ea44f" alt="Discussions"></a>
+  <a href="README.md"><img src="https://img.shields.io/badge/🇬🇧-English-000?style=flat" alt="English README"></a>
 </p>
 
 <div align="center">
@@ -28,6 +22,9 @@
 [![Buy Me a Coffee](https://img.shields.io/badge/Ko--fi-Buy%20Me%20a%20Coffee-darkgreen?style=flat&logo=ko-fi&logoColor=white)](https://ko-fi.com/jayjojayson)
 [![Support](https://img.shields.io/badge/%20-Support%20Me-darkgreen?style=flat&logo=paypal&logoColor=white)](https://www.paypal.me/quadFlyerFW)
 </div>
+
+> 🇬🇧 **English readme** → [README.md](README.md)
+
 
 ---
 
@@ -57,10 +54,7 @@ zur Verfügung:
 
 > Es gibt viele Mglichkeiten das Hermes Portal zu nutzen, du kannst es direkt vom Hermes Agenten in seiner VM installieren lassen, oder als App in Home Assistant einbinden, als Docker lokal oder in proxmox laufen lassen oder direkt als App für dein OS (mac, linux, win) installieren und nutzen.
 
-> Hermes Agent installiert
-> Home Assistant App/Add-On
-> Hast du Docker? → **Variante A** (1 Befehl, läuft überall).
-> Lieber natives Setup? → **nachfoglende Variante** je nach OS.
+> Hermes Agent installiert für dich oder du machst es manuell.
 
 ### 📦 Docker (empfohlen, alle Plattformen)
 

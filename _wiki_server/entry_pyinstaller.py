@@ -37,11 +37,41 @@ try:
         f"\nWenn diese Datei existiert aber die App trotzdem nicht startet:\n"
         f"  → Crash passiert NACH Python-Start. Schau in:\n"
         f"     ~/Desktop/Hermes-Portal-Crash.log\n"
-        f"     ~/Library/Application Support/Hermes Portal/crash.log\n",
+        f"     ~/Desktop/hermes-portal-trace.log\n",
         encoding="utf-8",
     )
 except Exception:
     pass
+
+
+# ──────────────────────────────────────────────────────────────────────
+# STEP-BY-STEP TRACE — jeder Schritt im Startup wird in eine
+# Datei auf dem Desktop geschrieben. Wenn die App stirbt, sehen wir
+# in der letzten Zeile WO genau. Append-Mode → bei mehreren Starts
+# bauen wir eine History auf.
+# ──────────────────────────────────────────────────────────────────────
+_TRACE_PATH = None
+def _trace(step):
+    """Append-only step-log nach ~/Desktop/hermes-portal-trace.log."""
+    global _TRACE_PATH
+    try:
+        if _TRACE_PATH is None:
+            from pathlib import Path as _P
+            _TRACE_PATH = _P.home() / "Desktop" / "hermes-portal-trace.log"
+        from datetime import datetime as _dt
+        # flush=write-through, weil bei Crash sonst Puffer verloren geht
+        with open(_TRACE_PATH, "a", encoding="utf-8") as fh:
+            fh.write(f"[{_dt.now().isoformat()}] {step}\n")
+            fh.flush()
+            try:
+                import os as _os
+                _os.fsync(fh.fileno())
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+_trace("=== START === (entry_pyinstaller.py top-of-file imports)")
 
 import os
 import sys
@@ -151,19 +181,25 @@ def _show_crash_dialog_macos(log_path: Path, exc_text: str) -> None:
 
 
 def main() -> int:
+    _trace("main() entered")
     data_dir = _ensure_runtime_dirs()
+    _trace(f"data_dir resolved: {data_dir}")
 
     # sys.path so erweitern, dass alle relativen Imports funktionieren
     here = Path(__file__).resolve().parent
     if str(here) not in sys.path:
         sys.path.insert(0, str(here))
+    _trace(f"sys.path patched: {here}")
 
+    _trace("importing wiki_app …")
     import wiki_app
+    _trace("wiki_app imported")
     cfg = wiki_app.cfg
     host = cfg.bind_host if cfg.bind_host != "0.0.0.0" else "127.0.0.1"
     bind_host = cfg.bind_host
     port = cfg.bind_port
     url = f"http://{host}:{port}/"
+    _trace(f"cfg loaded → host={host} port={port}")
 
     print()
     print("=" * 60)
@@ -176,32 +212,40 @@ def main() -> int:
     # Fenster (pywebview) im Main-Thread öffnen können. Auf macOS MUSS die
     # UI im Main-Thread laufen — daher diese Reihenfolge.
     def _serve_in_background():
+        _trace("server-thread: starting waitress")
         try:
             from waitress import serve as _wserve
             _wserve(wiki_app.app, host=bind_host, port=port, threads=8)
         except ImportError:
+            _trace("server-thread: waitress not available, fallback to Flask-dev")
             wiki_app.app.run(host=bind_host, port=port, threaded=True)
+        except Exception as ex:
+            _trace(f"server-thread CRASHED: {type(ex).__name__}: {ex}")
+            raise
 
     server_thread = threading.Thread(target=_serve_in_background, daemon=True)
     server_thread.start()
+    _trace("server-thread started")
 
     # Auf Server-Bereitschaft warten — sonst zeigt pywebview erst eine
     # weiße Seite und reloadet, was hässlich aussieht.
     if not _wait_for_server(host, port, timeout=8.0):
         print(f"⚠ Server antwortet nicht auf {url} — starte trotzdem das Fenster.", file=sys.stderr)
+        _trace(f"WARN: server did not respond on {url} within 8 s")
+    else:
+        _trace(f"server up on {url}")
 
     # Natives Fenster via pywebview (wenn verfügbar), sonst Browser-Fallback.
-    # pywebview gibt es nur in Desktop-Builds (Mac/Windows/Linux-AppImage);
-    # HA-Container/Docker brauchen es nicht.
     try:
-        # Auf macOS muss die Cocoa-Main-Loop im Main-Thread laufen,
-        # deshalb sind wir hier (alles vorher → Background-Thread).
+        _trace("importing webview …")
         import webview  # type: ignore
+        _trace(f"webview imported, version={getattr(webview, '__version__', '?')}")
         try:
             version = __import__("__version__").VERSION
         except Exception:
             version = ""
         title = "Hermes Portal" + (f" v{version}" if version else "")
+        _trace("creating pywebview window …")
         win = webview.create_window(
             title,
             url,
@@ -211,19 +255,24 @@ def main() -> int:
             resizable=True,
             background_color="#0f1115",
         )
+        _trace("window created")
+
         gui_kw = {}
         if sys.platform == "darwin":
             gui_kw["gui"] = "cocoa"
         elif sys.platform == "win32":
             gui_kw["gui"] = "edgechromium"
+        _trace(f"calling webview.start with gui_kw={gui_kw}")
 
         # Runtime-Fehler bei webview.start() abfangen (z.B. WKWebView
         # init scheitert auf manchen macOS-Versionen, GTK fehlt auf
         # Linux). Statt lautlos zu sterben → Browser-Fallback.
         try:
             webview.start(**gui_kw)
+            _trace("webview.start returned cleanly (window closed by user)")
             return 0
         except Exception as ex:  # noqa: BLE001 — bewusst breit
+            _trace(f"webview.start CRASHED: {type(ex).__name__}: {ex}")
             print(f"⚠ pywebview start() failed: {ex}", file=sys.stderr)
             print(f"  → opening browser instead: {url}", file=sys.stderr)
             _open_browser(url)
@@ -232,8 +281,8 @@ def main() -> int:
             except KeyboardInterrupt:
                 pass
             return 0
-    except ImportError:
-        # Kein pywebview gebündelt → Fallback: Browser öffnen + auf Server-Thread warten
+    except ImportError as ex:
+        _trace(f"pywebview import failed: {ex} → browser fallback")
         print("  Hinweis: pywebview nicht installiert — öffne stattdessen den Browser.")
         print("  Beenden: Strg+C bzw. Fenster schließen.")
         print()

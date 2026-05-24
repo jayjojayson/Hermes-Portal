@@ -1009,126 +1009,15 @@ function handleSendOrStop() {
     }
 }
 
-// ─── Portal-seitige Slash-Command-Handler ──────────────────────────────
-// Hermes-CLI behandelt Slash-Befehle nur im REPL-Mode. Wenn wir per
-// `hermes -z "/usage"` shell-en, sieht das Modell den Text als normalen
-// Prompt → halluziniert. Deshalb intercepten wir die wichtigsten Slash-
-// Commands hier im Portal und routen sie auf eigene Funktionen.
-// Liefert true wenn der Command verarbeitet wurde (→ KEINE Nachricht an
-// Hermes senden), false wenn der Command nicht handled wurde (→ normal
-// weitersenden).
-function maybeHandleSlashLocally(text) {
-    var s = (text || '').trim();
-    if (!s.startsWith('/')) return false;
-    // Erstes Token isolieren (inkl. evtl. Argument abtrennen)
-    var firstSpace = s.indexOf(' ');
-    var cmd = (firstSpace >= 0 ? s.slice(0, firstSpace) : s).toLowerCase();
-    var args = firstSpace >= 0 ? s.slice(firstSpace + 1).trim() : '';
-
-    switch (cmd) {
-        case '/usage':
-        case '/insights':
-            // Sende User-Nachricht in Bubble, dann Bot-Antwort mit Link
-            // statt Hermes-Anfrage.
-            _appendUserBubble(text);
-            _appendBotBubble(
-                '📊 ' + window.t('chat.slash.usage_redirect') +
-                ' <a href="' + window.hpUrl('/settings/#tab-usage') + '">Settings → 📊 ' +
-                window.t('settings.tab.usage') + '</a>'
-            );
-            return true;
-
-        case '/new':
-        case '/reset':
-            _appendUserBubble(text);
-            _appendBotBubble('🆕 ' + window.t('chat.slash.new_session'));
-            setTimeout(function() { newChat(); }, 600);
-            return true;
-
-        case '/stop':
-            if (_activeSendAbort) {
-                stopMessage();
-            } else {
-                _appendUserBubble(text);
-                _appendBotBubble('⏹ ' + window.t('chat.slash.nothing_to_stop'));
-            }
-            return true;
-
-        case '/help':
-            _appendUserBubble(text);
-            _appendBotBubble(_slashHelpHtml());
-            return true;
-
-        case '/quit':
-            _appendUserBubble(text);
-            _appendBotBubble('👋 ' + window.t('chat.slash.quit_hint'));
-            return true;
-    }
-    return false;
-}
-
-// Helpers zum Direkt-Einfügen einer Bubble ohne Server-Roundtrip.
-// Schreibt direkt in den DOM und füllt _localBubbles für späteres
-// Persistieren beim nächsten /api/chat/send-Call.
-function _appendBubble(role, contentHtml, escapeContent) {
-    var el = document.getElementById('chat-messages');
-    if (!el) return;
-    el.classList.remove('hidden');
-    var typing = document.getElementById('typing-indicator');
-    var bubble = document.createElement('div');
-    bubble.className = 'message ' + (role === 'user' ? 'user' : 'bot');
-    var inner = escapeContent
-        ? formatMessage(contentHtml)
-        : contentHtml;  // HTML-Strings direkt einsetzen (z.B. /help-Tabelle)
-    bubble.innerHTML =
-        '<div class="message-avatar">' + (role === 'user' ? '👤' : '🤖') + '</div>' +
-        '<div>' +
-            '<div class="message-bubble">' + inner + '</div>' +
-            '<div class="message-time">' + formatTime(new Date().toISOString()) + '</div>' +
-        '</div>';
-    if (typing && typing.parentNode === el) {
-        el.insertBefore(bubble, typing);
-    } else {
-        el.appendChild(bubble);
-    }
-    scrollToBottom();
-}
-function _appendUserBubble(text) {
-    _appendBubble('user', text, true);
-    var ta = document.getElementById('chat-textarea');
-    if (ta) { ta.value = ''; try { autoResize(ta); } catch(e) {} }
-}
-function _appendBotBubble(htmlOrText) {
-    _appendBubble('assistant', htmlOrText, false);
-}
-function _slashHelpHtml() {
-    var lines = [
-        '<strong>' + window.t('chat.slash.help_title') + '</strong>',
-        '',
-        '<strong>📦 ' + window.t('chat.slash.help_local') + '</strong>',
-        '<code>/usage</code>, <code>/insights</code> → Settings → 📊 Usage',
-        '<code>/new</code>, <code>/reset</code> → ' + window.t('chat.slash.new_session'),
-        '<code>/stop</code> → ' + window.t('chat.slash.stop_current'),
-        '<code>/help</code> → ' + window.t('chat.slash.show_help'),
-        '<code>/quit</code> → ' + window.t('chat.slash.quit_hint'),
-        '',
-        '<strong>🤖 ' + window.t('chat.slash.help_agent') + '</strong>',
-        window.t('chat.slash.help_agent_desc'),
-        '<code>/model</code>, <code>/tools</code>, <code>/skills</code>, <code>/cron</code>,',
-        '<code>/reload</code>, <code>/branch</code>, <code>/title</code>, <code>/goal</code> &hellip;'
-    ];
-    return lines.join('<br>');
-}
-
 function sendMessage() {
     var ta = document.getElementById('chat-textarea');
     var text = ta.value.trim();
     if (!text && pendingFiles.length === 0) return;
 
-    // Portal-seitige Slash-Commands abfangen, bevor wir Hermes anrufen
-    if (text && pendingFiles.length === 0 && maybeHandleSlashLocally(text)) {
-        return;
-    }
+    // Slash-Befehle gehen NATIV an den Hermes-Agent — er kennt /reset,
+    // /usage, /new etc. selbst und antwortet entsprechend. Kein Portal-
+    // seitiges Intercepten (Versuch in v1.1.4 war Schrott — startete
+    // neue Chat-Fenster statt Agent-Antwort zu zeigen).
 
     document.getElementById('typing-indicator').classList.add('visible');
     scrollToBottom();

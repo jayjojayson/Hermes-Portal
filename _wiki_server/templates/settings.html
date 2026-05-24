@@ -835,8 +835,10 @@
             <div style="margin-top:1rem;">
                 <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 {{ t('common.save') }}</button>
                 <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 {{ t('settings.app.connection.test') }}</button>
+                <button class="btn-sm btn-sm-secondary app-ssh-only" onclick="discoverSshHosts()" id="ssh-find-ip-btn">🔎 {{ t('settings.app.connection.find_ip') }}</button>
                 <span class="save-feedback" id="app-save-feedback">✓ {{ t('settings.saved') }}</span>
             </div>
+            <div id="ssh-discover-results" style="margin-top:0.5rem; display:none; padding:0.6rem 0.8rem; background:var(--bg-tertiary); border-radius:8px; font-size:0.85rem;"></div>
 
             <!-- SSH-Key Wizard (nur im SSH-Mode sichtbar) -->
             <div class="app-ssh-wizard app-ssh-only" style="margin-top:1.5rem; padding-top:1rem; border-top:1px dashed var(--border-color);">
@@ -1085,14 +1087,9 @@
     <!-- ===================== -->
     <div class="tab-content" id="tab-content-support">
         <div class="settings-section">
-            <div class="settings-section-title">❤️ Unterstütze das Projekt</div>
+            <div class="settings-section-title">❤️ {{ t('support.section.support_title') }}</div>
             <p style="font-size:0.9rem; color:var(--text-secondary); margin:0 0 1.25rem 0;">
-                Hermes Portal ist ein Open-Source-Projekt. Wenn dir das Tool gefällt
-                und du Lust hast, die Weiterentwicklung zu unterstützen — über jede
-                Tasse Kaffee ☕ und jeden ⭐ Stern auf
-                <a href="https://github.com/jayjojayson/Hermes-Portal" target="_blank" rel="noopener"
-                   style="color:var(--accent-primary);">GitHub</a>
-                freuen wir uns!
+                {{ t('support.intro')|safe }}
             </p>
             <div class="support-grid">
                 <a href="https://www.paypal.me/quadFlyerFW" target="_blank" rel="noopener"
@@ -1100,7 +1097,7 @@
                     <div class="support-icon">💙</div>
                     <div class="support-body">
                         <div class="support-title">PayPal</div>
-                        <div class="support-desc">Einmalig per PayPal.me unterstützen</div>
+                        <div class="support-desc">{{ t('support.paypal_desc') }}</div>
                     </div>
                     <div class="support-arrow">→</div>
                 </a>
@@ -1109,7 +1106,7 @@
                     <div class="support-icon">☕</div>
                     <div class="support-body">
                         <div class="support-title">Ko-fi</div>
-                        <div class="support-desc">Einen Kaffee spendieren via Ko-fi</div>
+                        <div class="support-desc">{{ t('support.kofi_desc') }}</div>
                     </div>
                     <div class="support-arrow">→</div>
                 </a>
@@ -1117,17 +1114,17 @@
         </div>
 
         <div class="settings-section">
-            <div class="settings-section-title">🐙 GitHub &amp; Community</div>
+            <div class="settings-section-title">🐙 {{ t('support.section.community') }}</div>
             <p style="font-size:0.9rem; color:var(--text-secondary); margin:0 0 1.25rem 0;">
-                Code, Bug-Reports, Feature-Wünsche, Fragen an die Community — alles auf GitHub.
+                {{ t('support.community_intro') }}
             </p>
             <div class="support-grid">
                 <a href="https://github.com/jayjojayson/Hermes-Portal" target="_blank" rel="noopener"
                    class="support-card support-github">
                     <div class="support-icon">⭐</div>
                     <div class="support-body">
-                        <div class="support-title">Projekt</div>
-                        <div class="support-desc">Repository · Code · Releases</div>
+                        <div class="support-title">{{ t('support.project_title') }}</div>
+                        <div class="support-desc">{{ t('support.project_desc') }}</div>
                     </div>
                     <div class="support-arrow">→</div>
                 </a>
@@ -1136,7 +1133,7 @@
                     <div class="support-icon">💬</div>
                     <div class="support-body">
                         <div class="support-title">Discussions</div>
-                        <div class="support-desc">Fragen, Ideen, Show &amp; Tell</div>
+                        <div class="support-desc">{{ t('support.discussions_desc') }}</div>
                     </div>
                     <div class="support-arrow">→</div>
                 </a>
@@ -1145,11 +1142,45 @@
                     <div class="support-icon">🐞</div>
                     <div class="support-body">
                         <div class="support-title">Issues</div>
-                        <div class="support-desc">Bugs melden · Feature-Wünsche</div>
+                        <div class="support-desc">{{ t('support.issues_desc') }}</div>
                     </div>
                     <div class="support-arrow">→</div>
                 </a>
             </div>
+        </div>
+
+        <!-- Version-Info: zeigt aktuelle Version + Link zu Releases.
+             Parallel zum Sidebar-Footer-Badge. -->
+        <div class="settings-section">
+            <div class="settings-section-title">📦 {{ t('support.section.version') }}</div>
+            <p style="font-size:0.9rem; color:var(--text-secondary); margin:0;">
+                {{ t('support.version_running') }}
+                <a href="https://github.com/jayjojayson/Hermes-Portal/releases/tag/v{{ portal_version }}"
+                   target="_blank" rel="noopener"
+                   style="color:var(--accent-primary); font-family:var(--mono);">v{{ portal_version }}</a>.
+                <span id="support-update-info" style="margin-left:0.5rem;"></span>
+            </p>
+            <script>
+            (function(){
+                // Update-Check (gleiche API wie der Sidebar-Footer-Badge)
+                fetch(window.hpUrl ? window.hpUrl('/api/version/check') : '/api/version/check',
+                      { cache: 'no-store' })
+                    .then(function(r){ return r.ok ? r.json() : null; })
+                    .then(function(d){
+                        var el = document.getElementById('support-update-info');
+                        if (!el || !d) return;
+                        if (d.update_available) {
+                            el.innerHTML = '· <a href="' + d.url + '" target="_blank" ' +
+                                'rel="noopener" style="color:#f0b400; font-weight:600;">' +
+                                '⬆ {{ t("support.update_available") }} v' + d.latest + '</a>';
+                        } else if (d.latest) {
+                            el.innerHTML = '· <span style="color:var(--text-secondary);">' +
+                                '{{ t("support.up_to_date") }}</span>';
+                        }
+                    })
+                    .catch(function(){});
+            })();
+            </script>
         </div>
     </div>
 
@@ -1778,6 +1809,64 @@ function testAppConnection() {
         }
     })
     .catch(function(e) { if (banner) banner.innerHTML = '🔴 Test fehlgeschlagen: ' + e; });
+}
+
+// ---- LAN-Discovery für SSH-Hosts -------------------------------------
+// Scant das lokale /24 (Server-side) und listet SSH-fähige Hosts.
+// User kann eine IP klicken → wird ins agent_host-Feld eingetragen.
+function discoverSshHosts() {
+    var btn = document.getElementById('ssh-find-ip-btn');
+    var box = document.getElementById('ssh-discover-results');
+    if (!box) return;
+    box.style.display = 'block';
+    box.innerHTML = '⏳ ' + (window.t ? window.t('settings.app.connection.scanning') : 'Scanning local network…');
+    if (btn) btn.disabled = true;
+    fetch('/api/settings/app/discover', { method: 'POST' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (btn) btn.disabled = false;
+        if (d.error) {
+            box.innerHTML = '⚠️ ' + d.error;
+            return;
+        }
+        if (!d.ssh_hosts || !d.ssh_hosts.length) {
+            box.innerHTML = '🤷 ' + (window.t ? window.t('settings.app.connection.no_hosts') : 'No SSH hosts found.') +
+                ' <span style="color:var(--text-secondary); font-size:0.8em;">(' + d.scanned_subnet + ', ' + d.took_ms + ' ms)</span>';
+            return;
+        }
+        var ownIp = d.own_ip || '';
+        var html = '<div style="margin-bottom:0.4rem;">📡 <strong>' + d.ssh_hosts.length + '</strong> ' +
+                   (window.t ? window.t('settings.app.connection.hosts_found') : 'SSH host(s) found') +
+                   ' <span style="color:var(--text-secondary); font-size:0.8em;">(' + d.scanned_subnet + ', ' + d.took_ms + ' ms)</span></div>';
+        html += '<div style="display:flex; flex-direction:column; gap:4px;">';
+        d.ssh_hosts.forEach(function(h) {
+            var label = h.hostname ? (h.ip + ' · ' + h.hostname) : h.ip;
+            var hint = (h.ip === ownIp) ? ' <em style="color:var(--text-secondary);">(this portal)</em>' : '';
+            html += '<div><button class="btn-sm btn-sm-secondary" style="font-family:var(--mono); font-size:0.82rem;" ' +
+                    'onclick="_pickDiscoveredIp(\'' + h.ip + '\')">' + label + '</button>' + hint + '</div>';
+        });
+        html += '</div>';
+        box.innerHTML = html;
+    })
+    .catch(function(e) {
+        if (btn) btn.disabled = false;
+        box.innerHTML = '🔴 ' + e;
+    });
+}
+function _pickDiscoveredIp(ip) {
+    var fld = document.getElementById('app-agent_host');
+    if (fld) {
+        fld.value = ip;
+        fld.focus();
+        fld.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    var box = document.getElementById('ssh-discover-results');
+    if (box) {
+        box.innerHTML = '✓ ' + (window.t ? window.t('settings.app.connection.ip_picked') : 'IP set as agent host.') +
+                       ' <code>' + ip + '</code> — ' +
+                       (window.t ? window.t('common.save') : 'Save') + ' + ' +
+                       (window.t ? window.t('settings.app.connection.test') : 'Test connection');
+    }
 }
 
 // ---- SSH-Key Wizard ---------------------------------------------------

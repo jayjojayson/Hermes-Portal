@@ -314,12 +314,21 @@
 
 <style>
 .wiki-io-card .wiki-io-buttons {
-    display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px;
+    /* Eine Zeile auf Desktop: Import-Button + Select-Dropdown + Export-Button
+       nebeneinander. Bei <520px Viewport (Phone-Portrait) wrap in 2 Zeilen. */
+    display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; margin-top: 4px;
+}
+@media (max-width: 520px) {
+    .wiki-io-card .wiki-io-buttons { flex-wrap: wrap; }
 }
 .wiki-io-card .wiki-io-select {
     padding: 5px 8px; border-radius: 6px; border: 1px solid var(--border);
     background: var(--surface2); color: var(--text); font-size: 0.85rem;
+    /* Verhindert, dass das Select die ganze Zeile beansprucht */
+    flex: 0 0 auto; min-width: 0;
 }
+.wiki-io-card .wiki-io-buttons label.btn { white-space: nowrap; flex: 0 0 auto; }
+.wiki-io-card .wiki-io-buttons a.btn     { white-space: nowrap; flex: 0 0 auto; }
 .wiki-io-card .wiki-io-status {
     margin-top: 8px; font-size: 0.78rem; line-height: 1.5;
     color: var(--text-dim); min-height: 1.2em;

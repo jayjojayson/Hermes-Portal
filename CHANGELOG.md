@@ -14,6 +14,59 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.5] — 2026-05-25
+
+Slash-Command-Revert + LAN-Discovery + Wiki-IO-Layout + Support-Tab i18n
++ aggressives Mac-Trace-Logging.
+
+### Changed
+- **Slash-Commands gehen nativ an den Hermes-Agent.** Portal-seitige
+  Interceptoren aus v1.1.4 sind komplett raus. `/new`, `/reset`,
+  `/usage`, `/help` etc. werden jetzt wie jede andere Chat-Nachricht
+  unverändert an den Agent gesendet — der antwortet entsprechend. Wenn
+  die Antwort halluziniert wirkt, liegt's am Invocation-Pattern des
+  Agenten (`hermes -z` vs. REPL-Mode), nicht am Portal.
+- **Wiki Import/Export**: Import-Button + Kategorie-Dropdown + Export-
+  Button auf Desktop in **einer Zeile** (vorher zwei). Wrappt nur noch
+  unter 520 px (Phone-Portrait).
+
+### Added
+- **🔎 „Find IP"-Button** in Settings → 🛰️ App → Connection. Scant das
+  lokale `/24`-Subnetz auf SSH-fähige Hosts (Port 22 offen), zeigt die
+  Treffer mit Hostname (Reverse-DNS), Klick übernimmt die IP ins
+  Agent-Host-Feld. Neuer Endpoint `/api/settings/app/discover`.
+- **Support-Tab vollständig i18n** in 4 Sprachen: Section-Titel
+  (Support / GitHub & Community / Version), Intro-Text, alle
+  Card-Beschreibungen.
+- **📦 Version-Info-Sektion im Support-Tab** mit Update-Check (gleiche
+  API wie der Sidebar-Footer-Badge). Zeigt aktuelle Version + bei
+  verfügbarem Update einen ⬆-Link zur Release-Page.
+- **🔍 Step-by-Step Mac-Trace-Logging** in `entry_pyinstaller.py`:
+  jeder Schritt im Startup wird in `~/Desktop/hermes-portal-trace.log`
+  geschrieben. Bei Crash sehen wir in der letzten Zeile WO genau
+  gestorben wurde — Bootloader, Imports, Server-Thread, pywebview-
+  Init, oder erst beim `webview.start()`-Call.
+
+### Deferred
+- **🗂 Weitere Wiki-Kategorien** (Wunsch aus dieser Runde) — wird in
+  v1.2.0 angegangen: braucht Refactor von `/entity/<id>` und
+  `/concept/<id>` auf eine generische `/category/<key>/<id>`-Route
+  plus UI zum Hinzufügen/Verwalten in Settings → App → Identity.
+- **News/Briefing/Tasks-Seiten-Subtitle**: das ist **agent-generierter
+  Content** aus deinem Blog-HTML (`/blog/index.html` etc.). Das Portal
+  strippt nur den Header und injiziert sein CSS, der Body-Inhalt
+  (Titel + Untertitel) kommt 1:1 von deinem `daily_news.py` / Blog-
+  Generator. Übersetzung wäre dort fällig, nicht im Portal.
+
+### Notes — Mac-PKG-Diagnostik
+Mit dem neuen Trace-File kommen wir dem stillen App-Tod auf die Spur.
+Nach Install + Start-Versuch bitte `~/Desktop/hermes-portal-trace.log`
+prüfen und Inhalt schicken — dann sehe ich exakt, ob's der
+`pywebview`-`start()` ist, ein Library-Loading-Fehler, oder schon
+früher.
+
+---
+
 ## [1.1.4] — 2026-05-25
 
 Slash-Commands intelligent gemacht, SSH-Wizard fertig übersetzt,
@@ -962,7 +1015,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.4...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.5...HEAD
+[1.1.5]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.4...v1.1.5
 [1.1.4]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.1...v1.1.2

@@ -3,6 +3,18 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.5
+
+- **Slash-Commands gehen wieder nativ an den Agent** — Portal-seitige
+  Interceptoren raus, `/usage`/`/new`/`/reset` etc. werden 1:1 zum Agent
+  gesendet wie jede andere Chat-Nachricht.
+- **🔎 LAN-Discovery für SSH-Host** — neuer „Find IP"-Button in
+  Settings → 🛰️ App scant das lokale Netzwerk nach SSH-fähigen Hosts
+  und übernimmt die IP per Klick.
+- **Wiki Import/Export** auf Desktop in einer Zeile (vorher zwei).
+- **Support-Tab vollständig übersetzt** in 4 Sprachen + neuer
+  Version-Info-Block mit Update-Hinweis.
+
 ## 1.1.4
 
 - **Slash-Commands intelligent gemacht**: `/usage`, `/new`, `/reset`,

@@ -3798,6 +3798,89 @@ def api_settings_app_test():
     return jsonify(status)
 
 
+@app.route("/api/settings/app/discover", methods=["POST"])
+def api_settings_app_discover():
+    """Scant das lokale /24-Subnetz nach Hosts, die auf SSH (Port 22) antworten.
+
+    Idee: Portal kennt seine eigene IP → derived /24 → parallel TCP-Connect
+    zu allen 254 Hosts mit kurzem Timeout. Hosts, die auf 22 antworten,
+    sind potentielle Hermes-Agenten. Optional: Reverse-DNS für freundliche
+    Namen.
+
+    Liefert: ``{ ssh_hosts: [{ip, hostname}], scanned_subnet, took_ms }``
+    """
+    import socket
+    import time as _time
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    started = _time.time()
+
+    def _local_ipv4():
+        """Eigene LAN-IP rauskriegen — UDP-Connect-Trick (kein Paket geht raus)."""
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("8.8.8.8", 53))
+            return s.getsockname()[0]
+        except OSError:
+            return None
+        finally:
+            s.close()
+
+    own_ip = _local_ipv4()
+    if not own_ip:
+        return jsonify({"error": "Konnte eigene LAN-IP nicht bestimmen.",
+                        "ssh_hosts": []}), 200
+
+    parts = own_ip.split(".")
+    if len(parts) != 4:
+        return jsonify({"error": "Unerwartetes IP-Format: " + own_ip,
+                        "ssh_hosts": []}), 200
+    subnet = ".".join(parts[:3])
+
+    def _check(host):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(0.4)
+        try:
+            if s.connect_ex((host, 22)) == 0:
+                # Hostname auflösen (best-effort, kann sehr lange dauern → eigener Timeout)
+                hostname = ""
+                try:
+                    socket.setdefaulttimeout(0.6)
+                    hostname = socket.gethostbyaddr(host)[0]
+                except (socket.herror, socket.gaierror, OSError):
+                    pass
+                finally:
+                    socket.setdefaulttimeout(None)
+                return {"ip": host, "hostname": hostname}
+        except OSError:
+            pass
+        finally:
+            s.close()
+        return None
+
+    candidates = [f"{subnet}.{i}" for i in range(1, 255) if f"{subnet}.{i}" != own_ip]
+    results = []
+    # 50 Worker → 254 Hosts in <2s gescannt
+    with ThreadPoolExecutor(max_workers=50) as ex:
+        futs = [ex.submit(_check, h) for h in candidates]
+        for fut in as_completed(futs, timeout=15):
+            try:
+                r = fut.result()
+                if r:
+                    results.append(r)
+            except Exception:
+                pass
+
+    results.sort(key=lambda x: tuple(int(p) for p in x["ip"].split(".")))
+    took_ms = int((_time.time() - started) * 1000)
+    return jsonify({
+        "ssh_hosts": results,
+        "scanned_subnet": f"{subnet}.0/24",
+        "own_ip": own_ip,
+        "took_ms": took_ms,
+    })
+
+
 # --------------------------------------------------------------------
 # Briefing-Seite
 # --------------------------------------------------------------------
