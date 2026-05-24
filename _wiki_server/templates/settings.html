@@ -1047,6 +1047,10 @@
                     <input id="app-wiki_subpath" class="app-input" placeholder="wiki">
                 </label>
                 <label class="app-field">
+                    <span>{{ t('settings.app.field.blog_posts_subdir') }}</span>
+                    <input id="app-blog_posts_subdir" class="app-input" placeholder="posts">
+                </label>
+                <label class="app-field">
                     <span>{{ t('settings.app.field.hermes_home') }}</span>
                     <input id="app-hermes_home" class="app-input" placeholder="/root/.hermes">
                 </label>
@@ -1778,7 +1782,7 @@ var APP_FIELDS = [
     'connection_mode','agent_host','ssh_user','ssh_port','ssh_key_path','ssh_password',
     'user_name','agent_name',
     'category_entity_label','category_concept_label',
-    'exchange_path','wiki_subpath','hermes_home','hermes_bin',
+    'exchange_path','wiki_subpath','blog_posts_subdir','hermes_home','hermes_bin',
     'briefing_script','briefing_output',
     'briefing_github_user','briefing_weather_lat','briefing_weather_lon',
     'briefing_weather_tz','briefing_forum_rss','briefing_bvg_stop',

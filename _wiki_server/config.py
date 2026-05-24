@@ -73,6 +73,9 @@ DEFAULTS: Dict[str, Any] = {
     "hermes_bin":          "hermes",                # in PATH des Agent
     "briefing_script":     "scripts/daily_briefing.py",  # relativ zu wiki_subpath
     "briefing_output":     "blog/briefing.html",    # relativ zu wiki_subpath
+    "blog_posts_subdir":   "posts",                 # Unterordner unter blog/ für die Einzel-Tagesberichte
+                                                    # (leer = direkt in blog/). Der Hermes-Agent-Blog-Generator
+                                                    # legt die Einzel-HTMLs typischerweise dort ab.
 
     # --- Briefing-Inhalte (werden an das Script als BRIEFING_* ENV-Vars gereicht) ---
     "briefing_github_user":   "",          # leer = GitHub-Section überspringen
@@ -225,6 +228,17 @@ class AppConfig:
     def exchange_path(self) -> str:     return str(self._values.get("exchange_path") or "/mnt/austausch")
     @property
     def hermes_home(self) -> str:       return str(self._values.get("hermes_home") or "/root/.hermes")
+    @property
+    def blog_posts_subdir(self) -> str:
+        """Subordner unter blog/, in dem der Hermes-Agent die Einzel-
+        Tagesberichts-HTMLs ablegt. Default: ``"posts"``. Leerer String
+        bedeutet: direkt in ``blog/``.
+        """
+        v = self._values.get("blog_posts_subdir")
+        # Bewusst keine Defaultierung wenn explizit "" gesetzt
+        if v is None:
+            return "posts"
+        return str(v).strip().strip("/")
     @property
     def hermes_bin(self) -> str:        return str(self._values.get("hermes_bin") or "hermes")
     @property

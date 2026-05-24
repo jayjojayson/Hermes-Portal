@@ -118,6 +118,35 @@
 .news-feeds-list ul { margin: 0; padding-left: 1.2rem; font-size: 0.86rem; }
 .news-feeds-list li { margin: 4px 0; }
 .news-feeds-list code { font-size: 0.78rem; color: var(--text-dim); }
+
+/* Pagination — Prev/Next + Seitenzahlen unter dem Grid */
+.news-pager {
+    display: flex; gap: 6px; justify-content: center;
+    margin-top: 1.5rem; flex-wrap: wrap; align-items: center;
+}
+.news-pager button {
+    background: var(--bg-secondary, #1a1d24);
+    border: 1px solid var(--border-color, #2a2e38);
+    color: var(--text-secondary);
+    padding: 5px 10px; border-radius: 6px;
+    cursor: pointer; font-size: 0.85rem; min-width: 32px;
+    transition: all 0.12s;
+}
+.news-pager button:hover {
+    border-color: var(--accent, #5cc8ff);
+    color: var(--accent);
+}
+.news-pager button.current {
+    background: var(--accent, #5cc8ff); color: #fff;
+    border-color: var(--accent);
+    font-weight: 600;
+}
+.news-pager button:disabled {
+    opacity: 0.4; cursor: not-allowed;
+}
+.news-pager .ellipsis {
+    color: var(--text-dim); padding: 5px 4px;
+}
 </style>
 {% endblock %}
 
@@ -182,11 +211,96 @@
 (function() {
     var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
     var GENERATOR_PATH = {{ generator_path|tojson }};
+    var PAGE_SIZE = 9;     // 3×3-Grid pro Seite
+    var _items = [];       // alle Items aus /api/news
+    var _page  = 1;
 
     function esc(s) {
         var d = document.createElement('div'); d.textContent = s == null ? '' : String(s);
         return d.innerHTML;
     }
+
+    function renderCards(slice) {
+        var html = '<div class="news-grid">';
+        slice.forEach(function(it) {
+            // Komplette Karte ist <a> auf die Detailseite (Agent-
+            // generierter Einzel-Beitrag). KEIN target=_blank — wir
+            // wollen in derselben Tab navigieren.
+            var href = it.detail_url || it.source_url || '#';
+            html += '<a class="news-card" href="' + esc(href) + '">';
+            if (it.image) {
+                html += '<div class="hero" style="background-image:url(\'' +
+                        esc(it.image).replace(/'/g, '%27') + '\')"></div>';
+            } else {
+                html += '<div class="hero-placeholder">📰</div>';
+            }
+            html += '<div class="body">';
+            html += '<h3>' + esc(it.title || '—') + '</h3>';
+            if (it.summary) html += '<p class="summary">' + esc(it.summary) + '</p>';
+            var metaBits = [];
+            if (it.date) metaBits.push('<span class="date">🗓 ' + esc(it.date) + '</span>');
+            (it.categories || []).slice(0, 3).forEach(function(cat) {
+                metaBits.push('<span class="cat">' + esc(cat) + '</span>');
+            });
+            (it.tags || []).slice(0, 3).forEach(function(tag) {
+                metaBits.push('<span class="tag">#' + esc(tag) + '</span>');
+            });
+            if (metaBits.length) html += '<div class="meta">' + metaBits.join('') + '</div>';
+            if (it.source) html += '<div class="source">📡 ' + esc(it.source) + '</div>';
+            html += '</div></a>';
+        });
+        html += '</div>';
+        return html;
+    }
+
+    function renderPager(total) {
+        var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (pages <= 1) return '';
+        var html = '<div class="news-pager">';
+        html += '<button onclick="gotoPage(1)" ' + (_page === 1 ? 'disabled' : '') +
+                ' title="' + esc(T('news.page_first')) + '">«</button>';
+        html += '<button onclick="gotoPage(' + (_page - 1) + ')" ' + (_page === 1 ? 'disabled' : '') +
+                ' title="' + esc(T('news.page_prev')) + '">‹</button>';
+        // Seitenzahlen: zeige immer 1, _page-1, _page, _page+1, last + Ellipsis
+        var shown = new Set();
+        function add(p) {
+            if (p < 1 || p > pages || shown.has(p)) return;
+            shown.add(p);
+        }
+        add(1); add(pages);
+        for (var i = _page - 1; i <= _page + 1; i++) add(i);
+        var sorted = Array.from(shown).sort(function(a,b){ return a-b; });
+        var prev = 0;
+        sorted.forEach(function(p) {
+            if (p - prev > 1) html += '<span class="ellipsis">…</span>';
+            html += '<button onclick="gotoPage(' + p + ')" ' +
+                    (p === _page ? 'class="current"' : '') + '>' + p + '</button>';
+            prev = p;
+        });
+        html += '<button onclick="gotoPage(' + (_page + 1) + ')" ' + (_page === pages ? 'disabled' : '') +
+                ' title="' + esc(T('news.page_next')) + '">›</button>';
+        html += '<button onclick="gotoPage(' + pages + ')" ' + (_page === pages ? 'disabled' : '') +
+                ' title="' + esc(T('news.page_last')) + '">»</button>';
+        html += '</div>';
+        return html;
+    }
+
+    function renderPage() {
+        var c = document.getElementById('news-content');
+        if (!c) return;
+        var start = (_page - 1) * PAGE_SIZE;
+        var slice = _items.slice(start, start + PAGE_SIZE);
+        c.innerHTML = renderCards(slice) + renderPager(_items.length);
+    }
+
+    window.gotoPage = function(p) {
+        var pages = Math.max(1, Math.ceil(_items.length / PAGE_SIZE));
+        _page = Math.max(1, Math.min(pages, p));
+        renderPage();
+        // Sanft nach oben scrollen, damit Page-Wechsel sichtbar ist
+        var hdr = document.querySelector('.news-header');
+        if (hdr) hdr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
 
     window.loadNews = function() {
         var c = document.getElementById('news-content');
@@ -195,53 +309,22 @@
         fetch('/api/news', { cache: 'no-store' })
         .then(function(r) { return r.json(); })
         .then(function(data) {
-            var items = data.items || [];
-            document.getElementById('news-count').textContent = items.length +
-                ' ' + (items.length === 1 ? T('news.article_singular') : T('news.article_plural'));
-            if (!items.length) {
+            _items = data.items || [];
+            _page = 1;
+            document.getElementById('news-count').textContent = _items.length +
+                ' ' + (_items.length === 1 ? T('news.article_singular') : T('news.article_plural'));
+            if (!_items.length) {
                 c.innerHTML =
                     '<div class="news-empty">' +
                         '<div class="icon">📰</div>' +
                         '<h3>' + esc(T('news.empty_title')) + '</h3>' +
                         '<p>' + esc(T('news.empty_body')) + '</p>' +
                     '</div>';
-                // Cron-Hinweis bei leerer Liste automatisch öffnen
                 var note = document.getElementById('news-cron-note');
                 if (note) note.open = true;
                 return;
             }
-            var html = '<div class="news-grid">';
-            items.forEach(function(it) {
-                // Komplette Karte ist <a> auf die Detailseite (Agent-
-                // generierter Einzel-Beitrag). KEIN target=_blank — wir
-                // wollen in derselben Tab navigieren, sonst landet der
-                // User mehrfach auf der News-Übersicht.
-                var href = it.detail_url || it.source_url || '#';
-                html += '<a class="news-card" href="' + esc(href) + '">';
-                if (it.image) {
-                    html += '<div class="hero" style="background-image:url(\'' +
-                            esc(it.image).replace(/'/g, '%27') + '\')"></div>';
-                } else {
-                    html += '<div class="hero-placeholder">📰</div>';
-                }
-                html += '<div class="body">';
-                html += '<h3>' + esc(it.title || '—') + '</h3>';
-                if (it.summary) html += '<p class="summary">' + esc(it.summary) + '</p>';
-                var metaBits = [];
-                if (it.date) metaBits.push('<span class="date">🗓 ' + esc(it.date) + '</span>');
-                (it.categories || []).slice(0, 3).forEach(function(cat) {
-                    metaBits.push('<span class="cat">' + esc(cat) + '</span>');
-                });
-                (it.tags || []).slice(0, 3).forEach(function(tag) {
-                    metaBits.push('<span class="tag">#' + esc(tag) + '</span>');
-                });
-                if (metaBits.length) html += '<div class="meta">' + metaBits.join('') + '</div>';
-                if (it.source) html += '<div class="source">📡 ' + esc(it.source) + '</div>';
-                html += '</div>';  // .body
-                html += '</a>';
-            });
-            html += '</div>';
-            c.innerHTML = html;
+            renderPage();
         })
         .catch(function(e) {
             c.innerHTML = '<div class="news-empty"><div class="icon">⚠️</div>' +

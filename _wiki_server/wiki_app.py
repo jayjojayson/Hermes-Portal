@@ -1200,16 +1200,24 @@ def _post_detail_url(p: dict) -> str:
     """Findet die URL zur Detail-Seite eines Posts (vom Hermes-Agent als
     Einzel-HTML-Datei im Blog-Dir abgelegt). Probiert mehrere Felder, weil
     blog_generator.py-Forks unterschiedliche Namen benutzen.
+
+    Berücksichtigt ``cfg.blog_posts_subdir`` (Default ``"posts"``) — die
+    meisten Generatoren legen die Einzel-Tagesberichte in
+    ``blog/posts/<datei>.html`` ab, nicht direkt in ``blog/``.
     """
-    # 1) Expliziter Pfad
+    posts_sub = cfg.blog_posts_subdir  # z.B. "posts" oder ""
+    # 1) Expliziter Pfad in posts.json
     for key in ("path", "filename", "file", "html"):
         v = p.get(key)
         if v and isinstance(v, str):
             return _resolve_blog_asset(v)
-    # 2) Slug → /blog/<slug>.html
+    # 2) Slug → /blog/<posts_subdir>/<slug>.html
     slug = p.get("slug") or p.get("id")
     if slug and isinstance(slug, str):
-        return "/blog/" + slug.lstrip("/").rstrip(".html") + ".html"
+        clean = slug.lstrip("/").rstrip(".html")
+        if posts_sub:
+            return "/blog/" + posts_sub + "/" + clean + ".html"
+        return "/blog/" + clean + ".html"
     # 3) Fallback: url (kann auch eine externe Quelle sein — dann
     # öffnet der Browser eben die Original-Quelle)
     return p.get("url") or p.get("link") or ""
@@ -2636,6 +2644,19 @@ def _serve_blog_file(filename: str):
     """
     client = get_client()
     full_path = str(BLOG_STATIC_DIR / filename)
+    # Fallback: wenn die Datei nicht direkt unter blog/ existiert, im
+    # konfigurierten Posts-Subdir nachschauen (Hermes-Agent legt die
+    # Tagesberichte typisch unter blog/posts/<datei>.html ab). Wir
+    # checken via client.exists, damit es auch über SSH funktioniert.
+    posts_sub = cfg.blog_posts_subdir
+    if posts_sub and not filename.startswith(posts_sub + "/"):
+        try:
+            if not client.exists(full_path):
+                alt = str(BLOG_STATIC_DIR / posts_sub / filename)
+                if client.exists(alt):
+                    full_path = alt
+        except Exception:
+            pass
     is_html = filename.lower().endswith(('.html', '.htm'))
     # HA-Ingress-Prefix: leerer String wenn standalone, sonst z.B.
     # ``/api/hassio_ingress/<TOKEN>``. Wird unten an ALLE hardcodierten

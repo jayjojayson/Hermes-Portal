@@ -3,6 +3,17 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.2.2
+
+- **🔗 News-Detail-Links funktionieren wieder** — der Hermes-Agent-Blog-
+  Generator legt die Einzel-Tagesberichte unter `BLOG_DIR/posts/` ab.
+  Portal sucht jetzt dort + macht einen automatischen Fallback wenn
+  eine Datei nicht direkt unter `blog/` liegt.
+- **📄 Pagination** auf der News-Übersicht — 9 Beiträge pro Seite mit
+  Seitenzahlen, Prev/Next/First/Last-Buttons.
+- **⚙️ Neues Settings-Feld** „Blog-Posts-Subordner" im App-Tab
+  (Default `posts`, leer für flache Struktur).
+
 ## 1.2.1
 
 - **🖼 News-Karten mit Hero-Bildern** — Backend zieht jetzt alle gängigen

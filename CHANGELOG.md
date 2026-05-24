@@ -14,6 +14,34 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.2.2] — 2026-05-25
+
+📂 **News-Detailseiten via posts/-Subdir, Pagination, Subdir-Setting.**
+
+### Added
+- **📄 Pagination auf der News-Übersicht** — 9 Beiträge pro Seite,
+  Prev/Next + Seitenzahlen unten zentriert, „«" springt zur ersten,
+  „»" zur letzten. Bei Page-Wechsel sanfter Scroll an den Anfang.
+  Übersetzt in en/de/es/fr.
+- **⚙️ Settings → 🛰️ App → Blog-Posts-Subordner** — neues Feld
+  `blog_posts_subdir` (Default `"posts"`). Wer eine flache
+  Verzeichnisstruktur hat trägt leeren String ein.
+
+### Fixed
+- **🔗 Klick auf News-Karte → 404 weil falscher Pfad** — der
+  Hermes-Agent-Blog-Generator legt die Einzel-Tagesberichte unter
+  `BLOG_DIR/posts/<datei>.html` ab, das Portal hat aber direkt unter
+  `BLOG_DIR/` gesucht. Ab v1.2.2:
+  - `_post_detail_url` baut Slug-URLs als `/blog/<posts_subdir>/<slug>.html`
+    (statt `/blog/<slug>.html`).
+  - `/blog/<filename>`-Route fällt auf `posts/<filename>` zurück, wenn
+    die Datei nicht top-level existiert — funktioniert sowohl lokal
+    als auch über SSH (via `client.exists`).
+  Bestehende User-Setups mit Subdir „posts" funktionieren ohne
+  Config-Änderung, weil das der Default ist.
+
+---
+
 ## [1.2.1] — 2026-05-25
 
 🖼 **News-Karten mit Hero-Bildern + funktionierende Detail-Links.**
