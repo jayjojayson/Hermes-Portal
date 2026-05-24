@@ -209,21 +209,29 @@ def main() -> int:
             height=900,
             min_size=(900, 600),
             resizable=True,
-            # Background passend zum Portal-Dark; vermeidet weiße
-            # „Server-startet-noch"-Phase bevor die Seite gerendert ist.
             background_color="#0f1115",
         )
-        # webview.start() blockt bis der User das Fenster schließt.
-        # gui-Argument: auf Mac wkwebview (built-in), Windows edgechromium
-        # (built-in seit Win10), Linux qt (falls QtWebEngine installiert).
         gui_kw = {}
         if sys.platform == "darwin":
             gui_kw["gui"] = "cocoa"
         elif sys.platform == "win32":
             gui_kw["gui"] = "edgechromium"
-        # Auf Linux ohne explizites gui — pywebview wählt selbst (GTK oder QT)
-        webview.start(**gui_kw)
-        return 0
+
+        # Runtime-Fehler bei webview.start() abfangen (z.B. WKWebView
+        # init scheitert auf manchen macOS-Versionen, GTK fehlt auf
+        # Linux). Statt lautlos zu sterben → Browser-Fallback.
+        try:
+            webview.start(**gui_kw)
+            return 0
+        except Exception as ex:  # noqa: BLE001 — bewusst breit
+            print(f"⚠ pywebview start() failed: {ex}", file=sys.stderr)
+            print(f"  → opening browser instead: {url}", file=sys.stderr)
+            _open_browser(url)
+            try:
+                server_thread.join()
+            except KeyboardInterrupt:
+                pass
+            return 0
     except ImportError:
         # Kein pywebview gebündelt → Fallback: Browser öffnen + auf Server-Thread warten
         print("  Hinweis: pywebview nicht installiert — öffne stattdessen den Browser.")

@@ -842,52 +842,51 @@
             <div class="app-ssh-wizard app-ssh-only" style="margin-top:1.5rem; padding-top:1rem; border-top:1px dashed var(--border-color);">
                 <div style="display:flex; align-items:center; justify-content:space-between; gap:0.75rem; flex-wrap:wrap;">
                     <div>
-                        <strong>🔑 SSH-Key des Portals</strong>
-                        <div id="ssh-key-status" style="font-size:0.82rem; color:var(--text-secondary); margin-top:2px;">Status wird geladen…</div>
+                        <strong>🔑 {{ t('ssh.wizard.title') }}</strong>
+                        <div id="ssh-key-status" style="font-size:0.82rem; color:var(--text-secondary); margin-top:2px;">{{ t('common.loading') }}</div>
                     </div>
                     <div style="display:flex; gap:6px;">
-                        <button class="btn-sm btn-sm-primary" onclick="generateSshKey(false)" id="ssh-gen-btn">⚙️ Key erzeugen</button>
-                        <button class="btn-sm btn-sm-warning" onclick="generateSshKey(true)" id="ssh-regen-btn" style="display:none;">♻️ Neu erzeugen</button>
+                        <button class="btn-sm btn-sm-primary" onclick="generateSshKey(false)" id="ssh-gen-btn">⚙️ {{ t('ssh.wizard.generate') }}</button>
+                        <button class="btn-sm btn-sm-warning" onclick="generateSshKey(true)" id="ssh-regen-btn" style="display:none;">♻️ {{ t('ssh.wizard.regenerate') }}</button>
                     </div>
                 </div>
 
                 <div id="ssh-pub-box" style="display:none; margin-top:0.75rem;">
                     <label class="brf-field" style="margin-bottom:0.5rem;">
-                        <span>Public Key (auf dem Hermes-Host in <code>~/.ssh/authorized_keys</code> einfügen)</span>
+                        <span>{{ t('ssh.wizard.pubkey_label') }} <code>~/.ssh/authorized_keys</code></span>
                         <textarea id="ssh-pubkey" class="app-input" rows="3" readonly style="font-family:var(--mono); font-size:0.78rem; height:4.5rem; min-height:4.5rem; max-height:4.5rem; resize:none; white-space:pre; overflow-x:auto; word-break:normal;"></textarea>
                     </label>
                     <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
-                        <button class="btn-sm btn-sm-secondary" onclick="copySshPubkey()">📋 Pubkey kopieren</button>
-                        <span id="ssh-pub-feedback" style="font-size:0.82rem; color:var(--success-color, #22c55e); opacity:0; transition:opacity 0.3s;">Kopiert!</span>
+                        <button class="btn-sm btn-sm-secondary" onclick="copySshPubkey()">📋 {{ t('ssh.wizard.copy_pubkey') }}</button>
+                        <span id="ssh-pub-feedback" style="font-size:0.82rem; color:var(--success-color, #22c55e); opacity:0; transition:opacity 0.3s;">{{ t('ssh.wizard.copied') }}</span>
                         <span id="ssh-fingerprint" style="font-size:0.78rem; color:var(--text-secondary); margin-left:auto; font-family:var(--mono);"></span>
                     </div>
 
                     <details style="margin-top:0.75rem;">
-                        <summary style="cursor:pointer; font-size:0.86rem;">📖 Manuell: Wie installiere ich den Key auf dem Hermes-Host?</summary>
+                        <summary style="cursor:pointer; font-size:0.86rem;">📖 {{ t('ssh.wizard.manual_title') }}</summary>
                         <ol style="font-size:0.85rem; line-height:1.6; color:var(--text-secondary); margin-top:0.5rem;">
-                            <li>Pubkey oben kopieren.</li>
-                            <li>Auf dem Hermes-Host als <code id="ssh-user-display">root</code> einloggen.</li>
-                            <li>Datei <code>~/.ssh/authorized_keys</code> öffnen (anlegen falls nicht vorhanden, <code>chmod 700 ~/.ssh</code>).</li>
-                            <li>Pubkey-Zeile am Ende einfügen, speichern.</li>
-                            <li>Hier auf <strong>🔌 Verbindung testen</strong> klicken — sollte grün werden.</li>
+                            <li>{{ t('ssh.wizard.step1') }}</li>
+                            <li>{{ t('ssh.wizard.step2_pre') }} <code id="ssh-user-display">root</code> {{ t('ssh.wizard.step2_post') }}</li>
+                            <li>{{ t('ssh.wizard.step3') }}</li>
+                            <li>{{ t('ssh.wizard.step4') }}</li>
+                            <li>{{ t('ssh.wizard.step5_pre') }} <strong>🔌 {{ t('settings.app.connection.test') }}</strong> {{ t('ssh.wizard.step5_post') }}</li>
                         </ol>
                         <p style="font-size:0.82rem; color:var(--text-secondary);">
-                            Alternativ direkt vom Portal-Host:
+                            {{ t('ssh.wizard.alt_command') }}
                             <code id="ssh-copy-cmd">ssh-copy-id -i &lt;key-path&gt; root@&lt;host&gt;</code>
                         </p>
                     </details>
 
                     <details style="margin-top:0.5rem;">
-                        <summary style="cursor:pointer; font-size:0.86rem;">🤖 Automatisch: Prompt an den Hermes-Agent (kopieren &amp; in die Hermes-CLI einfügen)</summary>
+                        <summary style="cursor:pointer; font-size:0.86rem;">🤖 {{ t('ssh.wizard.auto_title') }}</summary>
                         <p style="font-size:0.83rem; color:var(--text-secondary); margin:0.5rem 0;">
-                            Diesen Prompt im Chat oder über <code>hermes -z "&lt;prompt&gt;"</code> an deinen Hermes-Agenten geben.
-                            Er übernimmt SSH-Server-Installation, Authorized-Keys-Eintrag und Port-Freigabe.
+                            {{ t('ssh.wizard.auto_desc') }}
                         </p>
                         <textarea id="ssh-agent-prompt" readonly
                             style="width:100%; height:18rem; min-height:18rem; padding:0.6rem; border:1px solid var(--border-color); border-radius:8px; background:var(--bg-primary); color:var(--text-primary); font-family:var(--mono); font-size:0.78rem; line-height:1.45; resize:vertical; box-sizing:border-box;"></textarea>
                         <div style="margin-top:0.5rem; display:flex; align-items:center; gap:8px;">
-                            <button class="btn-sm btn-sm-secondary" onclick="copyAgentPrompt()">📋 Prompt kopieren</button>
-                            <span id="ssh-agent-prompt-feedback" style="font-size:0.82rem; color:var(--success-color, #22c55e); opacity:0; transition:opacity 0.3s;">Kopiert!</span>
+                            <button class="btn-sm btn-sm-secondary" onclick="copyAgentPrompt()">📋 {{ t('ssh.wizard.copy_prompt') }}</button>
+                            <span id="ssh-agent-prompt-feedback" style="font-size:0.82rem; color:var(--success-color, #22c55e); opacity:0; transition:opacity 0.3s;">{{ t('ssh.wizard.copied') }}</span>
                         </div>
                     </details>
                 </div>

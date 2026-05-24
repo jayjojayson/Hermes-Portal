@@ -14,6 +14,49 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.4] — 2026-05-25
+
+Slash-Commands intelligent gemacht, SSH-Wizard fertig übersetzt,
+Mac-pywebview-Crash bekommt jetzt einen Browser-Fallback.
+
+### Fixed
+- **Slash-Commands wurden vom LLM halluziniert** — Hermes-CLI behandelt
+  Slash-Befehle nur im REPL-Mode. Wenn wir per `hermes -z "/usage"`
+  shell-en, sieht das Modell den Text als normalen Prompt und
+  antwortet kreativ („Hold on, ich hab grad kein Tool für die Stats
+  parat…"). Fix: Portal-seitige Slash-Handler in `chat.html` —
+  die wichtigsten Befehle werden lokal abgefangen:
+  - `/usage`, `/insights` → Link auf Settings → 📊 Usage
+  - `/new`, `/reset` → startet neue Chat-Session
+  - `/stop` → triggert den Stop-Button (oder Hinweis wenn nichts läuft)
+  - `/help` → zeigt Liste aller verfügbaren Slash-Commands inline
+  - `/quit` → Hinweis dass Server weiterläuft
+  Andere Befehle (`/model`, `/tools`, …) gehen weiterhin als Text
+  an den Agent.
+- **macOS pywebview stirbt jetzt nicht mehr lautlos** — `webview.start()`
+  ist in einen Try/Except gewrappt. Bei WKWebView-Init-Fehler oder
+  anderen Runtime-Crashes wird auf Browser-Fallback umgeschaltet
+  statt die App lautlos zu beenden. User sieht im Terminal-Log was
+  passiert ist.
+
+### Changed
+- **SSH-Wizard komplett übersetzt** (Settings → 🛰️ App):
+  - „Pubkey kopieren" / „Neu erzeugen" / „Prompt kopieren" / „Kopiert!"
+  - Aufklappbare Hilfe-Texte „Manuell: Wie installiere ich den Key…" +
+    „Automatisch: Prompt an den Hermes-Agent…"
+  - 5 Manual-Schritte, alle Sub-Strings
+  - 4 Sprachen × 17 neue Keys = 68 neue Übersetzungen
+- **i18n-Tables jetzt 308 Keys × 4 Sprachen** (von 280 in v1.1.3)
+
+### Notes — Mac-Crash-Diagnose
+Wenn die PKG-installierte App `~/Library/Logs/DiagnosticReports/`-
+Crash-Reports erzeugt, bitte mir den Inhalt eines `hermes-portal*.ips`
+schicken. Mit dem neuen Browser-Fallback sollte aber wenigstens
+sichtbar werden, was schiefgeht — Console.app → Process: hermes-portal
+zeigt die stderr-Ausgabe.
+
+---
+
 ## [1.1.3] — 2026-05-25
 
 Mega-Update: macOS-PKG, Slash-Commands-Dropdown, Roboter-Avatar, neue
@@ -919,7 +962,8 @@ für den [Hermes-Agent](https://github.com/jayjojayson/Hermes-Portal) lauffähig
 
 ---
 
-[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.3...HEAD
+[Unreleased]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.4...HEAD
+[1.1.4]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.3...v1.1.4
 [1.1.3]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.2...v1.1.3
 [1.1.2]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.1...v1.1.2
 [1.1.1]: https://github.com/jayjojayson/Hermes-Portal/compare/v1.1.0...v1.1.1

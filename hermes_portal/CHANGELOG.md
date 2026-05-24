@@ -3,6 +3,14 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.4
+
+- **Slash-Commands intelligent gemacht**: `/usage`, `/new`, `/reset`,
+  `/stop`, `/help`, `/quit` werden vom Portal direkt behandelt
+  (kein LLM-Halluzinieren mehr). Andere Befehle gehen weiter an den Agent.
+- **SSH-Wizard komplett übersetzt**: alle Buttons + aufklappbare
+  Hilfe-Texte in 4 Sprachen.
+
 ## 1.1.3
 
 - **Slash-Commands-Dropdown im Chat** — Hermes-CLI-Befehle (`/new`,
