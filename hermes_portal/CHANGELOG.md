@@ -3,6 +3,18 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.7
+
+- **📥 SSH-Key importieren statt generieren** — bestehenden Private-Key
+  in Settings → 🛰️ App per Copy&Paste einfügen, Portal leitet den
+  Public-Key automatisch ab. Praktisch beim Umzug oder Multi-Device-Setup
+  — `authorized_keys` auf dem Agent muss nicht angefasst werden.
+- **💾 Settings-Save-Bar komplett übersetzt** (vorher partiell deutsch
+  hartkodiert).
+- **README konsolidiert**: ausführliche Troubleshooting- und
+  First-Time-Configuration-Sektionen mit Tabelle für alle App-Settings,
+  inkl. macOS-PKG-Quarantäne-Hinweis und HA-Container-Subnetz-Tipp.
+
 ## 1.1.6
 
 - **🔎 Find-IP versteht Container** — erkennt HA-Add-on-Subnetz

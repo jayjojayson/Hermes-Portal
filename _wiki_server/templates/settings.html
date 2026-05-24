@@ -847,10 +847,43 @@
                         <strong>🔑 {{ t('ssh.wizard.title') }}</strong>
                         <div id="ssh-key-status" style="font-size:0.82rem; color:var(--text-secondary); margin-top:2px;">{{ t('common.loading') }}</div>
                     </div>
-                    <div style="display:flex; gap:6px;">
+                    <div style="display:flex; gap:6px; flex-wrap:wrap;">
                         <button class="btn-sm btn-sm-primary" onclick="generateSshKey(false)" id="ssh-gen-btn">⚙️ {{ t('ssh.wizard.generate') }}</button>
                         <button class="btn-sm btn-sm-warning" onclick="generateSshKey(true)" id="ssh-regen-btn" style="display:none;">♻️ {{ t('ssh.wizard.regenerate') }}</button>
+                        <button class="btn-sm btn-sm-secondary" onclick="toggleSshImportBox()" id="ssh-import-toggle-btn">📥 {{ t('ssh.wizard.import_existing') }}</button>
                     </div>
+                </div>
+
+                <!-- Import-Box: vorhandenen Key per Paste übernehmen.
+                     Praktisch wenn man Portal auf einem neuen Gerät installiert
+                     und den bestehenden Key (der schon auf dem Hermes-Host in
+                     authorized_keys steht) weiternutzen will. -->
+                <div id="ssh-import-box" style="display:none; margin-top:0.75rem; padding:0.75rem; border:1px dashed var(--border-color); border-radius:8px;">
+                    <p style="margin:0 0 0.6rem 0; font-size:0.85rem; color:var(--text-secondary);">
+                        💡 {{ t('ssh.wizard.import_hint') }}
+                    </p>
+                    <label style="display:block; font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.4rem;">
+                        <span style="font-weight:600;">{{ t('ssh.wizard.private_key_label') }}</span>
+                        <textarea id="ssh-import-private" class="app-input" rows="6"
+                                  placeholder="-----BEGIN OPENSSH PRIVATE KEY-----&#10;…&#10;-----END OPENSSH PRIVATE KEY-----"
+                                  style="font-family:var(--mono); font-size:0.76rem; resize:vertical;"></textarea>
+                    </label>
+                    <label style="display:block; font-size:0.82rem; color:var(--text-secondary); margin-bottom:0.4rem;">
+                        <span style="font-weight:600;">{{ t('ssh.wizard.public_key_label') }}</span>
+                        <textarea id="ssh-import-public" class="app-input" rows="2"
+                                  placeholder="ssh-ed25519 AAAA…  comment"
+                                  style="font-family:var(--mono); font-size:0.76rem; resize:vertical;"></textarea>
+                    </label>
+                    <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                        <label style="display:flex; align-items:center; gap:4px; font-size:0.82rem; cursor:pointer;">
+                            <input type="checkbox" id="ssh-import-overwrite">
+                            <span>{{ t('ssh.wizard.overwrite_existing') }}</span>
+                        </label>
+                        <span style="flex:1;"></span>
+                        <button class="btn-sm btn-sm-secondary" onclick="toggleSshImportBox()">{{ t('common.cancel') }}</button>
+                        <button class="btn-sm btn-sm-primary" onclick="importSshKey()">📥 {{ t('ssh.wizard.import_button') }}</button>
+                    </div>
+                    <div id="ssh-import-feedback" style="margin-top:0.5rem; font-size:0.82rem; min-height:1.2em;"></div>
                 </div>
 
                 <div id="ssh-pub-box" style="display:none; margin-top:0.75rem;">
@@ -1051,12 +1084,12 @@
 
         <!-- Sticky Save-Bar am Tab-Ende -->
         <div class="settings-section" style="position:sticky; bottom:0; z-index:10; background:var(--bg-secondary); border:1px solid var(--accent-primary); display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
-            <span style="font-weight:600;">💾 Änderungen übernehmen</span>
+            <span style="font-weight:600;">💾 {{ t('settings.save_bar.title') }}</span>
             <span style="font-size:0.82rem; color:var(--text-secondary); flex:1;">
-                Pfad- und Verbindungs-Änderungen werden direkt aktiv (kein Neustart nötig).
+                {{ t('settings.save_bar.hint') }}
             </span>
-            <span class="save-feedback" id="app-save-feedback-bottom">✓ Gespeichert!</span>
-            <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 Verbindung testen</button>
+            <span class="save-feedback" id="app-save-feedback-bottom">✓ {{ t('settings.saved') }}</span>
+            <button class="btn-sm btn-sm-secondary" onclick="testAppConnection()">🔌 {{ t('settings.app.connection.test') }}</button>
             <button class="btn-sm btn-sm-primary" onclick="saveAppConfig()">💾 {{ t('common.save') }}</button>
         </div>
     </div>
@@ -1984,6 +2017,74 @@ function generateSshKey(overwrite) {
     .catch(function(e) {
         [genBtn, regenBtn].forEach(function(b) { if (b) b.disabled = false; });
         alert('Fehler: ' + e);
+    });
+}
+
+// ---- Import vorhandenen SSH-Key (Paste) ------------------------------
+function toggleSshImportBox() {
+    var box = document.getElementById('ssh-import-box');
+    if (!box) return;
+    box.style.display = (box.style.display === 'none' || !box.style.display) ? 'block' : 'none';
+    if (box.style.display === 'block') {
+        // Focus auf das Private-Key-Feld setzen
+        setTimeout(function() {
+            var ta = document.getElementById('ssh-import-private');
+            if (ta) ta.focus();
+        }, 50);
+    }
+}
+
+function importSshKey() {
+    var privEl = document.getElementById('ssh-import-private');
+    var pubEl  = document.getElementById('ssh-import-public');
+    var overwriteEl = document.getElementById('ssh-import-overwrite');
+    var fb = document.getElementById('ssh-import-feedback');
+    if (!privEl || !privEl.value.trim()) {
+        if (fb) fb.innerHTML = '<span style="color:var(--danger,#ef4444);">⚠ ' +
+            (window.t ? window.t('ssh.wizard.private_key_required') : 'Private key is required.') + '</span>';
+        return;
+    }
+    if (fb) fb.innerHTML = '⏳ ' + (window.t ? window.t('common.loading') : 'Loading…');
+
+    fetch('/api/settings/app/ssh/import', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({
+            private_key: privEl.value,
+            public_key:  pubEl ? pubEl.value : '',
+            overwrite:   overwriteEl ? overwriteEl.checked : false,
+        }),
+    })
+    .then(function(r) { return r.json().then(function(d) { return {ok: r.ok, status: r.status, body: d}; }); })
+    .then(function(res) {
+        if (!res.ok) {
+            if (res.status === 409) {
+                if (fb) fb.innerHTML = '<span style="color:#f0b400;">⚠ ' +
+                    (window.t ? window.t('ssh.wizard.import_exists') : 'Key already exists. Tick „Overwrite" to replace.') +
+                    '</span>';
+            } else {
+                if (fb) fb.innerHTML = '<span style="color:var(--danger,#ef4444);">❌ ' +
+                    (res.body.error || 'Import failed') + '</span>';
+            }
+            return;
+        }
+        if (fb) fb.innerHTML = '<span style="color:var(--success-color,#22c55e);">✓ ' +
+            (window.t ? window.t('ssh.wizard.import_success') : 'Imported successfully!') +
+            '</span>';
+        // Pfad ins Formular nachziehen + Status neu laden
+        var pathField = document.getElementById('app-ssh_key_path');
+        if (pathField && !pathField.value) pathField.value = res.body.key_path;
+        loadSshKeyStatus();
+        // Box nach 1.5 s schließen + Felder leeren
+        setTimeout(function() {
+            if (privEl) privEl.value = '';
+            if (pubEl) pubEl.value = '';
+            if (overwriteEl) overwriteEl.checked = false;
+            toggleSshImportBox();
+        }, 1500);
+    })
+    .catch(function(e) {
+        if (fb) fb.innerHTML = '<span style="color:var(--danger,#ef4444);">❌ ' + e + '</span>';
     });
 }
 

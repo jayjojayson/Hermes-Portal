@@ -543,6 +543,32 @@ curl -s http://localhost:8090/api/dashboard/status | python3 -m json.tool
 
 ---
 
+## 🛠️ Troubleshooting
+
+| Symptom | Lösung |
+|---------|--------|
+| Portal lädt, aber keine Agent-Verbindung | SSH manuell testen: `ssh -p 22 root@<agent-ip> "echo ok"`. Klappt das nicht, blockt Firewall oder sshd läuft nicht. |
+| SSH-Key wird abgelehnt | Auf dem Agent: `chmod 600 ~/.ssh/authorized_keys`, `chmod 700 ~/.ssh`, `chown -R root:root ~/.ssh`. |
+| Monaco-Editor leer im Chat | `python _wiki_server/scripts/fetch_monaco.py` erneut ausführen (nur bei Source-Install — Docker/Desktop bündeln Monaco bereits). |
+| Wiki-Seiten erscheinen nicht | `exchange_path` in Settings prüfen — muss auf den richtigen Share zeigen. |
+| News/RSS lädt nicht | Feed-URL im Browser testen; manche Feeds sind CORS-geschützt. |
+| Briefing aktualisiert sich nicht | `hermes cron list` auf dem Agent prüfen. |
+| Docker-Container startet nicht | `docker compose logs` — meist Port-8090-Konflikt oder Volume-Permissions. |
+| macOS PKG: „Beschädigt, kann nicht geöffnet werden" | `xattr -dr com.apple.quarantine ~/Downloads/Hermes-Portal-macOS.pkg` vor dem Doppelklick. |
+| Windows SmartScreen-Warnung | *Weitere Informationen* → *Trotzdem ausführen*. Wir haben kein EV-Code-Signing-Cert. |
+| HA-Add-on Find-IP zeigt Container-Subnetz | Portal läuft im HA-Docker-Netz — manuelles LAN-Subnetz (`192.168.x`) im Scan-Feld eingeben. |
+| Mac-App startet nicht (1 s offen, dann zu) | `cat ~/Desktop/hermes-portal-trace.log` zeigt, an welcher Stelle es klemmt. |
+
+**Smoke-Tests nach Installation:**
+
+```bash
+curl -s http://localhost:8090/api/refresh
+curl -s http://localhost:8090/api/settings/app | python3 -m json.tool
+curl -s http://localhost:8090/api/dashboard/status | python3 -m json.tool
+```
+
+---
+
 ## ❤️ Support
 
 Wenn dir das Projekt gefällt:

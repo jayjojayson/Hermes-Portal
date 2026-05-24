@@ -155,6 +155,19 @@
     "settings.app.connection.container_hint":    "Introduce tu subred LAN abajo (p. ej. „192.168.178\" o „192.168.178.0/24\").",
     "settings.app.connection.scan_subnet":       "Escanear esta subred",
 
+    "settings.save_bar.title":   "Aplicar cambios",
+    "settings.save_bar.hint":    "Los cambios en rutas y conexión surten efecto inmediatamente (sin reiniciar).",
+
+    "ssh.wizard.import_existing": "Importar clave existente",
+    "ssh.wizard.import_hint":     "¿Ya tienes una clave SSH en otro dispositivo o instalación? Pégala aquí para reutilizarla — la clave pública en tu host Hermes (en ~/.ssh/authorized_keys) sigue siendo válida.",
+    "ssh.wizard.private_key_label": "Clave privada (contenido completo del archivo, incl. marcadores BEGIN/END)",
+    "ssh.wizard.public_key_label":  "Clave pública (opcional — se deriva automáticamente si está vacía)",
+    "ssh.wizard.overwrite_existing":"Sobrescribir clave existente en este dispositivo",
+    "ssh.wizard.import_button":     "Importar clave",
+    "ssh.wizard.private_key_required": "Se requiere clave privada.",
+    "ssh.wizard.import_exists":     "La clave ya existe en este dispositivo. Marca \"Sobrescribir\" para reemplazarla.",
+    "ssh.wizard.import_success":    "¡Importada con éxito!",
+
     "support.section.support_title":    "Apoya el proyecto",
     "support.intro":                    "Hermes Portal es un proyecto de código abierto. Si te gusta y quieres apoyar el desarrollo — agradecemos cada café ☕ y cada ⭐ estrella en <a href=\"https://github.com/jayjojayson/Hermes-Portal\" target=\"_blank\" rel=\"noopener\" style=\"color:var(--accent-primary);\">GitHub</a>.",
     "support.paypal_desc":              "Donación única vía PayPal.me",

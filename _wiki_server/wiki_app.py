@@ -3782,6 +3782,113 @@ def api_settings_app_ssh_generate():
         return jsonify({"status": "error", "error": str(ex)}), 500
 
 
+@app.route("/api/settings/app/ssh/import", methods=["POST"])
+def api_settings_app_ssh_import():
+    """Importiert einen vorhandenen Private-Key (PEM/OpenSSH) per Copy-Paste.
+
+    Hintergrund: Wenn ein User bereits einen SSH-Key hat und nur auf ein
+    weiteres Gerät umzieht (oder Portal neu installiert), will er nicht
+    auf dem Hermes-Host nochmal authorized_keys editieren — er paste
+    seinen alten Key ins Portal und es nutzt diesen direkt.
+
+    Body (JSON):
+        private_key: str   – Inhalt der Private-Key-Datei (PEM / OpenSSH)
+        public_key:  str   – optional, der Public-Key. Wenn fehlt, wird
+                             er aus dem Private-Key abgeleitet.
+        overwrite:   bool  – existierenden Key überschreiben (Default: False)
+        comment:     str   – Kommentar im Pubkey (nur wenn auto-derived)
+    """
+    payload = request.get_json(silent=True) or {}
+    priv_text = (payload.get("private_key") or "").strip()
+    pub_text  = (payload.get("public_key") or "").strip()
+    overwrite = bool(payload.get("overwrite"))
+    comment   = (payload.get("comment") or f"hermes-portal-imported@{cfg.agent_host or 'local'}").strip()
+
+    if not priv_text:
+        return jsonify({"status": "error",
+                        "error": "private_key fehlt im Payload"}), 400
+
+    # Basic-Sanity: Private-Key muss BEGIN-/END-Marker haben
+    if "BEGIN" not in priv_text or "PRIVATE KEY" not in priv_text:
+        return jsonify({
+            "status": "error",
+            "error": "Das sieht nicht nach einem Private-Key aus (BEGIN-/END-Marker fehlen). "
+                     "Stelle sicher, dass du den kompletten Inhalt der Key-Datei (inkl. "
+                     "'-----BEGIN OPENSSH PRIVATE KEY-----' und '-----END …-----') einfügst.",
+        }), 400
+
+    key_path = _default_ssh_key_path()
+    pub_path = Path(str(key_path) + ".pub")
+
+    if key_path.exists() and not overwrite:
+        return jsonify({
+            "status": "exists",
+            "message": "Key existiert bereits. Setze overwrite=true zum Ersetzen.",
+            "key_path": str(key_path),
+        }), 409
+
+    # Wenn kein Pubkey mitgeliefert wurde, versuchen wir ihn aus dem
+    # Private-Key abzuleiten (geht für ed25519/RSA über cryptography).
+    if not pub_text:
+        try:
+            from cryptography.hazmat.primitives import serialization as _ser
+            try:
+                _priv = _ser.load_ssh_private_key(priv_text.encode("utf-8"), password=None)
+            except Exception:
+                _priv = _ser.load_pem_private_key(priv_text.encode("utf-8"), password=None)
+            pub_bytes = _priv.public_key().public_bytes(
+                encoding=_ser.Encoding.OpenSSH,
+                format=_ser.PublicFormat.OpenSSH,
+            )
+            safe_comment = re.sub(r"[^A-Za-z0-9@_\-.]", "_", comment) or "hermes-portal-imported"
+            pub_text = pub_bytes.decode("ascii").strip() + " " + safe_comment
+        except Exception as ex:
+            return jsonify({
+                "status": "error",
+                "error": f"Konnte Public-Key nicht aus Private-Key ableiten: {ex}. "
+                         f"Bitte public_key separat mit angeben.",
+            }), 400
+
+    try:
+        _ssh_key_dir().mkdir(parents=True, exist_ok=True)
+        try:
+            os.chmod(_ssh_key_dir(), 0o700)
+        except OSError:
+            pass
+
+        # Private-Key sicherstellen, dass er mit Newline endet
+        if not priv_text.endswith("\n"):
+            priv_text += "\n"
+        key_path.write_text(priv_text, encoding="utf-8")
+        try:
+            os.chmod(key_path, 0o600)
+        except OSError:
+            pass
+
+        if not pub_text.endswith("\n"):
+            pub_text += "\n"
+        pub_path.write_text(pub_text, encoding="utf-8")
+        try:
+            os.chmod(pub_path, 0o644)
+        except OSError:
+            pass
+
+        # Pfad in der Config setzen, falls noch leer
+        if not cfg.ssh_key_path:
+            cfg.update({"ssh_key_path": str(key_path)})
+            reset_client()
+
+        return jsonify({
+            "status": "ok",
+            "key_path": str(key_path),
+            "pubkey_path": str(pub_path),
+            "pubkey": pub_text.strip(),
+            "fingerprint": _pubkey_fingerprint(pub_text),
+        })
+    except Exception as ex:
+        return jsonify({"status": "error", "error": str(ex)}), 500
+
+
 @app.route("/api/settings/app/test", methods=["POST"])
 def api_settings_app_test():
     """Testet die aktuell konfigurierte Verbindung zum Hermes-Agent."""

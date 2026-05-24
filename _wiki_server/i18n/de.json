@@ -155,6 +155,19 @@
     "settings.app.connection.container_hint":    "Gib unten dein LAN-Subnetz an (z.B. „192.168.178\" oder „192.168.178.0/24\").",
     "settings.app.connection.scan_subnet":       "Dieses Subnetz scannen",
 
+    "settings.save_bar.title":   "Änderungen übernehmen",
+    "settings.save_bar.hint":    "Pfad- und Verbindungs-Änderungen werden direkt aktiv (kein Neustart nötig).",
+
+    "ssh.wizard.import_existing": "Vorhandenen Key importieren",
+    "ssh.wizard.import_hint":     "Du hast schon einen SSH-Key auf einem anderen Gerät oder einer alten Installation? Hier einfügen und weiternutzen — der Public-Key auf deinem Hermes-Host (in ~/.ssh/authorized_keys) bleibt gültig.",
+    "ssh.wizard.private_key_label": "Private-Key (kompletter Datei-Inhalt, inkl. BEGIN/END-Marker)",
+    "ssh.wizard.public_key_label":  "Public-Key (optional — wird sonst aus Private-Key abgeleitet)",
+    "ssh.wizard.overwrite_existing":"Vorhandenen Key auf diesem Gerät überschreiben",
+    "ssh.wizard.import_button":     "Key importieren",
+    "ssh.wizard.private_key_required": "Private-Key ist Pflicht.",
+    "ssh.wizard.import_exists":     "Key existiert bereits auf diesem Gerät. Häkchen \"Überschreiben\" setzen zum Ersetzen.",
+    "ssh.wizard.import_success":    "Erfolgreich importiert!",
+
     "support.section.support_title":    "Projekt unterstützen",
     "support.intro":                    "Hermes Portal ist ein Open-Source-Projekt. Wenn dir das Tool gefällt und du Lust hast, die Weiterentwicklung zu unterstützen — über jede Tasse Kaffee ☕ und jeden ⭐ Stern auf <a href=\"https://github.com/jayjojayson/Hermes-Portal\" target=\"_blank\" rel=\"noopener\" style=\"color:var(--accent-primary);\">GitHub</a> freuen wir uns!",
     "support.paypal_desc":              "Einmalig per PayPal.me unterstützen",

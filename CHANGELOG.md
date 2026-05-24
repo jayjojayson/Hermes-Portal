@@ -14,6 +14,41 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.7] — 2026-05-24
+
+🔑 **SSH-Key paste-import + Settings-Save-Bar i18n + README-Konsolidierung.**
+
+### Added
+- **📥 SSH-Key importieren statt generieren** — neuer Button im SSH-Wizard
+  (Settings → 🛰️ App): bestehenden Private-Key per Copy&Paste einfügen,
+  Portal leitet automatisch den Public-Key ab (via `cryptography`-Lib) und
+  legt beide unter `/data/.ssh/id_ed25519`(.pub) ab. Use-Case: dieselbe
+  Identität auf mehreren Portal-Installationen verwenden, ohne den
+  `authorized_keys` auf dem Hermes-Agent jedes Mal aktualisieren zu müssen.
+  - Backend-Endpoint: `POST /api/settings/app/ssh/import`
+    (Body: `{private_key, public_key?, overwrite, comment}`)
+  - Validiert BEGIN/END-PEM-Marker, gibt 409 zurück wenn Key existiert
+    und `overwrite=false`.
+  - UI: aufklappbare Box mit zwei Textareas + Überschreiben-Checkbox,
+    übersetzt in 4 Sprachen.
+
+### Fixed
+- **💾 Settings-Save-Bar komplett übersetzt** — die schwebende Box am
+  unteren Settings-Rand zeigte „Ungespeicherte Änderungen / Klick „Speichern"
+  oder Strg/Cmd+S" hartkodiert auf Deutsch, auch wenn UI auf Englisch
+  stand. Alle Strings (Titel, Hinweis, „Gespeichert"-Bestätigung,
+  Test-Verbindung-Button) laufen jetzt über `t()`.
+- **🌐 i18n: 9 neue Keys** für SSH-Import in en/de/es/fr.
+
+### Documentation
+- **README-Merge**: `Installproces.md` in `README.md` (Englisch, Default)
+  und `README.de.md` aufgegangen — komplette Troubleshooting-Tabelle
+  (Portal/SSH/Monaco/Wiki/Docker/macOS-PKG/Windows-SmartScreen/HA-Container)
+  plus First-Time-Configuration-Tabelle mit allen App-Settings. Inkl.
+  Architektur-ASCII-Diagramm. Standalone-Datei gelöscht.
+
+---
+
 ## [1.1.6] — 2026-05-25
 
 🎯 **Mac-App startet endlich!** Plus Find-IP-Verbesserung für HA-Container

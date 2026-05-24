@@ -146,6 +146,99 @@ Run as a macOS launch agent: see [`docs/launchd.plist`](docs/launchd.plist).
 
 ---
 
+## ⚙️ First-time configuration
+
+After installing & launching the Portal, open **⚙️ Settings → 🛰️ App** and set:
+
+| Setting | Example | Description |
+|---------|---------|-------------|
+| `agent_name` | `Wally` | Your agent's name |
+| `user_name` | `Jan` | How the agent addresses you |
+| `connection_mode` | `ssh` | `local` (same host) or `ssh` (remote) |
+| `agent_host` | `192.168.1.42` | IP of the Hermes VM (or use **🔎 Find IP** to scan) |
+| `ssh_user` | `root` | SSH user on the agent host |
+| `ssh_key_path` | `/data/.ssh/id_ed25519` | Path to the private key on the Portal host |
+| `exchange_path` | `/mnt/austausch` | Shared folder on the agent host |
+| `hermes_home` | `/root/.hermes` | Hermes config dir |
+| `hermes_bin` | `hermes` | Hermes CLI path |
+
+Click **🔌 Test connection** to verify SSH + `hermes --version` both work.
+
+### SSH key — generate or paste existing one
+
+In **Settings → 🛰️ App** the wizard offers two paths:
+
+- **⚙️ Generate** — Portal generates a fresh ed25519 keypair. Public key
+  is shown to copy into the agent's `~/.ssh/authorized_keys`.
+- **📥 Import existing key** — paste a private key (PEM/OpenSSH) you
+  already use on another device. Reuse the same key across Portal
+  installations without touching `authorized_keys` again.
+
+### Recommended folder layout on the Hermes agent
+
+```
+/mnt/austausch/
+├── wiki/
+│   ├── scripts/
+│   │   └── daily_briefing.py    ← your briefing generator
+│   └── blog/
+│       ├── briefing.html         ← briefing output
+│       ├── index.html            ← news overview (agent-generated)
+│       └── aufgaben.html         ← task list (Portal-managed)
+└── …
+```
+
+A starter briefing template ships at
+`_wiki_server/templates/briefing_default.html` — copy it to your agent
+as a basis for your own `daily_briefing.py`.
+
+---
+
+## 🛠 Troubleshooting
+
+| Symptom | Fix |
+|---------|-----|
+| Portal loads, but no agent connection | Test SSH manually: `ssh -p 22 root@<agent-ip> "echo ok"`. If that fails, the agent host or firewall is blocking. |
+| SSH key rejected | On the agent: `chmod 600 ~/.ssh/authorized_keys`, `chmod 700 ~/.ssh`, `chown -R root:root ~/.ssh`. |
+| Monaco editor empty in Chat | Re-run `python _wiki_server/scripts/fetch_monaco.py` (only relevant for source installs — Docker/desktop installers bundle it). |
+| Wiki pages not showing | Check `exchange_path` in Settings — must point to the actual share. |
+| News/RSS feeds not loading | Test the feed URL directly in a browser; some feeds are CORS-protected. |
+| Briefing never updates | Check the cronjob: `hermes cron list` on the agent. |
+| Docker container won't start | `docker compose logs` — usually port 8090 conflict or volume permission. |
+| macOS PKG: "Damaged, can't open" | `xattr -dr com.apple.quarantine ~/Downloads/Hermes-Portal-macOS.pkg` before launching the installer. |
+| Windows SmartScreen warning | Click *More info* → *Run anyway*. We don't have an EV code-signing cert. |
+| HA add-on Find-IP shows container subnet | Portal runs in HA's Docker network — manually enter your LAN subnet (`192.168.x`) in the scan input. |
+
+**Smoke tests after install:**
+
+```bash
+curl -s http://localhost:8090/api/refresh
+curl -s http://localhost:8090/api/settings/app | python3 -m json.tool
+curl -s http://localhost:8090/api/dashboard/status | python3 -m json.tool
+```
+
+---
+
+## 🏗 Architecture
+
+```
+┌──────────────────────┐        ┌──────────────────────┐
+│  Hermes Portal       │  HTTP  │     Browser /        │
+│  (Flask + waitress)  │ ◄────► │   native window      │
+└──────────┬───────────┘        └──────────────────────┘
+           │
+           │ local : Path() + subprocess
+           │ ssh   : paramiko (SFTP + exec)
+           ▼
+┌──────────────────────┐
+│  Hermes Agent        │
+│  /mnt/austausch      │ ← wiki content, briefing, shared folder
+│  /root/.hermes       │ ← SOUL.md, USER.md, MEMORY.md, cron, logs
+└──────────────────────┘
+```
+
+---
+
 ## 🤝 Contributing
 
 - **Bug reports** → [Issues](https://github.com/jayjojayson/Hermes-Portal/issues)
