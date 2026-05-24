@@ -137,6 +137,22 @@ _UPDATE_TTL = timedelta(hours=1)
 _GITHUB_RELEASES_URL = "https://api.github.com/repos/jayjojayson/Hermes-Portal/releases/latest"
 
 
+def _ssl_context_for_github():
+    """Robuster SSL-Context für externe HTTPS-Calls aus PyInstaller-Builds.
+
+    PyInstaller-Bundles auf macOS bringen kein System-CA-Bundle mit, daher
+    schlägt ``urllib.request.urlopen('https://...')`` lautlos fehl (genau
+    der Mac-Update-Banner-Bug aus v1.1.8). Ab v1.1.9 nehmen wir explizit
+    das ``certifi``-Bundle — funktioniert in beiden Welten (Frozen + Dev).
+    """
+    import ssl
+    try:
+        import certifi
+        return ssl.create_default_context(cafile=certifi.where())
+    except (ImportError, Exception):
+        return ssl.create_default_context()
+
+
 def _semver_tuple(v: str):
     """'1.0.3' → (1,0,3). Ungültige Stellen → 0. Defensiv."""
     try:
@@ -168,7 +184,7 @@ def api_version_check():
             headers={"Accept": "application/vnd.github+json",
                      "User-Agent": f"hermes-portal/{PORTAL_VERSION}"},
         )
-        with urllib.request.urlopen(req, timeout=5) as resp:
+        with urllib.request.urlopen(req, timeout=5, context=_ssl_context_for_github()) as resp:
             data = json_module.loads(resp.read().decode("utf-8"))
         tag = (data.get("tag_name") or "").lstrip("v")
         if tag:
@@ -1143,6 +1159,21 @@ def _ensure_aufgaben_md(client) -> str:
     except Exception:
         pass
     return default_text
+
+
+@app.route("/aufgaben/")
+@app.route("/aufgaben")
+def aufgaben_page():
+    """Portal-native Aufgaben-Seite (seit v1.1.9). Ersetzt die früher vom
+    Hermes-Agent generierte ``aufgaben.html``. Liest/schreibt direkt nach
+    ``BLOG_DIR/aufgaben.md`` — keine separaten Sync-Schritte mehr, kein
+    Cronjob-Setup auf dem Agent nötig damit die Seite überhaupt erscheint.
+    """
+    return render_template(
+        "aufgaben.html",
+        agent_name=cfg.agent_name or "Wally",
+        user_name=cfg.user_name or "User",
+    )
 
 
 @app.route("/api/aufgaben", methods=["GET", "POST"])

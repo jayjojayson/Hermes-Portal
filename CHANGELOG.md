@@ -14,6 +14,56 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.1.9] — 2026-05-25
+
+🎯 **Portal-native Aufgaben-Seite, Mac-Update-Banner-Fix, Status-Pill-i18n,
+Cronjob-Editor mit voller Prompt-Sicht.**
+
+### Added
+- **✅ Aufgaben-Seite komplett Portal-nativ** (`/aufgaben/`) — eigenes
+  Template ersetzt die früher vom Hermes-Agent generierte `aufgaben.html`.
+  Hermes-Agent muss nichts mehr generieren, die Seite funktioniert direkt
+  nach Installation. Features:
+  - Prominent ganz oben: „➕ Aufgabe hinzufügen"-Form mit Titel,
+    Bearbeiter-Dropdown (Agent vs. User) und optionaler Beschreibung.
+    Auto-Sync sofort nach `aufgaben.md` — kein extra Sync-Button mehr.
+  - Listen nach „Offen" / „Erledigt" getrennt; Checkbox-Klick verschiebt
+    die Aufgabe in die andere Sektion und updated den Status in der
+    Markdown-Datei.
+  - 🗑 pro Zeile löscht die Aufgabe sauber aus `aufgaben.md`.
+  - Aufklappbare Box mit Copy-Paste-Cron-Prompt für den Hermes-Agent
+    (`{path}` / `{agent}` / `{user}` werden mit den echten Werten
+    substituiert).
+  - Vollständig übersetzt in en/de/es/fr (14 neue i18n-Keys).
+- **🌐 Hermes-Status-Pill übersetzt** — „Hermes online / idle / offline /
+  kein Signal" oben rechts auf dem Dashboard läuft jetzt über `t()`.
+- **📖 README-Block „Tasks page — Hermes does the work"** (en + de)
+  erklärt das Zusammenspiel Portal ↔ aufgaben.md ↔ Hermes-Cronjob und
+  liefert das vorgefertigte Prompt-Template.
+
+### Fixed
+- **🍎 Mac-Update-Banner erscheint endlich** — `urllib.request.urlopen`
+  hatte im PyInstaller-Build kein System-CA-Bundle und scheiterte still
+  beim HTTPS-Call an api.github.com (deshalb blieb `update_available=False`
+  und der Banner unsichtbar). Fix: `certifi`-Bundle in den
+  Requirements + explizit als SSL-Context durchgereicht.
+- **⏰ Cronjob-Editor zeigt den vollständigen Prompt** — Textarea
+  vergrößert von 4 auf 14 Zeilen (`min-height: 16rem`), Modal-Breite
+  auf 760 px erweitert, Monospace + vertical resize. Multi-Zeilen-Prompts
+  (z.B. der Aufgaben-Cronjob mit „WICHTIG"-Liste) sind jetzt vollständig
+  lesbar und editierbar.
+- **🔘 Wiki-„New entry"-Button** nimmt nicht mehr die volle Box-Breite
+  ein (`align-self: flex-start; width: auto`).
+
+### Removed
+- **🚮 Agent-generierte aufgaben.html nicht mehr erwartet** — Nav-Link
+  „Tasks" zeigt jetzt auf `/aufgaben/` (Portal-native Route); alte
+  `/blog/aufgaben.html`-Aufrufe werden im Site-Header-Active-State weiter
+  als „aufgaben"-Page erkannt, aber die Seite selbst wird vom Portal
+  gerendert, nicht mehr vom Agent.
+
+---
+
 ## [1.1.8] — 2026-05-24
 
 🎯 **Update-Banner, Aufgaben-Out-of-the-Box, Windows ohne Terminal, Private-Key-Reveal

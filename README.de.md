@@ -543,6 +543,40 @@ curl -s http://localhost:8090/api/dashboard/status | python3 -m json.tool
 
 ---
 
+## ✅ Aufgaben-Seite — Hermes erledigt die Arbeit
+
+Die **Aufgaben**-Seite im Portal schreibt neue Tasks sofort in
+`/<exchange_path>/wiki/blog/aufgaben.md` (kein manueller Sync nötig).
+Damit Hermes diese Aufgaben auch **ausführt** (nicht nur listet),
+legst du auf dem Agent einen Cronjob an, der `aufgaben.md` regelmäßig
+scannt. Eine Copy-Paste-Vorlage findest du direkt auf der Aufgaben-Seite
+(*„⚙️ Damit Hermes die Aufgaben auch ausführt …"* aufklappen); im
+Kern sieht der Prompt so aus:
+
+```text
+Schaue dir die Aufgabenliste unter /mnt/austausch/wiki/blog/aufgaben.md an
+und arbeite die angelegten Aufgaben für den Bearbeiter <agent_name> ab,
+wenn welche für dich eingetragen sind. Aufgaben die mit Bearbeiter
+<user_name> markiert sind, erledigt der User selber. Sobald die Aufgabe
+abgeschlossen wurde, markierst du in der aufgaben.md die Aufgabe als
+erledigt.
+
+WICHTIG:
+- Wenn mehrere Aufgaben für <agent_name> aufgelistet sind, werden sie
+  einzeln und nacheinander abgearbeitet.
+- Strukturiert: eine Aufgabe lösen, als erledigt markieren, dann erst
+  mit der nächsten beginnen.
+- Aufgaben werden ohne Rückfragen an <user_name> durchgeführt.
+```
+
+Schedule z.B. alle 30 Minuten (`*/30 * * * *`) oder stündlich. Das
+Portal kümmert sich um Lesen/Schreiben der `aufgaben.md`, der Cronjob
+sorgt dafür, dass Hermes danach handelt. Neue Installationen bekommen
+beim ersten Aufruf automatisch eine Default-`aufgaben.md` angelegt —
+auf der Agent-Seite muss nichts vorbereitet werden.
+
+---
+
 ## 🛠️ Troubleshooting
 
 | Symptom | Lösung |

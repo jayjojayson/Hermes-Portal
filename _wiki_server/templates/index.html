@@ -229,6 +229,15 @@
     flex-direction: column;
     gap: 0.5rem;
 }
+.wiki-action-buttons > .btn {
+    /* + New entry-Button soll nicht die volle Box-Breite ausfüllen
+       (wirkte aufgebläht — der Text ist ja kurz). Stattdessen
+       Auto-Breite + linksbündig. */
+    align-self: flex-start;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+    width: auto;
+}
 .wiki-search-form {
     display: flex;
     gap: 0.4rem;

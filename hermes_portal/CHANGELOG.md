@@ -3,6 +3,22 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.1.9
+
+- **✅ Aufgaben-Seite komplett Portal-nativ** — eigene `/aufgaben/`-Route,
+  Add-Form ganz oben mit Bearbeiter-Auswahl + Auto-Sync, Checkbox
+  verschiebt zwischen Offen/Erledigt, Löschen pro Zeile, Copy-Paste-
+  Vorlage für den Hermes-Cronjob. Hermes-Agent muss keine `aufgaben.html`
+  mehr generieren.
+- **🌐 Hermes-Status-Pill** (Online/Idle/Offline/Kein Signal) übersetzt.
+- **🍎 Mac-Update-Banner-Fix** — `certifi` bündelt jetzt die SSL-CAs,
+  damit der HTTPS-Call an api.github.com im PyInstaller-Build nicht mehr
+  still scheitert.
+- **⏰ Cronjob-Editor**: Prompt-Textarea auf 14 Zeilen vergrößert, Modal
+  auf 760 px verbreitert — komplexe Multi-Zeilen-Prompts sind jetzt
+  vollständig sichtbar und editierbar.
+- **🔘 Wiki-„New entry"-Button** verliert die volle Box-Breite.
+
 ## 1.1.8
 
 - **🚀 Update-Banner** auf allen Pages — meldet automatisch, wenn auf GitHub

@@ -442,7 +442,7 @@
     <div class="dash-card col-6">
         <div class="head">
             <h3>⚡ {{ t('dashboard.quick_prompt') }}</h3>
-            <a class="more" href="/blog/aufgaben.html">{{ t('dashboard.all_tasks') }}</a>
+            <a class="more" href="/aufgaben/">{{ t('dashboard.all_tasks') }}</a>
         </div>
         <form class="qp-form" id="qpForm">
             <input type="text" id="qpTitle" placeholder="{{ t('dashboard.placeholder.task_title') }}" maxlength="200" required>
@@ -595,10 +595,17 @@
         var pill = $('#hermesStatus');
         var st = (data.hermes && data.hermes.state) || 'unknown';
         pill.className = 'status-pill ' + st;
-        var labels = { online: 'Hermes online', idle: 'Hermes idle', offline: 'Hermes offline', unknown: 'Hermes – kein Signal' };
+        var _Th = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+        var labels = {
+            online:  _Th('hermes.status.online'),
+            idle:    _Th('hermes.status.idle'),
+            offline: _Th('hermes.status.offline'),
+            unknown: _Th('hermes.status.unknown'),
+        };
         pill.querySelector('.txt').textContent = labels[st] || 'Hermes';
         if (data.hermes && data.hermes.last_activity_human) {
-            pill.title = 'Letzte Aktivität: ' + data.hermes.last_activity_human + ' (' + (data.hermes.source || '?') + ')';
+            pill.title = _Th('hermes.status.last_activity') + ' ' + data.hermes.last_activity_human +
+                         ' (' + (data.hermes.source || '?') + ')';
         }
         $('#hermesActivity').textContent = (data.hermes && data.hermes.last_activity_human) || '–';
 

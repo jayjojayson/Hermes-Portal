@@ -192,6 +192,32 @@ A starter briefing template ships at
 `_wiki_server/templates/briefing_default.html` — copy it to your agent
 as a basis for your own `daily_briefing.py`.
 
+### ✅ Tasks page — Hermes does the work
+
+The **Tasks** page in Hermes Portal writes new tasks to
+`/<exchange_path>/wiki/blog/aufgaben.md` instantly (no manual sync). To
+have Hermes actually **execute** those tasks (instead of just listing
+them), set up one cronjob on the agent that scans `aufgaben.md`
+regularly. A copy-paste template is available on the Tasks page itself
+(click *"⚙️ Make Hermes actually work on these tasks"*); the gist is:
+
+```text
+Look at the task list under /mnt/austausch/wiki/blog/aufgaben.md and work
+on the tasks assigned to <agent_name> if any are open. Tasks assigned to
+<user_name> are handled by the user. Once a task is finished, mark it as
+done in aufgaben.md.
+
+IMPORTANT:
+- If several tasks are assigned to <agent_name>, work them one after another.
+- Work structured: solve one task, mark it as done, only then start the next.
+- Tasks are executed without further questions to <user_name>.
+```
+
+Schedule it e.g. every 30 minutes (`*/30 * * * *`) or hourly. The Portal
+takes care of writing/reading `aufgaben.md`, the cronjob takes care of
+making Hermes act on it. New installations get a default `aufgaben.md`
+auto-created on first access — nothing to set up on the agent side first.
+
 ---
 
 ## 🛠 Troubleshooting

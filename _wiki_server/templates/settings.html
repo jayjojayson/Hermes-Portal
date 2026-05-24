@@ -1630,7 +1630,7 @@
 
 <!-- Cronjob Modal -->
 <div class="modal-overlay" id="cron-modal">
-    <div class="modal">
+    <div class="modal" style="max-width: 760px; width: 95%;">
         <h3 id="modal-title">➕ Neuer Hermes-Cronjob</h3>
         <input type="hidden" id="cron-edit-id" value="">
         <label for="cron-name">Name</label>
@@ -1638,7 +1638,9 @@
         <label for="cron-schedule">Schedule (Cron-Format oder Intervall)</label>
         <input type="text" id="cron-schedule" placeholder="z.B. 0 7 * * * oder every 4h">
         <label for="cron-command">Prompt / Befehl</label>
-        <textarea id="cron-command" rows="4" placeholder="z.B. Erstelle einen kurzen Wetterbericht für Berlin und sende ihn als Telegram-Nachricht."></textarea>
+        <textarea id="cron-command" rows="14"
+                  style="width:100%; min-height: 16rem; font-family: var(--mono); font-size: 0.85rem; line-height: 1.5; padding: 12px; resize: vertical; box-sizing: border-box;"
+                  placeholder="z.B. Erstelle einen kurzen Wetterbericht für Berlin und sende ihn als Telegram-Nachricht."></textarea>
         <label for="cron-deliver">Deliver (Ziel der Ausgabe)</label>
         <select id="cron-deliver" style="width:100%;padding:8px 10px;border-radius:6px;border:1px solid var(--border-color);background:var(--bg-secondary);color:var(--text-primary);font-size:0.9rem;">
             <option value="origin">origin (diese Chat-Session)</option>

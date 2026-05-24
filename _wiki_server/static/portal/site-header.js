@@ -55,7 +55,7 @@
         { key: 'wiki',     i18n: 'nav.wiki',      fallback: 'Wiki',      href: '/wiki/',              icon: '📚' },
         { key: 'news',     i18n: 'nav.news',      fallback: 'News',      href: '/blog/',              icon: '📰' },
         { key: 'briefing', i18n: 'nav.briefing',  fallback: 'Briefing',  href: '/briefing/',          icon: '☕' },
-        { key: 'aufgaben', i18n: 'nav.aufgaben',  fallback: 'Tasks',     href: '/blog/aufgaben.html', icon: '✅' },
+        { key: 'aufgaben', i18n: 'nav.aufgaben',  fallback: 'Tasks',     href: '/aufgaben/', icon: '✅' },
         { key: 'explorer', i18n: 'nav.explorer',  fallback: 'Explorer',  href: '/explorer/',          icon: '📂' },
         { key: 'chat',     i18n: 'nav.chat',      fallback: 'Chat',      href: '/chat/',              icon: '💬' },
         { key: 'activity', i18n: 'nav.activity',  fallback: 'Activity',  href: '/activity/',          icon: '⚡' },
@@ -268,7 +268,7 @@
         if (p.indexOf('/explorer') === 0) return 'explorer';
         if (p.indexOf('/briefing') === 0) return 'briefing';
         if (p.indexOf('/blog/briefing') >= 0) return 'briefing';
-        if (p.indexOf('/blog/aufgaben') >= 0) return 'aufgaben';
+        if (p.indexOf('/aufgaben') === 0 || p.indexOf('/blog/aufgaben') >= 0) return 'aufgaben';
         if (p.indexOf('/blog/categories') >= 0 || p.indexOf('/blog/category-') >= 0) return 'news';
         if (p.indexOf('/settings') === 0) return 'settings';
         if (p.indexOf('/blog/anleitung') >= 0) return 'news';

@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+{% block title %}{{ t('aufgaben.title') }} — Hermes Portal{% endblock %}
+{% block page_key %}aufgaben{% endblock %}
+
+{% block extra_head %}
+<style>
+.tasks-wrap { max-width: 980px; margin: 1.5rem auto; padding: 0 1rem; }
+.tasks-header { display: flex; align-items: center; gap: 12px; margin-bottom: 1rem; flex-wrap: wrap; }
+.tasks-header h1 { margin: 0; font-size: 1.6rem; }
+.tasks-header .pill {
+    background: var(--bg-secondary, #1a1d24); color: var(--text-secondary);
+    padding: 4px 10px; border-radius: 999px; font-size: 0.8rem;
+    border: 1px solid var(--border-color, #2a2e38);
+}
+.task-add-card {
+    background: var(--bg-secondary, #1a1d24);
+    border: 1px solid var(--border-color, #2a2e38);
+    border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem;
+}
+.task-add-card .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
+.task-add-card input[type="text"], .task-add-card select {
+    flex: 1 1 220px; padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border-color, #2a2e38); border-radius: 6px;
+    background: var(--bg-primary); color: var(--text-primary);
+    font-size: 0.95rem;
+}
+.task-add-card select { flex: 0 0 auto; min-width: 150px; }
+.task-add-card .body-row { margin-top: 8px; }
+.task-add-card textarea {
+    width: 100%; padding: 0.55rem 0.75rem;
+    border: 1px solid var(--border-color, #2a2e38); border-radius: 6px;
+    background: var(--bg-primary); color: var(--text-primary);
+    font-size: 0.92rem; min-height: 60px; resize: vertical; box-sizing: border-box;
+    font-family: inherit;
+}
+.task-add-card .add-btn {
+    padding: 0.55rem 1.2rem; border: none; border-radius: 6px;
+    background: var(--accent, #5cc8ff); color: #fff; font-weight: 600;
+    cursor: pointer; transition: background 0.15s;
+    white-space: nowrap;
+}
+.task-add-card .add-btn:hover { filter: brightness(1.1); }
+
+.task-section { margin-top: 1.5rem; }
+.task-section h2 {
+    font-size: 1.05rem; color: var(--text-secondary);
+    margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 8px;
+}
+.task-section h2 .count {
+    background: var(--bg-secondary); color: var(--text-secondary);
+    padding: 2px 8px; border-radius: 999px; font-size: 0.78rem; font-weight: normal;
+}
+.task-item {
+    background: var(--bg-secondary, #1a1d24);
+    border: 1px solid var(--border-color, #2a2e38);
+    border-left: 3px solid var(--accent, #5cc8ff);
+    border-radius: 8px; padding: 0.7rem 0.85rem; margin: 6px 0;
+    display: flex; gap: 10px; align-items: flex-start;
+}
+.task-item.done {
+    border-left-color: var(--success-color, #22c55e); opacity: 0.7;
+}
+.task-item.done .task-title { text-decoration: line-through; }
+.task-checkbox {
+    cursor: pointer; flex: 0 0 auto; margin-top: 2px;
+    width: 18px; height: 18px; accent-color: var(--accent, #5cc8ff);
+}
+.task-main { flex: 1 1 auto; min-width: 0; }
+.task-title { font-weight: 600; font-size: 0.95rem; }
+.task-meta {
+    font-size: 0.78rem; color: var(--text-secondary);
+    margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap;
+}
+.task-meta .assignee {
+    background: rgba(99,102,241,0.15); color: var(--accent, #5cc8ff);
+    padding: 1px 8px; border-radius: 999px;
+}
+.task-desc {
+    margin-top: 6px; font-size: 0.85rem; color: var(--text-secondary);
+    white-space: pre-wrap;
+}
+.task-actions {
+    display: flex; gap: 4px; flex: 0 0 auto; align-items: flex-start;
+}
+.task-actions button {
+    background: transparent; border: 1px solid var(--border-color, #2a2e38);
+    color: var(--text-secondary); padding: 3px 8px; border-radius: 6px;
+    cursor: pointer; font-size: 0.78rem;
+}
+.task-actions button:hover { color: var(--accent); border-color: var(--accent); }
+.task-actions button.danger:hover { color: #ef4444; border-color: #ef4444; }
+.task-empty {
+    text-align: center; padding: 2rem; color: var(--text-secondary);
+    background: var(--bg-secondary); border-radius: 8px;
+    border: 1px dashed var(--border-color);
+}
+
+.task-cron-note {
+    margin-top: 2rem; padding: 1rem; border-radius: 10px;
+    background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.4);
+    color: var(--text-secondary); font-size: 0.85rem;
+}
+.task-cron-note strong { color: var(--warning-color, #f59e0b); }
+.task-cron-note pre {
+    background: var(--bg-primary); padding: 0.6rem; border-radius: 6px;
+    margin: 0.5rem 0 0 0; overflow-x: auto; font-size: 0.78rem;
+    border: 1px solid var(--border-color);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="tasks-wrap">
+    <div class="tasks-header">
+        <h1>✅ {{ t('aufgaben.title') }}</h1>
+        <span class="pill" id="task-count-pill">—</span>
+        <span style="margin-left: auto; font-size: 0.85rem; color: var(--text-secondary);">
+            {{ t('aufgaben.autosync_hint') }}
+        </span>
+    </div>
+
+    <!-- Add-form: schreibt sofort nach aufgaben.md (kein extra Sync-Step) -->
+    <div class="task-add-card">
+        <div class="row">
+            <input type="text" id="task-title"
+                   placeholder="{{ t('aufgaben.new_placeholder') }}"
+                   onkeydown="if(event.key==='Enter' && (event.ctrlKey||event.metaKey)) addTask()">
+            <select id="task-assignee">
+                <option value="agent">🤖 {{ agent_name or 'Wally' }}</option>
+                <option value="user">👤 {{ user_name or 'User' }}</option>
+            </select>
+            <button class="add-btn" onclick="addTask()">➕ {{ t('aufgaben.add_button') }}</button>
+        </div>
+        <div class="body-row">
+            <textarea id="task-body"
+                      placeholder="{{ t('aufgaben.description_placeholder') }}"></textarea>
+        </div>
+    </div>
+
+    <div class="task-section">
+        <h2>🔲 {{ t('aufgaben.section.open') }}
+            <span class="count" id="open-count">0</span></h2>
+        <div id="open-list"></div>
+    </div>
+
+    <div class="task-section">
+        <h2>✅ {{ t('aufgaben.section.done') }}
+            <span class="count" id="done-count">0</span></h2>
+        <div id="done-list"></div>
+    </div>
+
+    <details class="task-cron-note">
+        <summary style="cursor: pointer; color: var(--warning-color, #f59e0b);">
+            ⚙️ {{ t('aufgaben.cron_note_title') }}
+        </summary>
+        <p style="margin-top: 0.75rem;">{{ t('aufgaben.cron_note_intro') }}</p>
+        <p style="margin-bottom: 0.25rem;">
+            <strong>{{ t('aufgaben.cron_example_label') }}</strong>
+        </p>
+        <pre id="cron-prompt-example"></pre>
+        <button class="add-btn" style="margin-top: 0.5rem;" onclick="copyCronPrompt()">
+            📋 {{ t('aufgaben.copy_cron_prompt') }}
+        </button>
+        <span id="cron-copy-fb" style="margin-left:10px;color:var(--success-color, #22c55e);opacity:0;transition:opacity 0.3s;">
+            ✓ {{ t('ssh.wizard.copied') }}
+        </span>
+    </details>
+</div>
+
+<script>
+(function() {
+    var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+    var AGENT_NAME = {{ (agent_name or 'Wally')|tojson }};
+    var USER_NAME  = {{ (user_name  or 'User' )|tojson }};
+    var AUFGABEN_PATH = {{ ('/blog/aufgaben.md')|tojson }};
+
+    function esc(s) {
+        var d = document.createElement('div'); d.textContent = s == null ? '' : String(s);
+        return d.innerHTML;
+    }
+
+    /* aufgaben.md parser
+       Schema (von api_quick_prompt erzeugt):
+         ## Offene Aufgaben
+         ### <title>
+         - **Bearbeiter**: <name>
+         - **Status**: Offen | Erledigt
+         - **Erstellt**: <iso>
+         - Beschreibung: <body>
+       Wir merken uns Zeilen-Spans für späteres Update/Delete in-place. */
+    function parseTasks(md) {
+        var lines = (md || '').split(/\r?\n/);
+        var sections = { open: [], done: [] };
+        var section = null;
+        var current = null;
+        function flush() {
+            if (current && section) {
+                current.endLine = current.endLine == null ? current.startLine : current.endLine;
+                sections[section].push(current);
+            }
+            current = null;
+        }
+        for (var i = 0; i < lines.length; i++) {
+            var ln = lines[i];
+            var mSec = ln.match(/^##\s+(.+?)\s*$/);
+            if (mSec) {
+                flush();
+                var name = mSec[1].toLowerCase();
+                if (name.indexOf('offen') === 0 || name.indexOf('open') === 0) section = 'open';
+                else if (name.indexOf('erledigt') === 0 || name.indexOf('done') === 0 || name.indexOf('complete') === 0) section = 'done';
+                else section = null;
+                continue;
+            }
+            var mH3 = ln.match(/^###\s+(.+?)\s*$/);
+            if (mH3) {
+                flush();
+                if (section) {
+                    current = { title: mH3[1].trim(), startLine: i, endLine: i,
+                                assignee: '', status: '', created: '', desc: '' };
+                }
+                continue;
+            }
+            if (current) {
+                current.endLine = i;
+                var mAss = ln.match(/^-\s+\*\*Bearbeiter\*\*:\s*(.+?)\s*$/i);
+                if (mAss) current.assignee = mAss[1];
+                var mSt = ln.match(/^-\s+\*\*Status\*\*:\s*(.+?)\s*$/i);
+                if (mSt) current.status = mSt[1];
+                var mCr = ln.match(/^-\s+\*\*Erstellt\*\*:\s*(.+?)\s*$/i);
+                if (mCr) current.created = mCr[1];
+                var mDe = ln.match(/^-\s+Beschreibung:\s*(.+?)\s*$/i);
+                if (mDe) current.desc = mDe[1];
+            }
+        }
+        flush();
+        return { sections: sections, lines: lines };
+    }
+
+    function fmtTask(task, doneFlag) {
+        var meta = '';
+        if (task.assignee) meta += '<span class="assignee">👤 ' + esc(task.assignee) + '</span>';
+        if (task.created)  meta += '<span>🕒 ' + esc(task.created) + '</span>';
+        var html =
+            '<div class="task-item' + (doneFlag ? ' done' : '') + '" data-line="' + task.startLine + '">' +
+                '<input type="checkbox" class="task-checkbox" ' + (doneFlag ? 'checked' : '') +
+                    ' onchange="toggleTaskDone(' + task.startLine + ', this.checked)">' +
+                '<div class="task-main">' +
+                    '<div class="task-title">' + esc(task.title) + '</div>' +
+                    (meta ? '<div class="task-meta">' + meta + '</div>' : '') +
+                    (task.desc ? '<div class="task-desc">' + esc(task.desc) + '</div>' : '') +
+                '</div>' +
+                '<div class="task-actions">' +
+                    '<button class="danger" onclick="deleteTask(' + task.startLine + ')" title="' +
+                        esc(T('common.delete')) + '">🗑</button>' +
+                '</div>' +
+            '</div>';
+        return html;
+    }
+
+    var _currentMd = '';  // cache
+
+    function render() {
+        var openEl = document.getElementById('open-list');
+        var doneEl = document.getElementById('done-list');
+        var pill   = document.getElementById('task-count-pill');
+        if (!openEl || !doneEl) return;
+        fetch('/api/aufgaben', { cache: 'no-store' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            _currentMd = data.content || '';
+            var parsed = parseTasks(_currentMd);
+            document.getElementById('open-count').textContent = parsed.sections.open.length;
+            document.getElementById('done-count').textContent = parsed.sections.done.length;
+            if (pill) pill.textContent = (parsed.sections.open.length + parsed.sections.done.length) +
+                ' ' + T('aufgaben.total_tasks');
+
+            if (!parsed.sections.open.length) {
+                openEl.innerHTML = '<div class="task-empty">' + esc(T('aufgaben.no_open')) + '</div>';
+            } else {
+                openEl.innerHTML = parsed.sections.open.map(function(t){ return fmtTask(t, false); }).join('');
+            }
+            if (!parsed.sections.done.length) {
+                doneEl.innerHTML = '<div class="task-empty">' + esc(T('aufgaben.no_done')) + '</div>';
+            } else {
+                doneEl.innerHTML = parsed.sections.done.map(function(t){ return fmtTask(t, true); }).join('');
+            }
+        })
+        .catch(function(e) {
+            openEl.innerHTML = '<div class="task-empty">' +
+                esc(T('aufgaben.load_error') + ' ' + (e.message || e)) + '</div>';
+        });
+    }
+
+    function saveMd(newMd) {
+        return fetch('/api/aufgaben', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content: newMd }),
+        }).then(function(r) { return r.json(); });
+    }
+
+    window.addTask = function() {
+        var title = (document.getElementById('task-title').value || '').trim();
+        if (!title) { alert(T('aufgaben.title_required')); return; }
+        var body = (document.getElementById('task-body').value || '').trim();
+        var assignee = document.getElementById('task-assignee').value === 'user' ? USER_NAME : AGENT_NAME;
+        var now = new Date();
+        var pad = function(n){ return n < 10 ? '0'+n : n; };
+        var created = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate()) +
+                      ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+
+        // Block direkt nach '## Offene Aufgaben' einfügen — UTF-8 safe, kein Escaping nötig
+        var block = '\n### ' + title +
+                    '\n- **Bearbeiter**: ' + assignee +
+                    '\n- **Status**: Offen' +
+                    '\n- **Erstellt**: ' + created +
+                    (body ? '\n- Beschreibung: ' + body.replace(/\r?\n/g, ' ') : '') +
+                    '\n';
+
+        var md = _currentMd;
+        if (!md || !md.trim()) {
+            md = '# Aufgabenliste\n\n## Offene Aufgaben\n\n## Erledigte Aufgaben\n';
+        }
+        var re = /(##\s+Offene Aufgaben\s*\n)/i;
+        if (re.test(md)) md = md.replace(re, '$1' + block);
+        else md = '## Offene Aufgaben\n' + block + '\n' + md;
+
+        saveMd(md).then(function(d) {
+            if (d.status === 'ok') {
+                document.getElementById('task-title').value = '';
+                document.getElementById('task-body').value = '';
+                render();
+            } else {
+                alert(T('aufgaben.add_error') + ' ' + (d.message || ''));
+            }
+        });
+    };
+
+    window.toggleTaskDone = function(startLine, isDone) {
+        // Block aus _currentMd ausschneiden, Status updaten, in andere
+        // Sektion verschieben.
+        var lines = _currentMd.split(/\r?\n/);
+        // End-Linie suchen: bis zur nächsten ### oder ## oder EOF
+        var end = startLine + 1;
+        while (end < lines.length && !lines[end].match(/^(###?|##)\s+/)) end++;
+        var blockLines = lines.slice(startLine, end);
+        // Status-Zeile updaten
+        for (var i = 0; i < blockLines.length; i++) {
+            if (/^-\s+\*\*Status\*\*:/i.test(blockLines[i])) {
+                blockLines[i] = '- **Status**: ' + (isDone ? 'Erledigt' : 'Offen');
+            }
+        }
+        // Originalen Block entfernen
+        var newLines = lines.slice(0, startLine).concat(lines.slice(end));
+        var newMd = newLines.join('\n');
+        // In Ziel-Sektion einfügen
+        var targetRe = isDone ? /(##\s+Erledigte Aufgaben\s*\n)/i
+                              : /(##\s+Offene Aufgaben\s*\n)/i;
+        var insert = '\n' + blockLines.join('\n').replace(/^\n+/, '');
+        if (!insert.endsWith('\n')) insert += '\n';
+        if (targetRe.test(newMd)) newMd = newMd.replace(targetRe, '$1' + insert);
+        else newMd += '\n## ' + (isDone ? 'Erledigte Aufgaben' : 'Offene Aufgaben') + '\n' + insert;
+        saveMd(newMd).then(function(d) {
+            if (d.status === 'ok') render();
+            else alert(T('aufgaben.save_error'));
+        });
+    };
+
+    window.deleteTask = function(startLine) {
+        if (!confirm(T('aufgaben.delete_confirm'))) return;
+        var lines = _currentMd.split(/\r?\n/);
+        var end = startLine + 1;
+        while (end < lines.length && !lines[end].match(/^(###?|##)\s+/)) end++;
+        var newLines = lines.slice(0, startLine).concat(lines.slice(end));
+        saveMd(newLines.join('\n')).then(function(d) {
+            if (d.status === 'ok') render();
+            else alert(T('aufgaben.save_error'));
+        });
+    };
+
+    // Cron-Prompt-Vorlage befüllen + kopieren
+    function buildCronPrompt() {
+        return T('aufgaben.cron_prompt_template')
+            .replace(/{path}/g, AUFGABEN_PATH)
+            .replace(/{agent}/g, AGENT_NAME)
+            .replace(/{user}/g, USER_NAME);
+    }
+    window.copyCronPrompt = function() {
+        var txt = buildCronPrompt();
+        var fb = document.getElementById('cron-copy-fb');
+        var ok = false;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(txt);
+                ok = true;
+            } else {
+                var ta = document.createElement('textarea');
+                ta.value = txt; document.body.appendChild(ta); ta.select();
+                ok = document.execCommand('copy'); document.body.removeChild(ta);
+            }
+        } catch (e) { ok = false; }
+        if (fb && ok) {
+            fb.style.opacity = '1';
+            setTimeout(function() { fb.style.opacity = '0'; }, 1500);
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var pre = document.getElementById('cron-prompt-example');
+        if (pre) pre.textContent = buildCronPrompt();
+        render();
+    });
+})();
+</script>
+{% endblock %}

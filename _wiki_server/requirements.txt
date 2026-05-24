@@ -6,3 +6,5 @@ PyYAML>=6.0
 paramiko>=3.4
 gunicorn>=21.2
 waitress>=3.0       # für PyInstaller-Standalone-Bundle
+certifi>=2024.2     # SSL-CA-Bundle für api.github.com (Mac-PKG hat sonst keine CAs)
+cryptography>=42
