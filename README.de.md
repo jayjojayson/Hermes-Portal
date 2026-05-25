@@ -579,11 +579,19 @@ Agent-Seite muss nichts vorbereitet werden.
 
 Die **News**-Seite im Portal zeigt Beiträge, die dein `blog_generator.py`
 auf dem Agent in `posts.json` schreibt. RSS-Quellen werden in
-**Settings → 🛰️ App → RSS feeds** verwaltet. Damit Hermes die News
-regelmäßig aktualisiert, legst du auf dem Agent einen Cronjob an, der
-den Generator 3× täglich startet — morgens, mittags, abends
-(`0 7,12,19 * * *`). Copy-Paste den Prompt direkt von der News-Seite
-(*„⚙️ Damit Hermes die News auch generiert …"* aufklappen); im Kern:
+**Settings → 🛰️ App → RSS feeds** verwaltet.
+
+**Setup in 2 Klicks (ab v1.3.0):**
+1. **Settings → 🛰️ App → „🛠 Agent-Skripte"** — Klick auf
+   *„Auf Agent installieren"* neben `blog_generator.py`. Portal
+   kopiert das mitgelieferte Skript lokal oder per SFTP auf den Agent.
+   Das Skript liest deine RSS-Feeds aus der `NEWS_RSS_FEEDS`-ENV-
+   Variable, die das Portal setzt — Änderungen in Settings wirken also
+   automatisch beim nächsten Cronjob-Lauf.
+2. **Cronjob auf dem Agent** — einen Cronjob anlegen, der den
+   Generator 3× täglich startet (morgens, mittags, abends —
+   `0 7,12,19 * * *`). Copy-Paste den Prompt direkt von der News-Seite
+   (*„⚙️ Damit Hermes die News auch generiert …"* aufklappen); im Kern:
 
 ```text
 Führe den Blog-Generator aus: python3 /mnt/austausch/wiki/blog/blog_generator.py

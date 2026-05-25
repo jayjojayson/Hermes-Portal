@@ -3410,7 +3410,10 @@ def _call_hermes_llm(chat_id, user_message, cursor):
 
     client = get_client()
     # Direkter hermes-Aufruf (bevorzugt). Falls fehlend, fällt der User-Output verständlich aus.
-    result = client.hermes(["-z", full_prompt], timeout=120)
+    # Timeout aus Settings (Default 300s = 5 min) — LLM-Antworten mit Reasoning
+    # oder über SSH können länger als die alten hardcodierten 120s dauern.
+    chat_timeout = cfg.chat_timeout_sec
+    result = client.hermes(["-z", full_prompt], timeout=chat_timeout)
     if result.ok and result.stdout.strip():
         return result.stdout.strip()
     err = (result.stderr or result.stdout or "keine Ausgabe").strip()[:400]
@@ -3444,7 +3447,15 @@ def _call_hermes_llm(chat_id, user_message, cursor):
         )
 
     if result.returncode == -1 and "Timeout" in err:
-        return "Das hat zu lange gedauert – versuch es bitte mit einer kürzeren Nachricht."
+        return (
+            f"⏱ Der Hermes-Agent hat länger als {chat_timeout}s gebraucht und ich "
+            "habe abgebrochen.\n\n"
+            "Möglichkeiten:\n"
+            "• Frage nochmal stellen — der Agent kann gerade beschäftigt sein.\n"
+            f"• Timeout erhöhen unter **Settings → 🛰️ App → Chat-Timeout** "
+            f"(aktuell {chat_timeout}s, max. 1800s).\n"
+            "• Über SSH/VM prüfen, ob der `hermes`-Prozess wirklich noch läuft."
+        )
     return f"Da ist etwas schiefgelaufen: {err}"
 
 
@@ -4419,6 +4430,107 @@ def api_briefing_render():
 
     return html_text, 200, {"Content-Type": "text/html; charset=utf-8",
                             "Cache-Control": "no-store"}
+
+
+# ────────────────────────────────────────────────────────────────────
+# Agent-Skript-Templates (blog_generator.py + daily_briefing.py)
+# ────────────────────────────────────────────────────────────────────
+
+_AGENT_SCRIPTS_DIR = Path(__file__).parent / "templates" / "agent_scripts"
+
+_AGENT_SCRIPTS_CATALOG = {
+    "blog_generator": {
+        "filename":      "blog_generator.py",
+        "template":      "blog_generator.py",
+        "agent_relpath": "blog/blog_generator.py",  # relativ zu wiki_dir
+        "description":   "Hermes Portal News-Generator. Liest RSS-Feeds, "
+                         "filtert Politik, schreibt Tagesberichte nach "
+                         "blog/posts/ und posts.json.",
+    },
+    "daily_briefing": {
+        "filename":      "daily_briefing.py",
+        "template":      "daily_briefing.py",
+        "agent_relpath": "scripts/daily_briefing.py",
+        "description":   "Hermes Portal Daily Briefing. Wetter + optional "
+                         "Forum-Feed → blog/briefing.html.",
+    },
+}
+
+
+@app.route("/api/agent-scripts", methods=["GET"])
+def api_agent_scripts_list():
+    """Liefert die Liste verfügbarer Agent-Skript-Templates inkl. Status
+    (ob sie schon auf dem Agent installiert sind und welcher Ziel-Pfad
+    daraus berechnet wird).
+    """
+    client = get_client()
+    out = []
+    for key, meta in _AGENT_SCRIPTS_CATALOG.items():
+        agent_path = cfg.wiki_path(meta["agent_relpath"])
+        out.append({
+            "key":         key,
+            "filename":    meta["filename"],
+            "description": meta["description"],
+            "agent_path":  agent_path,
+            "installed":   client.exists(agent_path),
+        })
+    return jsonify({"scripts": out})
+
+
+@app.route("/api/agent-scripts/<key>/content", methods=["GET"])
+def api_agent_scripts_content(key: str):
+    """Liefert den rohen Script-Inhalt als Plain-Text. Praktisch für
+    Vorschau im Settings-UI oder direkten Download."""
+    meta = _AGENT_SCRIPTS_CATALOG.get(key)
+    if not meta:
+        return jsonify({"error": "unknown script"}), 404
+    src = _AGENT_SCRIPTS_DIR / meta["template"]
+    if not src.is_file():
+        return jsonify({"error": "template missing"}), 500
+    return (src.read_text(encoding="utf-8"), 200, {
+        "Content-Type": "text/plain; charset=utf-8",
+        "Content-Disposition": f'inline; filename="{meta["filename"]}"',
+    })
+
+
+@app.route("/api/agent-scripts/<key>/install", methods=["POST"])
+def api_agent_scripts_install(key: str):
+    """Kopiert das mitgelieferte Skript-Template auf den Hermes-Agent
+    (lokal oder via SSH/SFTP). Parent-Verzeichnisse werden automatisch
+    angelegt, vorhandene Dateien werden nur überschrieben wenn
+    ``overwrite=true`` gesetzt ist.
+    """
+    meta = _AGENT_SCRIPTS_CATALOG.get(key)
+    if not meta:
+        return jsonify({"status": "error", "error": "unknown script"}), 404
+    body = request.get_json(silent=True) or {}
+    overwrite = bool(body.get("overwrite", False))
+
+    src = _AGENT_SCRIPTS_DIR / meta["template"]
+    if not src.is_file():
+        return jsonify({"status": "error", "error": "template missing"}), 500
+    content = src.read_text(encoding="utf-8")
+
+    client = get_client()
+    target = cfg.wiki_path(meta["agent_relpath"])
+    if client.exists(target) and not overwrite:
+        return jsonify({
+            "status": "exists",
+            "target": target,
+            "message": "File already exists. Set overwrite=true to replace.",
+        }), 409
+
+    if not client.write_text(target, content):
+        return jsonify({
+            "status": "error",
+            "error": f"Could not write {target}",
+        }), 500
+
+    return jsonify({
+        "status": "ok",
+        "target": target,
+        "bytes":  len(content.encode("utf-8")),
+    })
 
 
 @app.route("/api/briefing/run", methods=["POST"])

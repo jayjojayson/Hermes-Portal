@@ -14,6 +14,44 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.0] — 2026-05-26
+
+🛠 **Agent-Skript-Bundle, RSS-Bridge, längerer Chat-Timeout.**
+
+### Added
+- **🛠 Mitgelieferte Agent-Skripte (`blog_generator.py` + `daily_briefing.py`)**
+  unter `_wiki_server/templates/agent_scripts/`. Settings → 🛰️ App
+  hat eine neue Box „Agent-Skripte (One-Click-Installation)" — Klick
+  auf *Install* kopiert das Skript via local FS oder SFTP an den
+  Hermes-Agent (Default-Pfade: `blog/blog_generator.py` und
+  `scripts/daily_briefing.py`). Vorhandene Skripte werden nur mit
+  expliziter Bestätigung überschrieben.
+- **🔌 ENV-Bridge Portal → Agent-Skripte** — `cfg.portal_env()` setzt
+  beim Cronjob-Aufruf:
+  - `PORTAL_BLOG_DIR`, `PORTAL_POSTS_SUBDIR`,
+    `PORTAL_AGENT_NAME`, `PORTAL_USER_NAME`
+  - `NEWS_RSS_FEEDS` (komplette RSS-Liste als JSON)
+  Damit nutzen die Default-Skripte **automatisch** die im Portal
+  konfigurierten RSS-Feeds — keine Code-Anpassung mehr nötig.
+- **⏱ Chat-Antwort-Timeout konfigurierbar** (neues Settings-Feld
+  `chat_timeout_sec` in Settings → 🛰️ App, Default 300 s = 5 min,
+  max. 1800 s). Backend nimmt den Wert für `client.hermes(["-z", …])`.
+  Plus: bei Timeout zeigt der Chat jetzt eine klare Mehrzeilen-
+  Erklärung mit Direktlink ins Settings statt „Versuch eine kürzere
+  Nachricht" (war irreführend — das Problem war Antwortzeit, nicht
+  Nachrichtenlänge).
+- **📖 README-Update (en + de)** — „Setup in 2 Klicks"-Abschnitt für
+  News, der die neue Agent-Skript-Installation aus dem Settings-Tab
+  erklärt.
+
+### Fixed
+- **🌐 Irreführender RSS-Hinweis** im App-Tab korrigiert. Vorher:
+  „RSS feeds … NOT automatically passed to your news generator".
+  Jetzt: das Portal reicht die Feeds **doch** durch — solange du
+  das mitgelieferte `blog_generator.py` nutzt.
+
+---
+
 ## [1.2.2] — 2026-05-25
 
 📂 **News-Detailseiten via posts/-Subdir, Pagination, Subdir-Setting.**

@@ -77,6 +77,12 @@ DEFAULTS: Dict[str, Any] = {
                                                     # (leer = direkt in blog/). Der Hermes-Agent-Blog-Generator
                                                     # legt die Einzel-HTMLs typischerweise dort ab.
 
+    # --- Chat ---------------------------------------------------------------
+    "chat_timeout_sec":    300,                     # Wie lange darf hermes -z auf eine Antwort
+                                                    # brauchen, bevor wir einen Timeout-Hinweis zeigen.
+                                                    # Default: 5 min. LLM-Antworten mit Reasoning/Tools
+                                                    # können länger dauern, gerade über SSH.
+
     # --- Briefing-Inhalte (werden an das Script als BRIEFING_* ENV-Vars gereicht) ---
     "briefing_github_user":   "",          # leer = GitHub-Section überspringen
     "briefing_weather_lat":   "52.52",     # Berlin Default
@@ -229,6 +235,14 @@ class AppConfig:
     @property
     def hermes_home(self) -> str:       return str(self._values.get("hermes_home") or "/root/.hermes")
     @property
+    def chat_timeout_sec(self) -> int:
+        try:
+            v = int(self._values.get("chat_timeout_sec") or 300)
+            return max(30, min(v, 1800))  # zwischen 30s und 30min einklemmen
+        except (TypeError, ValueError):
+            return 300
+
+    @property
     def blog_posts_subdir(self) -> str:
         """Subordner unter blog/, in dem der Hermes-Agent die Einzel-
         Tagesberichts-HTMLs ablegt. Default: ``"posts"``. Leerer String
@@ -278,9 +292,30 @@ class AppConfig:
     def briefing_output_path(self) -> str:
         return self.wiki_path(str(self._values.get("briefing_output") or "blog/briefing.html"))
 
-    def briefing_env(self) -> Dict[str, str]:
-        """ENV-Mapping für den Aufruf des Briefing-Scripts (BRIEFING_* Variablen)."""
+    def portal_env(self) -> Dict[str, str]:
+        """ENV-Variablen, die das Portal seinen Agent-Scripts mitgibt.
+
+        Werden von ``blog_generator.py`` (News) und ``daily_briefing.py``
+        gelesen. Damit nutzen die mitgelieferten Default-Skripte automatisch
+        die im Portal konfigurierten RSS-Feeds, Pfade und Namen — ohne dass
+        der User irgendwas im Script anpassen muss.
+        """
         return {
+            "PORTAL_BLOG_DIR":     self.wiki_path("blog"),
+            "PORTAL_POSTS_SUBDIR": self.blog_posts_subdir or "posts",
+            "PORTAL_AGENT_NAME":   self.agent_name,
+            "PORTAL_USER_NAME":    self.user_name,
+            "NEWS_RSS_FEEDS":      json.dumps(self.rss_feeds, ensure_ascii=False),
+        }
+
+    def briefing_env(self) -> Dict[str, str]:
+        """ENV-Mapping für den Aufruf des Briefing-Scripts (BRIEFING_* Variablen).
+
+        Enthält auch die gemeinsamen PORTAL_*-Variablen, damit das Briefing-
+        Script genauso die Portal-Pfade kennt wie der News-Generator.
+        """
+        env = self.portal_env()
+        env.update({
             "BRIEFING_GITHUB_USER": str(self._values.get("briefing_github_user") or ""),
             "BRIEFING_WEATHER_LAT": str(self._values.get("briefing_weather_lat") or ""),
             "BRIEFING_WEATHER_LON": str(self._values.get("briefing_weather_lon") or ""),
@@ -288,7 +323,8 @@ class AppConfig:
             "BRIEFING_FORUM_RSS":   str(self._values.get("briefing_forum_rss")   or ""),
             "BRIEFING_BVG_STOP":    str(self._values.get("briefing_bvg_stop")    or ""),
             "BRIEFING_OUTPUT_PATH": self.briefing_output_path(),
-        }
+        })
+        return env
 
     # --- Persistenz -------------------------------------------------------
     def update(self, patch: Dict[str, Any]) -> None:

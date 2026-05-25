@@ -1059,6 +1059,10 @@
                     <input id="app-hermes_bin" class="app-input" placeholder="hermes">
                 </label>
                 <label class="app-field">
+                    <span>{{ t('settings.app.field.chat_timeout_sec') }}</span>
+                    <input id="app-chat_timeout_sec" class="app-input" type="number" min="30" max="1800" placeholder="300">
+                </label>
+                <label class="app-field">
                     <span>{{ t('settings.app.field.briefing_script') }}</span>
                     <input id="app-briefing_script" class="app-input" placeholder="scripts/daily_briefing.py">
                 </label>
@@ -1107,6 +1111,20 @@
             <div id="app-rss-list" style="display:flex; flex-direction:column; gap:8px;"></div>
             <div style="margin-top:0.6rem;">
                 <button class="btn-sm btn-sm-secondary" onclick="addRssRow()">➕ Feed hinzufügen</button>
+            </div>
+        </div>
+
+        <!-- Agent-Scripts: mitgelieferte blog_generator.py / daily_briefing.py
+             one-click auf den Hermes-Agent kopieren. Beide Scripts lesen die
+             Portal-Settings via ENV-Variablen, also bleiben Änderungen an
+             RSS-Feeds/Wetter-Koordinaten auch ohne Script-Edit wirksam. -->
+        <div class="settings-section">
+            <div class="settings-section-title">🛠 {{ t('settings.app.agent_scripts.title') }}</div>
+            <p style="font-size:0.88rem; color:var(--text-secondary); margin:0 0 0.75rem 0;">
+                {{ t('settings.app.agent_scripts.intro') }}
+            </p>
+            <div id="agent-scripts-list" style="display:flex; flex-direction:column; gap:10px;">
+                <div style="color:var(--text-secondary); font-size:0.85rem;">{{ t('common.loading') }}…</div>
             </div>
         </div>
 
@@ -1782,7 +1800,7 @@ var APP_FIELDS = [
     'connection_mode','agent_host','ssh_user','ssh_port','ssh_key_path','ssh_password',
     'user_name','agent_name',
     'category_entity_label','category_concept_label',
-    'exchange_path','wiki_subpath','blog_posts_subdir','hermes_home','hermes_bin',
+    'exchange_path','wiki_subpath','blog_posts_subdir','hermes_home','hermes_bin','chat_timeout_sec',
     'briefing_script','briefing_output',
     'briefing_github_user','briefing_weather_lat','briefing_weather_lon',
     'briefing_weather_tz','briefing_forum_rss','briefing_bvg_stop',
@@ -1832,10 +1850,90 @@ function loadAppConfig() {
         if (sel) sel.onchange = function() { applySshOnlyVisibility(sel.value); loadSshKeyStatus(); };
         // Wizard-Status laden, falls SSH-Mode aktiv
         if (d.connection_mode === 'ssh') loadSshKeyStatus();
+        // Agent-Scripts-Liste laden
+        loadAgentScripts();
     })
     .catch(function(e) {
         var banner = document.getElementById('app-status-banner');
         if (banner) banner.innerHTML = '🔴 Konnte App-Config nicht laden: ' + e;
+    });
+}
+
+// ─── Agent-Scripts (blog_generator.py / daily_briefing.py) ──────────
+function loadAgentScripts() {
+    var el = document.getElementById('agent-scripts-list');
+    if (!el) return;
+    var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+    fetch('/api/agent-scripts', { cache: 'no-store' })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        var scripts = d.scripts || [];
+        if (!scripts.length) {
+            el.innerHTML = '<div style="color:var(--text-secondary);font-size:0.85rem;">' +
+                T('settings.app.agent_scripts.none') + '</div>';
+            return;
+        }
+        el.innerHTML = scripts.map(function(s) {
+            var statusBadge = s.installed
+                ? '<span style="color:var(--success-color,#22c55e); font-size:0.78rem;">✓ ' +
+                    T('settings.app.agent_scripts.installed') + '</span>'
+                : '<span style="color:var(--text-dim); font-size:0.78rem;">○ ' +
+                    T('settings.app.agent_scripts.not_installed') + '</span>';
+            var btnLabel = s.installed
+                ? '♻️ ' + T('settings.app.agent_scripts.update')
+                : '⬇️ ' + T('settings.app.agent_scripts.install');
+            return '' +
+              '<div style="padding:0.7rem 0.9rem; border:1px solid var(--border-color);' +
+              ' border-radius:8px; background:var(--bg-primary);">' +
+                '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+                    '<strong style="font-size:0.95rem;">📄 ' + escapeAttr(s.filename) + '</strong>' +
+                    statusBadge +
+                    '<button class="btn-sm btn-sm-primary" style="margin-left:auto;"' +
+                        ' onclick="installAgentScript(\'' + escapeAttr(s.key) + '\', ' + (s.installed ? 'true' : 'false') + ')">' +
+                        btnLabel + '</button>' +
+                    '<a href="/api/agent-scripts/' + escapeAttr(s.key) + '/content"' +
+                        ' target="_blank" class="btn-sm btn-sm-secondary">' +
+                        '👁 ' + T('common.view') + '</a>' +
+                '</div>' +
+                '<div style="margin-top:6px; font-size:0.82rem; color:var(--text-secondary);">' +
+                    escapeAttr(s.description) +
+                '</div>' +
+                '<div style="margin-top:4px; font-size:0.75rem; color:var(--text-dim); font-family:var(--mono);">' +
+                    '→ ' + escapeAttr(s.agent_path) +
+                '</div>' +
+              '</div>';
+        }).join('');
+    })
+    .catch(function(e) {
+        el.innerHTML = '<div style="color:#ef4444;font-size:0.85rem;">' +
+            T('settings.app.agent_scripts.load_error') + ': ' + (e.message || e) + '</div>';
+    });
+}
+
+function escapeAttr(s) {
+    var d = document.createElement('div'); d.textContent = s == null ? '' : String(s);
+    return d.innerHTML.replace(/"/g, '&quot;');
+}
+
+function installAgentScript(key, alreadyExists) {
+    var T = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+    if (alreadyExists && !confirm(T('settings.app.agent_scripts.overwrite_confirm'))) return;
+    fetch('/api/agent-scripts/' + encodeURIComponent(key) + '/install', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ overwrite: !!alreadyExists }),
+    })
+    .then(function(r) { return r.json().then(function(d){ return {ok: r.ok, data: d}; }); })
+    .then(function(res) {
+        if (!res.ok || res.data.status !== 'ok') {
+            alert(T('settings.app.agent_scripts.install_error') + ' ' + (res.data && res.data.error || res.data.message || ''));
+            return;
+        }
+        alert(T('settings.app.agent_scripts.install_ok').replace('%path%', res.data.target));
+        loadAgentScripts();
+    })
+    .catch(function(e) {
+        alert(T('settings.app.agent_scripts.install_error') + ' ' + (e.message || e));
     });
 }
 

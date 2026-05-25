@@ -3,6 +3,19 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.0
+
+- **🛠 Mitgelieferte Agent-Skripte** — `blog_generator.py` und
+  `daily_briefing.py` werden im Portal mitgeliefert und können per
+  One-Click aus Settings → 🛰️ App auf den Hermes-Agent installiert
+  werden. Default-Skripte lesen die Portal-Settings über ENV-Variablen
+  (RSS-Feeds, Wetter-Koordinaten, Pfade) — Änderungen im Portal
+  wirken also automatisch beim nächsten Cronjob-Lauf.
+- **🔌 RSS-Feeds aus Settings landen jetzt im News-Generator** via
+  ENV-Variable `NEWS_RSS_FEEDS` (vorher nur im Briefing-Script).
+- **⏱ Chat-Timeout** konfigurierbar (Default 300 s statt 120 s).
+  Klarerer Fehlertext beim Timeout, inkl. Link ins Settings.
+
 ## 1.2.2
 
 - **🔗 News-Detail-Links funktionieren wieder** — der Hermes-Agent-Blog-

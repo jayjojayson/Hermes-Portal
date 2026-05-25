@@ -222,10 +222,18 @@ auto-created on first access — nothing to set up on the agent side first.
 
 The **News** page in Hermes Portal lists posts that your `blog_generator.py`
 on the agent writes into `posts.json`. RSS feed sources live in
-**Settings → 🛰️ App → RSS feeds**. To have Hermes refresh the news, set up
-a cronjob on the agent that runs the generator 3× per day — morning, noon,
-evening (`0 7,12,19 * * *`). Copy-paste the prompt directly from the News
-page (open *"⚙️ Make Hermes generate the news for you"*); it boils down to:
+**Settings → 🛰️ App → RSS feeds**.
+
+**Setup in 2 clicks (since v1.3.0):**
+1. **Settings → 🛰️ App → "🛠 Agent scripts"** — click *Install on agent*
+   next to `blog_generator.py`. Portal copies the bundled script via
+   local FS or SFTP to the agent. The script reads your RSS feeds from
+   the `NEWS_RSS_FEEDS` ENV variable that the Portal sets — so changes
+   in Settings apply automatically on the next cronjob run.
+2. **Cronjob on the agent** — set up one cronjob that runs the
+   generator 3× per day (morning, noon, evening — `0 7,12,19 * * *`).
+   Copy-paste the prompt directly from the News page
+   (open *"⚙️ Make Hermes generate the news for you"*); it boils down to:
 
 ```text
 Run the blog generator: python3 /mnt/austausch/wiki/blog/blog_generator.py
