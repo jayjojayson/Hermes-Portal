@@ -212,6 +212,7 @@ def format_date(value):
 # --- Pfade aus der Config evaluieren (werden in _refresh_paths() bei
 # Settings-Änderungen neu berechnet, damit Live-Updates möglich sind).
 WIKI_DIR = ENTITIES_DIR = CONCEPTS_DIR = REFERENCES_DIR = BLOG_DIR = None  # type: ignore
+WIKI_EXTRA_DIRS: list = []  # type: ignore
 WIKI_SCRIPTS_DIR = WIKI_SKILLS_DIR = None  # type: ignore
 HERMES_SKILLS_DIR = HERMES_BUILTIN_SKILLS_DIR = HERMES_SCRIPTS_DIR = HERMES_CRON_FILE = None  # type: ignore
 
@@ -232,6 +233,10 @@ def _refresh_paths():
     ENTITIES_DIR = WIKI_DIR / "entities"
     CONCEPTS_DIR = WIKI_DIR / "concepts"
     REFERENCES_DIR = WIKI_DIR / "references"
+    # Zusätzliche, vom User konfigurierte Kategorien (gleicher Stil wie
+    # concepts/) — Globals damit andere Pfade sie sehen.
+    global WIKI_EXTRA_DIRS
+    WIKI_EXTRA_DIRS = [WIKI_DIR / d for d in cfg.wiki_extra_dirs]
     BLOG_DIR = WIKI_DIR / "blog"
     BLOG_STATIC_DIR = BLOG_DIR
     WIKI_SCRIPTS_DIR = WIKI_DIR / "scripts"
@@ -609,12 +614,30 @@ def parse_frontmatter(text):
     return meta, content
 
 
+def _concept_like_dirs():
+    """Concepts + alle vom User konfigurierten Extra-Kategorien.
+
+    Diese werden in der Wiki-Übersicht zur „Konzepte"-Box gezählt, sodass
+    das 2-Box-Layout (Entitäten / Konzepte) erhalten bleibt — egal wie
+    viele zusätzliche Kategorien angelegt sind.
+    """
+    return [CONCEPTS_DIR] + list(WIKI_EXTRA_DIRS)
+
+
 def get_all_pages():
-    """Liest alle Wiki-Seiten aus entities/ und concepts/ (via hermes_client)."""
+    """Liest alle Wiki-Seiten aus entities/, concepts/ und konfigurierten
+    Extra-Kategorien (via hermes_client). Extras laufen unter
+    ``section="concept"`` für URL-Routing; das Original-Verzeichnis steht
+    im neuen Feld ``category_dir`` für Filterung in der UI.
+    """
     client = get_client()
     pages = []
-    for section_dir, section_type in [(ENTITIES_DIR, "entity"), (CONCEPTS_DIR, "concept")]:
+    sections = [(ENTITIES_DIR, "entity")]
+    for d in _concept_like_dirs():
+        sections.append((d, "concept"))
+    for section_dir, section_type in sections:
         section_path = str(section_dir)
+        category_dir = section_dir.name
         for filename in client.glob(section_path, "*.md"):
             file_path = f"{section_path}/{filename}"
             text = client.read_text(file_path)
@@ -627,6 +650,7 @@ def get_all_pages():
                 "filename": filename,
                 "title": meta.get("title", stem.replace("-", " ").title()),
                 "section": section_type,
+                "category_dir": category_dir,
                 "tags": [t.lower().strip() for t in meta.get("tags", [])],
                 "created": meta.get("created", ""),
                 "updated": meta.get("updated", ""),
@@ -634,6 +658,28 @@ def get_all_pages():
             })
     pages.sort(key=lambda p: p["title"].lower())
     return pages
+
+
+def _resolve_wiki_page(page_id: str, section_hint: str = ""):
+    """Findet den absoluten Pfad einer Wiki-MD-Datei + ihre Section.
+
+    Schaut zuerst in der ``section_hint``-Sektion (entity/concept), dann
+    in den jeweils anderen Kategorien. Liefert ``(Path, "entity"|"concept")``
+    oder ``(None, "")`` wenn die Datei nicht existiert. Für Extra-Kategorien
+    ist die zurückgegebene Section immer ``"concept"`` (URL-Routing-
+    Kompatibilität).
+    """
+    client = get_client()
+    # Reihenfolge je nach Hint — vermeidet unnötige stat-Calls
+    if section_hint == "entity":
+        order = [(ENTITIES_DIR, "entity")] + [(d, "concept") for d in _concept_like_dirs()]
+    else:
+        order = [(d, "concept") for d in _concept_like_dirs()] + [(ENTITIES_DIR, "entity")]
+    for base_dir, section in order:
+        candidate = base_dir / f"{page_id}.md"
+        if client.exists(str(candidate)):
+            return candidate, section
+    return None, ""
 
 
 def get_all_tags(pages):
@@ -701,9 +747,18 @@ def wiki_home():
     if log_content:
         log_entries = [l.strip() for l in log_content.split("\n") if l.strip().startswith("## [")][:15]
 
+    # Extras als Chip-Liste für die Übersicht — pro Kategorie die Anzahl
+    # der Seiten, damit der User sieht, was wo lebt. Das 2-Box-Layout
+    # bleibt unangetastet (extras zählen visuell zur Konzepte-Box).
+    extras_summary = []
+    for d in WIKI_EXTRA_DIRS:
+        count = sum(1 for p in pages if p.get("category_dir") == d.name)
+        extras_summary.append({"key": d.name, "label": d.name.title(), "count": count})
+
     return render_template("index.html",
         entities=entities, concepts=concepts, tags=tags,
         recently=recently, log_entries=log_entries,
+        extra_categories=extras_summary,
         total_pages=len(pages))
 
 
@@ -712,13 +767,12 @@ def wiki_home():
 def show_page(page_id):
     """Zeigt eine einzelne Wiki-Seite (via hermes_client)."""
     client = get_client()
-    md_file = ENTITIES_DIR / f"{page_id}.md"
-    section = "entity"
+    section_hint = "entity" if request.path.startswith("/entity/") else "concept"
+    md_file, section = _resolve_wiki_page(page_id, section_hint)
+    if md_file is None:
+        flash("Seite nicht gefunden!", "error")
+        return redirect(url_for("index"))
     text = client.read_text(str(md_file))
-    if text is None:
-        md_file = CONCEPTS_DIR / f"{page_id}.md"
-        section = "concept"
-        text = client.read_text(str(md_file))
     if text is None:
         flash("Seite nicht gefunden!", "error")
         return redirect(url_for("index"))
@@ -741,11 +795,10 @@ def show_page(page_id):
 def delete_page(section, page_id):
     """Löscht eine Wiki-Seite mit Bestätigung (via hermes_client)."""
     client = get_client()
-    if section == "entity":
-        md_file = ENTITIES_DIR / f"{page_id}.md"
-    else:
-        md_file = CONCEPTS_DIR / f"{page_id}.md"
-
+    md_file, _ = _resolve_wiki_page(page_id, section)
+    if md_file is None:
+        flash("Seite nicht gefunden!", "error")
+        return redirect(url_for("index"))
     text = client.read_text(str(md_file))
     if text is None:
         flash("Seite nicht gefunden!", "error")
@@ -836,10 +889,13 @@ def allowed_file(filename):
 def edit_page(section, page_id):
     """Bearbeiten einer Wiki-Seite (via hermes_client)."""
     client = get_client()
-    if section == "entity":
-        md_file = ENTITIES_DIR / f"{page_id}.md"
-    else:
-        md_file = CONCEPTS_DIR / f"{page_id}.md"
+    md_file, resolved_section = _resolve_wiki_page(page_id, section)
+    if md_file is None:
+        flash("Seite nicht gefunden!", "error")
+        return redirect(url_for("index"))
+    # Section vom Resolver übernehmen (kann durch URL-Hint vs. tatsächliche
+    # Ablage differieren, z.B. bei Extra-Kategorien).
+    section = resolved_section
 
     raw = client.read_text(str(md_file))
     if raw is None:
@@ -912,7 +968,14 @@ def new_page():
             slug = slug[:80]
 
         client = get_client()
+        # section kann sein: "entity", "concept", oder ein Extra-Kategorie-
+        # Name (z.B. "rezepte"). Auflösen: entities/, concepts/, oder
+        # zugehöriger Extra-Ordner. Validierung gegen Whitelist verhindert
+        # Path-Traversal über Form-Input.
         target_dir = ENTITIES_DIR if section == "entity" else CONCEPTS_DIR
+        if section not in ("entity", "concept"):
+            extra_match = next((d for d in WIKI_EXTRA_DIRS if d.name == section), None)
+            target_dir = extra_match if extra_match else CONCEPTS_DIR
         md_file = target_dir / f"{slug}.md"
 
         if client.exists(str(md_file)):
@@ -940,7 +1003,12 @@ sources: []
         return redirect(url_for("show_page", page_id=slug, section=section))
 
     all_tags = get_all_tags(get_all_pages())
-    return render_template("new.html", section="concept", all_tags=all_tags)
+    return render_template(
+        "new.html",
+        section="concept",
+        all_tags=all_tags,
+        extra_categories=[d.name for d in WIKI_EXTRA_DIRS],
+    )
 
 
 @app.route("/search")
@@ -1688,6 +1756,68 @@ def _parse_token_stats_from_log(today: str) -> dict:
     return stats
 
 
+def _aggregate_token_stats_range(days: int = 7, max_log_lines: int = 100000) -> dict:
+    """Aggregiert Token-Stats über die letzten ``days`` Kalendertage.
+
+    Liefert dict mit ``in/out/total/calls`` Gesamtsummen über den Zeitraum
+    plus ein per-Tag-Breakdown ``daily[YYYY-MM-DD]`` für ggf. spätere
+    Mini-Charts. Reuse der bestehenden Regex-Patterns aus
+    :func:`_parse_token_stats_from_log` — einmal über den Log laufen, jede
+    Zeile dem Tag zuordnen.
+    """
+    log_path = cfg.hermes_path("logs/agent.log")
+    client = get_client()
+    if not client.exists(log_path):
+        return {"days": days, "total_in": 0, "total_out": 0, "total_tokens": 0,
+                "total_calls": 0, "daily": {}}
+
+    today = datetime.now().date()
+    start = today - timedelta(days=days - 1)
+    valid = {(start + timedelta(days=i)).strftime("%Y-%m-%d") for i in range(days)}
+
+    token_pattern = re.compile(
+        r"^(\d{4}-\d{2}-\d{2}) (\d{2}):\d{2}:\d{2}.*?API call #\d+: model=(\S+) provider=(\S+) "
+        r"in=(\d+) out=(\d+) total=(\d+)"
+    )
+    failed_pattern = re.compile(
+        r"^(\d{4}-\d{2}-\d{2}) (\d{2}):\d{2}:\d{2}.*?API call (?:failed|Retrying)"
+    )
+
+    daily: dict = {d: {"in": 0, "out": 0, "total": 0, "calls": 0} for d in valid}
+    try:
+        for line in client.tail(log_path, max_log_lines):
+            if len(line) < 10:
+                continue
+            date_str = line[:10]
+            if date_str not in valid:
+                continue
+            m = token_pattern.match(line)
+            if m:
+                in_t = int(m.group(5)); out_t = int(m.group(6)); tot = int(m.group(7))
+                bucket = daily[date_str]
+                bucket["in"]    += in_t
+                bucket["out"]   += out_t
+                bucket["total"] += tot
+                bucket["calls"] += 1
+                continue
+            if failed_pattern.match(line):
+                daily[date_str]["calls"] += 1
+    except Exception:
+        pass
+
+    summary = {
+        "days":         days,
+        "start":        start.strftime("%Y-%m-%d"),
+        "end":          today.strftime("%Y-%m-%d"),
+        "total_in":     sum(d["in"] for d in daily.values()),
+        "total_out":    sum(d["out"] for d in daily.values()),
+        "total_tokens": sum(d["total"] for d in daily.values()),
+        "total_calls":  sum(d["calls"] for d in daily.values()),
+        "daily":        daily,
+    }
+    return summary
+
+
 def _available_log_dates(max_days=14):
     """Liefert die letzten Datumswerte (YYYY-MM-DD), für die agent.log Einträge hat.
 
@@ -1772,6 +1902,22 @@ def api_settings_usage():
             "hourly": token_hours_data,
         },
     })
+
+
+@app.route("/api/settings/usage/range")
+def api_settings_usage_range():
+    """Aggregierter Verbrauch über die letzten N Tage (Default 7).
+
+    Praktisch für Wochen-/Monats-Karten neben dem Tages-Detail. Quelle ist
+    derselbe ``agent.log`` wie das Tages-Endpoint — wir scannen einmal und
+    summieren je Tag.
+    """
+    try:
+        days = int(request.args.get("days") or 7)
+    except (TypeError, ValueError):
+        days = 7
+    days = max(1, min(days, 90))
+    return jsonify(_aggregate_token_stats_range(days))
 
 
 # --------------------------------------------------------------------

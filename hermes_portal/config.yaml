@@ -3,7 +3,7 @@
 
 name: Hermes Portal
 description: Webfrontend für den Hermes-Agent — Wiki, News, Briefing, Aufgaben, Explorer und Chat.
-version: "1.3.1"
+version: "1.3.2"
 slug: hermes_portal
 init: false
 arch:

@@ -278,6 +278,18 @@
         <h4>💡 {{ category_concept_label }}</h4>
         <p class="stat-desc">Anleitungen, Tutorials, Ideen, Prozesse</p>
         <div class="stat-num">{{ concepts|length }}</div>
+        {# Extra-Kategorien werden in die Konzepte-Box gefaltet, damit das
+           2-Box-Layout intakt bleibt. Als kleine Chip-Liste sichtbar, mit
+           je einer Filter-Tag-Suche pro Eintrag. #}
+        {% if extra_categories %}
+        <div class="tags" style="margin-top:0.6rem;">
+            {% for ec in extra_categories %}
+            <a href="/search?tag={{ ec.key|urlencode }}" class="tag"
+               title="Kategorie: {{ ec.label }}">{{ ec.label }}
+               <span style="opacity:0.6;">·{{ ec.count }}</span></a>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     <div class="card">
         <h4>🏷️ <a href="/tags" style="color:inherit;text-decoration:none;">Tags</a></h4>

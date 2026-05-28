@@ -14,6 +14,36 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.2] — 2026-05-26
+
+📊 **Usage-Chart wirklich gefixt + Wochen/Monatsverbrauch + Wiki-Multi-Kategorien.**
+
+### Fixed
+- **📊 Usage-Tab Balkendiagramm zeigt jetzt tatsächlich Daten** —
+  v1.3.1 hatte `d.hourly[hk].total` benutzt, aber die Token-Hourlies
+  liegen unter `d.tokens.hourly[hk].total` (`.count` im top-level
+  `d.hourly` sind HTTP-Requests, nicht Tokens). Tooltip nennt jetzt
+  alle drei Werte: `XX:XX — Y Tokens · Z Model-Calls · W HTTP-Requests`.
+
+### Added
+- **📅 Wochen- + Monatsverbrauch-Karten** im Usage-Tab — vier neue
+  Stat-Karten (Tokens/Calls × 7d/30d) aggregiert aus `agent.log` über
+  den neuen Endpoint `GET /api/settings/usage/range?days=N`. Lädt
+  parallel zum Tages-Detail, separat zwischengespeichert.
+- **🗂 Wiki-Multi-Kategorien** via Settings → 🛰️ App →
+  „Zusätzliche Wiki-Kategorien" (Komma-getrennte Subordner-Namen,
+  z.B. `rezepte, projekte, todo`). Jeder Ordner wird wie `concepts/`
+  indexiert, gelesen und editiert. **Das 2-Box-Layout der
+  Wiki-Übersicht bleibt unangetastet** — Extras zählen zur
+  „Konzepte"-Box dazu und werden als kleine Chip-Liste mit Counts
+  darunter angezeigt. Neue-Seiten-Form bietet die Extras als Dropdown-
+  Optionen, Backend validiert gegen Whitelist (kein Path-Traversal).
+- **🔧 `_coerce()`** akzeptiert für Listen-Felder jetzt JSON UND
+  Komma-getrennte Strings (vorher nur JSON). Praktisch für Settings-
+  Textfelder, die der User direkt tippt.
+
+---
+
 ## [1.3.1] — 2026-05-26
 
 🐛 **References-Save-Bug + Usage-Tab-Chart wie Dashboard.**

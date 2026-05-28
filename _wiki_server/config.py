@@ -83,6 +83,13 @@ DEFAULTS: Dict[str, Any] = {
                                                     # Default: 5 min. LLM-Antworten mit Reasoning/Tools
                                                     # können länger dauern, gerade über SSH.
 
+    # --- Wiki: zusätzliche Kategorien --------------------------------------
+    # Liste von Subordner-Namen unter wiki/ (zusätzlich zu entities/ und
+    # concepts/). Jeder Ordner enthält .md-Dateien und wird genauso indexiert
+    # und editiert wie concepts/. Wird in der Wiki-Übersicht zur „Konzepte"-
+    # Box dazugezählt — das 2-Box-Layout bleibt also intakt.
+    "wiki_extra_dirs":     [],
+
     # --- Briefing-Inhalte (werden an das Script als BRIEFING_* ENV-Vars gereicht) ---
     "briefing_github_user":   "",          # leer = GitHub-Section überspringen
     "briefing_weather_lat":   "52.52",     # Berlin Default
@@ -120,11 +127,21 @@ def _coerce(default: Any, value: Any) -> Any:
     if isinstance(default, list):
         if isinstance(value, list):
             return value
-        try:
-            parsed = json.loads(value)
-            return parsed if isinstance(parsed, list) else default
-        except (TypeError, ValueError, json.JSONDecodeError):
-            return default
+        # Strings können entweder JSON sein oder einfach comma-separated
+        # (Settings-Textfelder schicken Roh-Text). JSON zuerst, sonst split.
+        if isinstance(value, str):
+            stripped = value.strip()
+            if not stripped:
+                return []
+            if stripped[0] in "[{":
+                try:
+                    parsed = json.loads(stripped)
+                    if isinstance(parsed, list):
+                        return parsed
+                except (ValueError, json.JSONDecodeError):
+                    pass
+            return [s.strip() for s in stripped.split(",") if s.strip()]
+        return default
     return str(value)
 
 
@@ -234,6 +251,22 @@ class AppConfig:
     def exchange_path(self) -> str:     return str(self._values.get("exchange_path") or "/mnt/austausch")
     @property
     def hermes_home(self) -> str:       return str(self._values.get("hermes_home") or "/root/.hermes")
+    @property
+    def wiki_extra_dirs(self) -> List[str]:
+        """Liste zusätzlicher Wiki-Unterordner (neben entities + concepts)."""
+        raw = self._values.get("wiki_extra_dirs") or []
+        if isinstance(raw, str):
+            # Erlaube comma-separated Strings im Settings-Textfeld
+            raw = [s.strip() for s in raw.split(",")]
+        out = []
+        for d in raw:
+            if not isinstance(d, str):
+                continue
+            clean = d.strip().strip("/").lstrip(".")
+            if clean and clean not in ("entities", "concepts"):
+                out.append(clean)
+        return out
+
     @property
     def chat_timeout_sec(self) -> int:
         try:

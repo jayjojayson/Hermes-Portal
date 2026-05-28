@@ -62,8 +62,14 @@
         <div class="form-group">
             <label for="type">Typ</label>
             <select id="type" name="section">
-                <option value="concept">💡 Konzept / Anleitung</option>
-                <option value="entity">📦 Entität / Gerät / System</option>
+                <option value="concept">💡 {{ category_concept_label }}</option>
+                <option value="entity">📦 {{ category_entity_label }}</option>
+                {# Vom User über Settings → 🛰️ App konfigurierte Extra-
+                   Kategorien. Werte sind die Subordner-Namen, die das
+                   Backend gegen WIKI_EXTRA_DIRS validiert. #}
+                {% for cat in (extra_categories or []) %}
+                <option value="{{ cat }}">🗂 {{ cat|capitalize }}</option>
+                {% endfor %}
             </select>
         </div>
 

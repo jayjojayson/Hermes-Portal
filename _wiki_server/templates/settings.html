@@ -1051,6 +1051,10 @@
                     <input id="app-blog_posts_subdir" class="app-input" placeholder="posts">
                 </label>
                 <label class="app-field">
+                    <span>{{ t('settings.app.field.wiki_extra_dirs') }}</span>
+                    <input id="app-wiki_extra_dirs" class="app-input" placeholder="rezepte, projekte, todo">
+                </label>
+                <label class="app-field">
                     <span>{{ t('settings.app.field.hermes_home') }}</span>
                     <input id="app-hermes_home" class="app-input" placeholder="/root/.hermes">
                 </label>
@@ -1558,6 +1562,30 @@
                 </div>
             </div>
 
+            <!-- Wochen-/Monats-Aggregate aus agent.log (gleiche Quelle wie
+                 das Tages-Endpoint, einmal über die letzten N Tage gescannt). -->
+            <div style="margin-top:1.5rem; margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">
+                📅 Zeitraum-Verbrauch
+            </div>
+            <div class="usage-stats" style="margin-bottom:1rem;">
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-week-tokens">—</div>
+                    <div class="stat-label">Tokens · 7 Tage</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-week-calls">—</div>
+                    <div class="stat-label">API Calls · 7 Tage</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-month-tokens">—</div>
+                    <div class="stat-label">Tokens · 30 Tage</div>
+                </div>
+                <div class="usage-stat-card">
+                    <div class="stat-value" id="stat-month-calls">—</div>
+                    <div class="stat-label">API Calls · 30 Tage</div>
+                </div>
+            </div>
+
             <!-- Modell-Tabelle -->
             <div style="margin-top:1.5rem; margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">🤖 Verbrauch nach Modell</div>
             <div id="usage-model-table" style="margin-bottom:1.5rem;"></div>
@@ -1808,7 +1836,7 @@ var APP_FIELDS = [
     'connection_mode','agent_host','ssh_user','ssh_port','ssh_key_path','ssh_password',
     'user_name','agent_name',
     'category_entity_label','category_concept_label',
-    'exchange_path','wiki_subpath','blog_posts_subdir','hermes_home','hermes_bin','chat_timeout_sec',
+    'exchange_path','wiki_subpath','blog_posts_subdir','wiki_extra_dirs','hermes_home','hermes_bin','chat_timeout_sec',
     'briefing_script','briefing_output',
     'briefing_github_user','briefing_weather_lat','briefing_weather_lon',
     'briefing_weather_tz','briefing_forum_rss','briefing_bvg_stop',
@@ -1843,6 +1871,10 @@ function loadAppConfig() {
             if (!el) return;
             var v = d[k];
             if (v === undefined || v === null) v = '';
+            // Listen-Felder als comma-separated Strings darstellen, damit der
+            // User sie im Input-Textfeld bearbeiten kann (Backend akzeptiert
+            // beides — siehe _coerce()).
+            if (Array.isArray(v)) v = v.join(', ');
             el.value = v;
         });
         APP_BOOL_FIELDS.forEach(function(k) {
@@ -2678,6 +2710,23 @@ function _todayStr() {
         String(d.getDate()).padStart(2, '0');
 }
 
+function loadUsageRange(days, tokenElId, callsElId) {
+    var tEl = document.getElementById(tokenElId);
+    var cEl = document.getElementById(callsElId);
+    if (tEl) tEl.textContent = '…';
+    if (cEl) cEl.textContent = '…';
+    fetch('/api/settings/usage/range?days=' + days, {cache: 'no-store'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (tEl) tEl.textContent = fmtNum(d.total_tokens || 0);
+        if (cEl) cEl.textContent = fmtNum(d.total_calls || 0);
+    })
+    .catch(function() {
+        if (tEl) tEl.textContent = '—';
+        if (cEl) cEl.textContent = '—';
+    });
+}
+
 function loadUsage(date) {
     var url = '/api/settings/usage' + (date ? '?date=' + encodeURIComponent(date) : '');
     fetch(url)
@@ -2730,12 +2779,18 @@ function loadUsage(date) {
         }
 
         // Token-Usage-Bars — gleiches Verhalten wie das Dashboard-Widget:
-        // Bar-Höhe = Tokens pro Stunde, Tooltip nennt Tokens + Calls,
+        // Bar-Höhe = Tokens pro Stunde, Tooltip nennt Tokens + Requests,
         // aktuelle Stunde hervorgehoben, 4-Stunden-Labels (00/04/08/12/16/20).
-        // Wir nutzen .total (Tokens) statt .count (Requests) als Hauptmetrik.
+        //
+        // WICHTIG: Die Hour-Breakdown-Quellen sind ZWEI verschiedene Strukturen:
+        //   d.hourly[hk].count       → Requests-Zähler aus dem Access-Log
+        //   d.tokens.hourly[hk].total → Tokens-Summe + .calls (Modell-Calls)
+        // Wir bauen die Bars aus den Tokens (Hauptmetrik), füllen den
+        // Tooltip aber mit beiden Werten an.
         var bars = document.getElementById('usage-bars');
-        if (bars && d.hourly) {
-            var hourly = d.hourly || {};
+        if (bars) {
+            var tokHourly = (d.tokens && d.tokens.hourly) || {};
+            var reqHourly = d.hourly || {};
             var now = new Date();
             var currentHour = now.getHours().toString().padStart(2, '0') + ':00';
             var isToday = d.is_today;
@@ -2744,23 +2799,26 @@ function loadUsage(date) {
             var maxTok = 1;
             for (var h0 = 0; h0 < 24; h0++) {
                 var hk0 = h0.toString().padStart(2,'0') + ':00';
-                var t0 = (hourly[hk0] || {}).total || 0;
+                var t0 = (tokHourly[hk0] || {}).total || 0;
                 if (t0 > maxTok) maxTok = t0;
             }
 
             var barHtml = '';
             for (var hr = 0; hr < 24; hr++) {
                 var hk = hr.toString().padStart(2, '0') + ':00';
-                var data = hourly[hk] || { total: 0, count: 0 };
-                var tokens = data.total || 0;
-                var calls  = data.count || 0;
+                var tokenData = tokHourly[hk] || {};
+                var reqData   = reqHourly[hk] || {};
+                var tokens = tokenData.total || 0;
+                var calls  = tokenData.calls || 0;
+                var requests = reqData.count || 0;
                 // Mindesthöhe damit auch leere Stunden als Spalte sichtbar bleiben
                 var pct = tokens > 0 ? Math.max(2, Math.round((tokens / maxTok) * 100)) : 0;
                 var isCurrent = isToday && (hk === currentHour);
                 var lbl = (hr % 4 === 0)
                     ? ('<div class="mb-lbl">' + (hr < 10 ? '0' + hr : hr) + '</div>')
                     : '';
-                var tooltip = hk + ' — ' + fmtNum(tokens) + ' Tokens, ' + calls + ' Requests';
+                var tooltip = hk + ' — ' + fmtNum(tokens) + ' Tokens · ' + calls +
+                              ' Model-Calls · ' + requests + ' HTTP-Requests';
                 barHtml += '<div class="mb-col' + (isCurrent ? ' current' : '') + '" title="' + tooltip + '">';
                 barHtml += '<div class="mb-bar" style="height:' + pct + '%"></div>';
                 barHtml += lbl;
@@ -2781,6 +2839,11 @@ function loadUsage(date) {
         if (tokOut) tokOut.textContent = fmtNum(tok.total_out);
         if (tokCache) tokCache.textContent = fmtNum(tok.total_cache_hits);
         if (tokCalls) tokCalls.textContent = fmtNum(tok.total_calls);
+
+        // Wochen- + Monats-Aggregat parallel laden (separate Endpoints).
+        // Nicht blockierend: jeder Range hat seinen eigenen Spinner-Fallback.
+        loadUsageRange(7,  'stat-week-tokens',  'stat-week-calls');
+        loadUsageRange(30, 'stat-month-tokens', 'stat-month-calls');
 
         // Modell-Tabelle
         var modelDiv = document.getElementById('usage-model-table');

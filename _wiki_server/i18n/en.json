@@ -234,6 +234,7 @@
     "settings.app.field.wiki_subpath":  "Wiki subpath (under exchange)",
     "settings.app.field.blog_posts_subdir": "Blog posts subdir (under blog/)",
     "settings.app.field.chat_timeout_sec": "Chat response timeout (seconds, 30-1800)",
+    "settings.app.field.wiki_extra_dirs":  "Extra wiki categories (comma-separated subdir names)",
     "settings.app.agent_scripts.title":     "Agent scripts (one-click install on the Hermes agent)",
     "settings.app.agent_scripts.intro":     "These scripts run on your Hermes agent and read the Portal settings via ENV variables (RSS feeds, weather coordinates, paths). Install them once per agent — afterwards your cronjobs use them and pick up Portal-side changes automatically.",
     "settings.app.agent_scripts.installed": "Installed",

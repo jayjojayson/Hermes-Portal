@@ -3,6 +3,17 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.2
+
+- **📊 Usage-Chart wirklich gefixt** — v1.3.1-Fix hatte das falsche
+  Feld benutzt (`d.hourly` statt `d.tokens.hourly`). Bars sind jetzt
+  da, Tooltip zeigt Tokens + Model-Calls + HTTP-Requests.
+- **📅 Wochen- + Monatsverbrauch** als Karten im Usage-Tab.
+- **🗂 Wiki-Multi-Kategorien**: zusätzliche Subordner unter wiki/
+  konfigurierbar (Settings → 🛰️ App). 2-Box-Layout bleibt intakt —
+  Extras werden zur Konzepte-Box gefaltet und als Chip-Liste mit
+  Counts darunter angezeigt.
+
 ## 1.3.1
 
 - **📁 References-Save-Fix** — „Datei nicht gefunden" trotz geöffneter
