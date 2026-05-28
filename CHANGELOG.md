@@ -14,6 +14,34 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.1] — 2026-05-26
+
+🐛 **References-Save-Bug + Usage-Tab-Chart wie Dashboard.**
+
+### Fixed
+- **📁 References-Save: „Datei nicht gefunden"** trotz geöffneter Datei.
+  Frontend sandte beim `PUT /api/references/...` nur den Dateinamen
+  (`growbox-report.py`), der Backend-Resolver erwartet aber den
+  `source_type/rel_path`-Key (`references/growbox-report.py`). Fix:
+  - JS trackt jetzt `_currentRefUrlKey` (Routing-Key) zusätzlich zu
+    `_currentRefName` (Anzeige). Beim Speichern/Löschen wird der
+    URL-Key benutzt.
+  - URL-Pfad-Segmente einzeln encoded statt einmal komplett — die
+    Flask-Route `<path:url_key>` braucht die Slashes ungequoted, sonst
+    matcht nichts. (War zusätzlich versteckter Bug, der bei Subdirs
+    relevant geworden wäre.)
+  - Cache-Lookup nach `url_key` statt `name` (Dateinamen sind über
+    `source_types` hinweg nicht eindeutig).
+  - Skills-Tab war nicht betroffen (nutzt eigenen `POST`-Endpoint mit
+    `url_key` im JSON-Body).
+- **📊 Usage-Tab Balkendiagramm jetzt wie Dashboard-Widget** — zeigt
+  Token-Verbrauch pro Stunde (vorher Request-Count), mit Tooltip der
+  Tokens UND Requests nennt, aktueller Stunde voll opak hervorgehoben,
+  inaktiver Rest dezent. Skaliert auf den Tages-Max-Wert, mindestens
+  2 % Höhe damit auch leise Stunden als Spalte sichtbar bleiben.
+
+---
+
 ## [1.3.0] — 2026-05-26
 
 🛠 **Agent-Skript-Bundle, RSS-Bridge, längerer Chat-Timeout.**

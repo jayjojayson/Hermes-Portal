@@ -3,6 +3,15 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.1
+
+- **📁 References-Save-Fix** — „Datei nicht gefunden" trotz geöffneter
+  Datei. Frontend nutzt jetzt den korrekten URL-Key statt nur des
+  Dateinamens und encoded Pfad-Segmente einzeln.
+- **📊 Usage-Tab Balkendiagramm wie Dashboard** — zeigt Tokens pro
+  Stunde (Tooltip nennt zusätzlich Requests), aktuelle Stunde
+  hervorgehoben.
+
 ## 1.3.0
 
 - **🛠 Mitgelieferte Agent-Skripte** — `blog_generator.py` und

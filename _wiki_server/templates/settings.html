@@ -1575,10 +1575,15 @@
                 <div id="usage-token-chart" class="usage-line-chart-wrap"></div>
             </div>
 
-            <!-- Requests pro Stunde — kompaktes Mini-Balken-Chart -->
+            <!-- Token-Usage pro Stunde — gleiches Verhalten wie der
+                 Dashboard-Widget (Bar-Höhe = Tokens, Tooltip nennt
+                 Tokens + Calls, aktuelle Stunde hervorgehoben). -->
             <div class="usage-chart-card" style="margin-top:1rem;">
                 <div class="usage-chart-head">
-                    <h4>🔁 Requests pro Stunde</h4>
+                    <h4>📊 Token Usage pro Stunde</h4>
+                    <span style="font-size:0.74rem; color:var(--text-secondary);">
+                        ↪ Hover für Tokens + Requests
+                    </span>
                 </div>
                 <div id="usage-bars" class="usage-mini-bars"></div>
             </div>
@@ -1671,9 +1676,12 @@
     #tab-content-usage .usage-mini-bars .mb-bar {
         width: 100%; background: var(--accent-primary);
         border-radius: 2px 2px 0 0; min-height: 1px;
-        transition: background 0.15s;
+        opacity: 0.55;
+        transition: background 0.15s, opacity 0.15s;
     }
-    #tab-content-usage .usage-mini-bars .mb-bar:hover { background: var(--accent-secondary); }
+    /* Aktuelle Stunde: voll sichtbar — gleiches Verhalten wie Dashboard */
+    #tab-content-usage .usage-mini-bars .mb-col.current .mb-bar { opacity: 1; }
+    #tab-content-usage .usage-mini-bars .mb-col:hover .mb-bar { opacity: 1; background: var(--accent-secondary); }
     #tab-content-usage .usage-mini-bars .mb-lbl {
         position: absolute; bottom: -16px; left: 0; right: 0;
         text-align: center; font-size: 0.66rem; color: var(--text-secondary);
@@ -2721,24 +2729,39 @@ function loadUsage(date) {
             }
         }
 
-        // Requests Bars — kompaktes 24-Spalten Mini-Chart
+        // Token-Usage-Bars — gleiches Verhalten wie das Dashboard-Widget:
+        // Bar-Höhe = Tokens pro Stunde, Tooltip nennt Tokens + Calls,
+        // aktuelle Stunde hervorgehoben, 4-Stunden-Labels (00/04/08/12/16/20).
+        // Wir nutzen .total (Tokens) statt .count (Requests) als Hauptmetrik.
         var bars = document.getElementById('usage-bars');
         if (bars && d.hourly) {
-            var maxReq = 0;
-            for (var hr1 = 0; hr1 < 24; hr1++) {
-                var hk1 = hr1.toString().padStart(2,'0') + ':00';
-                var cc = (d.hourly[hk1] || {}).count || 0;
-                if (cc > maxReq) maxReq = cc;
+            var hourly = d.hourly || {};
+            var now = new Date();
+            var currentHour = now.getHours().toString().padStart(2, '0') + ':00';
+            var isToday = d.is_today;
+
+            // Max-Wert über alle 24 Stunden (Tokens) für die Skalierung
+            var maxTok = 1;
+            for (var h0 = 0; h0 < 24; h0++) {
+                var hk0 = h0.toString().padStart(2,'0') + ':00';
+                var t0 = (hourly[hk0] || {}).total || 0;
+                if (t0 > maxTok) maxTok = t0;
             }
-            if (maxReq < 1) maxReq = 1;
+
             var barHtml = '';
             for (var hr = 0; hr < 24; hr++) {
                 var hk = hr.toString().padStart(2, '0') + ':00';
-                var data = d.hourly[hk] || { count: 0 };
-                var cnt = data.count || 0;
-                var pct = (cnt / maxReq * 100);
-                var lbl = (hr % 4 === 0) ? ('<div class="mb-lbl">' + (hr < 10 ? '0' + hr : hr) + '</div>') : '';
-                barHtml += '<div class="mb-col" title="' + hk + ' — ' + cnt + ' Requests">';
+                var data = hourly[hk] || { total: 0, count: 0 };
+                var tokens = data.total || 0;
+                var calls  = data.count || 0;
+                // Mindesthöhe damit auch leere Stunden als Spalte sichtbar bleiben
+                var pct = tokens > 0 ? Math.max(2, Math.round((tokens / maxTok) * 100)) : 0;
+                var isCurrent = isToday && (hk === currentHour);
+                var lbl = (hr % 4 === 0)
+                    ? ('<div class="mb-lbl">' + (hr < 10 ? '0' + hr : hr) + '</div>')
+                    : '';
+                var tooltip = hk + ' — ' + fmtNum(tokens) + ' Tokens, ' + calls + ' Requests';
+                barHtml += '<div class="mb-col' + (isCurrent ? ' current' : '') + '" title="' + tooltip + '">';
                 barHtml += '<div class="mb-bar" style="height:' + pct + '%"></div>';
                 barHtml += lbl;
                 barHtml += '</div>';
@@ -3064,7 +3087,8 @@ function syncLineNumbers(editorType) {
 // REFERENCES – Split View
 // ============================================================
 var _allReferences = [];
-var _currentRefName = '';
+var _currentRefName = '';     // angezeigter Dateiname (z.B. growbox-report.py)
+var _currentRefUrlKey = '';   // routing-Key fürs Backend (z.B. references/growbox-report.py)
 
 function loadReferences() {
     fetch('/api/references')
@@ -3100,8 +3124,9 @@ function renderReferenceList(refs) {
 
     var html = '';
     refs.forEach(function(ref) {
-        var nameJs = escJs(ref.name);
-        html += '<div class="split-item" id="ref-item-' + nameJs.replace(/[^a-z0-9]/gi,'_') + '" onclick="selectReference(\'' + nameJs + '\', this)">';
+        var nameJs   = escJs(ref.name);
+        var urlKeyJs = escJs(ref.url_key || ref.name);
+        html += '<div class="split-item" id="ref-item-' + nameJs.replace(/[^a-z0-9]/gi,'_') + '" onclick="selectReference(\'' + urlKeyJs + '\', \'' + nameJs + '\', this)">';
         html += '<div class="split-item-name">📄 ' + escHtml(ref.name) + '</div>';
         html += '<div class="split-item-meta">' + escHtml(ref.lines) + ' Zeilen · ' + escHtml(ref.size_human) + '</div>';
         html += '<div class="split-item-cat" style="font-size:0.72rem;">' + escHtml(ref.mtime || '') + '</div>';
@@ -3110,12 +3135,20 @@ function renderReferenceList(refs) {
     container.innerHTML = html;
 }
 
-function selectReference(name, el) {
+function selectReference(urlKey, name, el) {
+    // Kompat-Aufruf: alte Signatur war selectReference(name, el) — wenn
+    // das zweite Argument ein DOM-Element ist, interpretieren wir es so.
+    if (name && typeof name === 'object' && name.nodeType) {
+        el = name;
+        name = urlKey;          // alte Aufrufe hatten nur den Namen
+    }
+
     // Aktiven Eintrag markieren
     document.querySelectorAll('#references-list .split-item').forEach(function(i) { i.classList.remove('active'); });
     if (el) el.classList.add('active');
 
-    _currentRefName = name;
+    _currentRefUrlKey = urlKey;
+    _currentRefName   = name || urlKey.split('/').pop();
     var emptyPanel = document.getElementById('ref-editor-empty');
     var activePanel = document.getElementById('ref-editor-active');
     var titleEl = document.getElementById('ref-editor-title');
@@ -3125,12 +3158,13 @@ function selectReference(name, el) {
 
     if (emptyPanel) emptyPanel.style.display = 'none';
     if (activePanel) { activePanel.style.display = 'flex'; activePanel.style.flexDirection = 'column'; }
-    if (titleEl) titleEl.textContent = '📄 ' + name;
+    if (titleEl) titleEl.textContent = '📄 ' + _currentRefName;
     if (feedback) feedback.classList.remove('show', 'error');
     if (textarea) textarea.value = '⏳ Lade…';
 
-    // Inhalt aus gecachten refs holen
-    var ref = _allReferences.find(function(r) { return r.name === name; });
+    // Inhalt aus gecachten refs holen — url_key bevorzugen (Filename ist
+    // nicht eindeutig über source_types hinweg).
+    var ref = _allReferences.find(function(r) { return (r.url_key || r.name) === urlKey; });
     if (ref) {
         if (metaEl) metaEl.textContent = ref.lines + ' Zeilen · ' + ref.size_human + ' · ' + (ref.mtime || '');
         if (textarea) textarea.value = ref.content || '';
@@ -3141,12 +3175,17 @@ function selectReference(name, el) {
 }
 
 function saveReferenceInline() {
-    if (!_currentRefName) return;
+    var routingKey = _currentRefUrlKey || _currentRefName;
+    if (!routingKey) return;
     var textarea = document.getElementById('ref-editor-textarea');
     var feedback = document.getElementById('ref-editor-feedback');
     if (!textarea) return;
 
-    fetch('/api/references/' + encodeURIComponent(_currentRefName), {
+    // path:url_key braucht die Slashes UNgequoted (Flask path-Converter),
+    // sonst landet 'references/foo.py' als 'references%2Ffoo.py' und matcht
+    // die Route nicht. Daher Segmente einzeln encoden.
+    var encodedPath = routingKey.split('/').map(encodeURIComponent).join('/');
+    fetch('/api/references/' + encodedPath, {
         method: 'PUT',
         headers: {'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'},
         body: 'content=' + encodeURIComponent(textarea.value)
@@ -3159,7 +3198,7 @@ function saveReferenceInline() {
                 feedback.textContent = '✓ Gespeichert!';
                 feedback.classList.add('show');
                 // Cache aktualisieren
-                var ref = _allReferences.find(function(r) { return r.name === _currentRefName; });
+                var ref = _allReferences.find(function(r) { return (r.url_key || r.name) === routingKey; });
                 if (ref) ref.content = textarea.value;
             } else {
                 feedback.textContent = '✗ ' + (d.error || 'Fehler');
@@ -3178,9 +3217,11 @@ function saveReferenceInline() {
 }
 
 function deleteReferenceInline() {
-    if (!_currentRefName) return;
-    if (!confirm('Datei wirklich löschen: ' + _currentRefName + '?')) return;
-    fetch('/api/references/' + encodeURIComponent(_currentRefName), { method: 'DELETE' })
+    var routingKey = _currentRefUrlKey || _currentRefName;
+    if (!routingKey) return;
+    if (!confirm('Datei wirklich löschen: ' + (_currentRefName || routingKey) + '?')) return;
+    var encodedPath = routingKey.split('/').map(encodeURIComponent).join('/');
+    fetch('/api/references/' + encodedPath, { method: 'DELETE' })
     .then(function(r) { return r.json(); })
     .then(function(d) {
         if (d.status === 'ok') {
@@ -3190,6 +3231,7 @@ function deleteReferenceInline() {
             if (emptyPanel) emptyPanel.style.display = 'flex';
             if (activePanel) activePanel.style.display = 'none';
             _currentRefName = '';
+            _currentRefUrlKey = '';
             loadReferences();
         } else {
             alert('Fehler: ' + (d.error || 'Unbekannt'));
