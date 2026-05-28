@@ -3,6 +3,15 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.4
+
+- **📅 Zeitraum-Verbrauch in 2×2** — Woche oben, Monat unten,
+  Tokens/Calls je in einer Zeile.
+- **🗂 Extra-Wiki-Categories Label gekürzt** — passt jetzt einzeilig
+  in die Identity-Zeile.
+- **📋 Release-Notes auf Englisch** mit Direkt-Links zu beiden
+  Changelogs.
+
 ## 1.3.3
 
 - **📊 Usage-Tab Header verdichtet** — drei Karten-Zeilen werden zu einem

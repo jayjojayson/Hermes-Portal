@@ -16,6 +16,28 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.4] — 2026-05-28
+
+🧹 **Mikro-Polish: Zeitraum-Verbrauch in 2×2, Identity-Label kürzer,
+Release-Notes auf Englisch.**
+
+### Changed
+- **📅 Zeitraum-Verbrauch in 2×2-Grid** — vorher auto-fit (4 Karten
+  nebeneinander), jetzt feste 2 Spalten: Zeile 1 = Tokens · 7 Tage +
+  Calls · 7 Tage, Zeile 2 = Tokens · 30 Tage + Calls · 30 Tage. So
+  gehören Woche und Monat visuell sauber zusammen.
+- **🗂 Extra-Wiki-Categories Label gekürzt** — vorher
+  „Extra wiki categories (comma-separated subdir names)" über zwei
+  Zeilen, jetzt einzeilig „Extra wiki categories" in 4 Sprachen.
+  Damit stehen alle drei Identity-Zeile-2-Felder sauber in einer
+  Linie, ohne dass das mittlere Feld sich tiefer schiebt.
+- **📋 GitHub-Release-Notes auf Englisch** als Standard, mit
+  Quick-Links zu beiden Changelogs (en + de) und beiden READMEs am
+  Anfang des Bodies. Englisch ist die bessere Wahl für die
+  internationale GitHub-Audience.
+
+---
+
 ## [1.3.3] — 2026-05-28
 
 🎨 **Settings-UX-Politur: dichterer Usage-Header, klarer Identity-Box-Aufbau,

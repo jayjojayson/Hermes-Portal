@@ -357,7 +357,12 @@ jobs:
           body: |
             ## 🛰️ Hermes Portal ${{ steps.tag.outputs.tag }}
 
-            ### Installation
+            ### 📋 Changelog
+
+            - 🇬🇧 **[What's new — full changelog](https://github.com/${{ github.repository }}/blob/${{ steps.tag.outputs.tag }}/Changelog_eng.md)** (English)
+            - 🇩🇪 **[Vollständiges Changelog](https://github.com/${{ github.repository }}/blob/${{ steps.tag.outputs.tag }}/CHANGELOG.md)** (Deutsch)
+
+            ### 💾 Installation
 
             | Platform | File | How to install |
             |----------|------|----------------|
@@ -387,6 +392,7 @@ jobs:
             lands in `/Applications/Hermes Portal.app`. Launch via
             Launchpad or Spotlight as usual.
 
-            Vollständige Anleitung im [README](https://github.com/${{ github.repository }}#-installation).
+            Full installation guide in the [README](https://github.com/${{ github.repository }}#-installation) ·
+            🇩🇪 [Deutsche Anleitung](https://github.com/${{ github.repository }}/blob/${{ steps.tag.outputs.tag }}/README.de.md).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

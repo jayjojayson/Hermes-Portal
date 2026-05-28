@@ -234,7 +234,7 @@
     "settings.app.field.wiki_subpath":  "Sous-chemin du wiki (sous l'échange)",
     "settings.app.field.blog_posts_subdir": "Sous-dossier des posts (sous blog/)",
     "settings.app.field.chat_timeout_sec": "Délai d'attente de réponse du chat (secondes, 30-1800)",
-    "settings.app.field.wiki_extra_dirs":  "Catégories wiki supplémentaires (noms de sous-dossiers séparés par des virgules)",
+    "settings.app.field.wiki_extra_dirs":  "Catégories wiki supplémentaires",
     "settings.app.agent_scripts.title":     "Scripts d'agent (installation en un clic sur l'agent Hermes)",
     "settings.app.agent_scripts.intro":     "Ces scripts s'exécutent sur votre agent Hermes et lisent les paramètres du Portal via des variables ENV (flux RSS, coordonnées météo, chemins). Installez-les une fois par agent — ensuite vos cronjobs les utilisent et reprennent les changements du Portal automatiquement.",
     "settings.app.agent_scripts.installed": "Installé",

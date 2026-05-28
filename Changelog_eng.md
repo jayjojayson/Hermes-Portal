@@ -16,6 +16,28 @@ Versioning scheme: [SemVer](https://semver.org/).
 
 ---
 
+## [1.3.4] — 2026-05-28
+
+🧹 **Micro polish: range usage in 2×2, shorter Identity label,
+English release notes.**
+
+### Changed
+- **📅 Range usage in a 2×2 grid** — previously auto-fit (4 cards
+  side by side), now fixed at 2 columns: row 1 = Tokens · 7 days +
+  Calls · 7 days, row 2 = Tokens · 30 days + Calls · 30 days. Week
+  and month now visually belong together cleanly.
+- **🗂 Extra wiki categories label shortened** — previously
+  "Extra wiki categories (comma-separated subdir names)" wrapped to
+  two lines, now single-line "Extra wiki categories" in 4 languages.
+  All three Identity row-2 fields now align cleanly without the
+  middle one drifting downward.
+- **📋 GitHub release notes default to English** with quick links
+  to both changelogs (en + de) and both READMEs at the top of the
+  body. English is the better default for the international GitHub
+  audience.
+
+---
+
 ## [1.3.3] — 2026-05-28
 
 🎨 **Settings UX polish: denser usage header, cleaner Identity-box layout,

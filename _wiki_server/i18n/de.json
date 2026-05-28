@@ -234,7 +234,7 @@
     "settings.app.field.wiki_subpath":  "Wiki-Subpfad (unter Austausch)",
     "settings.app.field.blog_posts_subdir": "Blog-Posts-Subordner (unter blog/)",
     "settings.app.field.chat_timeout_sec": "Chat-Antwort-Timeout (Sekunden, 30-1800)",
-    "settings.app.field.wiki_extra_dirs":  "Zusätzliche Wiki-Kategorien (Komma-getrennte Subordner-Namen)",
+    "settings.app.field.wiki_extra_dirs":  "Zusätzliche Wiki-Kategorien",
     "settings.app.agent_scripts.title":     "Agent-Skripte (One-Click-Installation auf dem Hermes-Agent)",
     "settings.app.agent_scripts.intro":     "Diese Skripte laufen auf deinem Hermes-Agent und lesen die Portal-Settings über ENV-Variablen (RSS-Feeds, Wetter-Koordinaten, Pfade). Einmal pro Agent installieren — danach nutzen deine Cronjobs sie und übernehmen Portal-Änderungen automatisch.",
     "settings.app.agent_scripts.installed": "Installiert",

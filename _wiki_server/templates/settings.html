@@ -1581,10 +1581,12 @@
                     </div>
                 </div>
 
-                <!-- Block 3: Zeitraum-Verbrauch (7d + 30d) -->
+                <!-- Block 3: Zeitraum-Verbrauch (7d + 30d) — bewusst
+                     2×2 statt auto-fit, damit Woche und Monat als eigene
+                     Zeilen visuell zusammengehören (Tokens/Calls pro Zeile). -->
                 <div class="usage-block">
                     <div class="usage-block-title">📅 Zeitraum-Verbrauch</div>
-                    <div class="usage-stats compact">
+                    <div class="usage-stats compact range-2x2">
                         <div class="usage-stat-card compact">
                             <div class="stat-value" id="stat-week-tokens">—</div>
                             <div class="stat-label">Tokens · 7 Tage</div>
@@ -1698,6 +1700,11 @@
     #tab-content-usage .usage-stat-card.compact .stat-label {
         font-size: 0.68rem;
         margin-top: 2px;
+    }
+    /* Zeitraum-Verbrauch in 2×2: Woche oben, Monat unten — Tokens/Calls je
+       in einer Zeile. Wide-Screen-stabil weil Block selbst auto-fit ist. */
+    #tab-content-usage .usage-stats.range-2x2 {
+        grid-template-columns: repeat(2, 1fr);
     }
     .usage-chart-card {
         padding: 14px 16px;
