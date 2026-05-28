@@ -3,6 +3,15 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.3
+
+- **📊 Usage-Tab Header verdichtet** — drei Karten-Zeilen werden zu einem
+  3-Spalten-Grid auf großen Screens; kleinere Karten, dichteres Layout.
+- **👤 Identity-Box** neu strukturiert: Personen-Namen (Zeile 1) und
+  Kategorie-Labels inkl. `wiki_extra_dirs` (Zeile 2) klar getrennt.
+- **🗂 Neue-Seiten-Dropdown** zeigt Extra-Kategorien jetzt zuverlässig
+  in allen Render-Pfaden (auch bei Validierungsfehlern).
+
 ## 1.3.2
 
 - **📊 Usage-Chart wirklich gefixt** — v1.3.1-Fix hatte das falsche

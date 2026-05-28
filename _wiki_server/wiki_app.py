@@ -952,6 +952,17 @@ sources: []
 @app.route("/new", methods=["GET", "POST"])
 def new_page():
     """Neue Wiki-Seite erstellen."""
+
+    def _render_new(section_value: str):
+        """Render-Helper damit das ``extra_categories``-Dropdown in JEDEM
+        Pfad sichtbar ist (GET, POST-Fehler, POST-Schreibfehler)."""
+        return render_template(
+            "new.html",
+            section=section_value,
+            all_tags=get_all_tags(get_all_pages()),
+            extra_categories=[d.name for d in WIKI_EXTRA_DIRS],
+        )
+
     if request.method == "POST":
         title = request.form.get("title", "").strip()
         section = request.form.get("section", "concept")
@@ -960,7 +971,7 @@ def new_page():
 
         if not title:
             flash("Bitte einen Titel eingeben!", "error")
-            return render_template("new.html", section=section, all_tags=get_all_tags(get_all_pages()))
+            return _render_new(section)
 
         slug = re.sub(r'[^\w\säöüÄÖÜß-]', '', title.lower()).strip()
         slug = re.sub(r'[\s]+', '-', slug)
@@ -980,7 +991,7 @@ def new_page():
 
         if client.exists(str(md_file)):
             flash("Eine Seite mit dieser URL existiert bereits!", "error")
-            return render_template("new.html", section=section, all_tags=get_all_tags(get_all_pages()))
+            return _render_new(section)
 
         today = datetime.now().strftime("%Y-%m-%d")
         tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
@@ -997,18 +1008,12 @@ sources: []
 """
         if not client.write_text(str(md_file), frontmatter + "\n" + content):
             flash("Schreiben fehlgeschlagen.", "error")
-            return render_template("new.html", section=section, all_tags=get_all_tags(get_all_pages()))
+            return _render_new(section)
 
         flash(f"✓ Neue Seite '{title}' erstellt!", "success")
         return redirect(url_for("show_page", page_id=slug, section=section))
 
-    all_tags = get_all_tags(get_all_pages())
-    return render_template(
-        "new.html",
-        section="concept",
-        all_tags=all_tags,
-        extra_categories=[d.name for d in WIKI_EXTRA_DIRS],
-    )
+    return _render_new("concept")
 
 
 @app.route("/search")

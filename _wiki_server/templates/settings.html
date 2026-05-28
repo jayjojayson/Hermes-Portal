@@ -954,7 +954,10 @@
 
         <div class="settings-section">
             <div class="settings-section-title">👤 {{ t('settings.app.section.identity') }}</div>
-            <div class="app-grid" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
+            <!-- Zeile 1: Personen-Namen — bewusst nur zwei Felder, damit sie
+                 visuell eine eigene Zeile bilden (Settings → App ist ein
+                 dichtes Formular, klare Trennung hilft beim Scannen). -->
+            <div class="app-grid app-grid-2" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1rem;">
                 <label class="app-field">
                     <span>{{ t('settings.app.field.user_name') }}</span>
                     <input id="app-user_name" class="app-input" placeholder="Jan">
@@ -963,6 +966,11 @@
                     <span>{{ t('settings.app.field.agent_name') }}</span>
                     <input id="app-agent_name" class="app-input" placeholder="Wally, Athena, Jarvis…">
                 </label>
+            </div>
+            <!-- Zeile 2: Wiki-Kategorie-Labels + Extra-Kategorien zusammen
+                 in einer Zeile — sind alle drei „Wie nennen wir Kategorien?"-
+                 Felder und gehören semantisch zusammen. -->
+            <div class="app-grid app-grid-3" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1rem; margin-top:1rem;">
                 <label class="app-field">
                     <span>{{ t('settings.app.field.cat_entity') }}</span>
                     <input id="app-category_entity_label" class="app-input" placeholder="Entitäten">
@@ -970,6 +978,10 @@
                 <label class="app-field">
                     <span>{{ t('settings.app.field.cat_concept') }}</span>
                     <input id="app-category_concept_label" class="app-input" placeholder="Konzepte">
+                </label>
+                <label class="app-field">
+                    <span>{{ t('settings.app.field.wiki_extra_dirs') }}</span>
+                    <input id="app-wiki_extra_dirs" class="app-input" placeholder="rezepte, projekte, todo">
                 </label>
             </div>
             <p style="margin-top:0.6rem; font-size:0.85rem; color:var(--text-secondary);">
@@ -1050,10 +1062,9 @@
                     <span>{{ t('settings.app.field.blog_posts_subdir') }}</span>
                     <input id="app-blog_posts_subdir" class="app-input" placeholder="posts">
                 </label>
-                <label class="app-field">
-                    <span>{{ t('settings.app.field.wiki_extra_dirs') }}</span>
-                    <input id="app-wiki_extra_dirs" class="app-input" placeholder="rezepte, projekte, todo">
-                </label>
+                <!-- wiki_extra_dirs lebt jetzt in der Identity-Box neben
+                     den Kategorie-Labels (semantisch dort besser aufgehoben). -->
+
                 <label class="app-field">
                     <span>{{ t('settings.app.field.hermes_home') }}</span>
                     <input id="app-hermes_home" class="app-input" placeholder="/root/.hermes">
@@ -1520,69 +1531,77 @@
                 <span id="usage-date-info" style="font-size:0.78rem; color:var(--text-secondary); margin-left:auto;"></span>
             </div>
 
-            <!-- Requests-Karten -->
-            <div style="margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">🔁 API Requests</div>
-            <div class="usage-stats">
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-today">0</div>
-                    <div class="stat-label">Requests heute</div>
+            <!-- Verdichtetes Header-Layout: 3 Spalten auf großen Screens,
+                 mit Sub-Headlines im jeweiligen Block. Cards selbst sind
+                 kompakter (siehe .usage-stat-card.compact unten). -->
+            <div class="usage-header-grid">
+                <!-- Block 1: Requests heute -->
+                <div class="usage-block">
+                    <div class="usage-block-title">🔁 API Requests</div>
+                    <div class="usage-stats compact">
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-today">0</div>
+                            <div class="stat-label">Requests heute</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-hour">0</div>
+                            <div class="stat-label">diese Stunde</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-peak">0</div>
+                            <div class="stat-label">Spitzenstunde</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-hour">0</div>
-                    <div class="stat-label">Requests diese Stunde</div>
-                </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-peak">0</div>
-                    <div class="stat-label">Spitzenstunde</div>
-                </div>
-            </div>
 
-            <!-- Token-Karten -->
-            <div style="margin-top:1.5rem; margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">🧮 Token-Verbrauch</div>
-            <div class="usage-stats">
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-tok-total">—</div>
-                    <div class="stat-label">Total Tokens</div>
+                <!-- Block 2: Token-Verbrauch heute -->
+                <div class="usage-block">
+                    <div class="usage-block-title">🧮 Token-Verbrauch (heute)</div>
+                    <div class="usage-stats compact">
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-tok-total">—</div>
+                            <div class="stat-label">Total</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-tok-in">—</div>
+                            <div class="stat-label">Input</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-tok-out">—</div>
+                            <div class="stat-label">Output</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-tok-cache">—</div>
+                            <div class="stat-label">Cache-Hits</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-tok-calls">—</div>
+                            <div class="stat-label">API Calls</div>
+                        </div>
+                    </div>
                 </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-tok-in">—</div>
-                    <div class="stat-label">Input Tokens</div>
-                </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-tok-out">—</div>
-                    <div class="stat-label">Output Tokens</div>
-                </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-tok-cache">—</div>
-                    <div class="stat-label">Cache-Hits</div>
-                </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-tok-calls">—</div>
-                    <div class="stat-label">API Calls (aus Log)</div>
-                </div>
-            </div>
 
-            <!-- Wochen-/Monats-Aggregate aus agent.log (gleiche Quelle wie
-                 das Tages-Endpoint, einmal über die letzten N Tage gescannt). -->
-            <div style="margin-top:1.5rem; margin-bottom:0.5rem; font-size:0.82rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.05em;">
-                📅 Zeitraum-Verbrauch
-            </div>
-            <div class="usage-stats" style="margin-bottom:1rem;">
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-week-tokens">—</div>
-                    <div class="stat-label">Tokens · 7 Tage</div>
-                </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-week-calls">—</div>
-                    <div class="stat-label">API Calls · 7 Tage</div>
-                </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-month-tokens">—</div>
-                    <div class="stat-label">Tokens · 30 Tage</div>
-                </div>
-                <div class="usage-stat-card">
-                    <div class="stat-value" id="stat-month-calls">—</div>
-                    <div class="stat-label">API Calls · 30 Tage</div>
+                <!-- Block 3: Zeitraum-Verbrauch (7d + 30d) -->
+                <div class="usage-block">
+                    <div class="usage-block-title">📅 Zeitraum-Verbrauch</div>
+                    <div class="usage-stats compact">
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-week-tokens">—</div>
+                            <div class="stat-label">Tokens · 7 Tage</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-week-calls">—</div>
+                            <div class="stat-label">Calls · 7 Tage</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-month-tokens">—</div>
+                            <div class="stat-label">Tokens · 30 Tage</div>
+                        </div>
+                        <div class="usage-stat-card compact">
+                            <div class="stat-value" id="stat-month-calls">—</div>
+                            <div class="stat-label">Calls · 30 Tage</div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1639,6 +1658,46 @@
         font-size: 0.74rem; color: var(--text-secondary);
         text-transform: uppercase; letter-spacing: 0.04em;
         margin-top: 4px;
+    }
+
+    /* Verdichteter 3-Spalten-Header für den Usage-Tab (v1.3.3) — auf
+       schmalen Screens stapeln sich die Blöcke automatisch via auto-fit. */
+    #tab-content-usage .usage-header-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1rem;
+        margin-top: 0.5rem;
+    }
+    #tab-content-usage .usage-block {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        border-radius: 12px;
+        padding: 0.85rem 1rem 1rem 1rem;
+    }
+    #tab-content-usage .usage-block-title {
+        font-size: 0.78rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.55rem;
+    }
+    /* Kompakte Variante der Stat-Karten — schmalerer Padding, kleinere
+       Zahlen, dichteres Grid. Das spart auf großen Screens viel Platz
+       (drei Spalten passen jetzt nebeneinander statt drei Zeilen). */
+    #tab-content-usage .usage-stats.compact {
+        grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+        gap: 6px;
+    }
+    #tab-content-usage .usage-stat-card.compact {
+        padding: 7px 10px;
+        background: var(--bg-primary);
+    }
+    #tab-content-usage .usage-stat-card.compact .stat-value {
+        font-size: 1.15rem;
+    }
+    #tab-content-usage .usage-stat-card.compact .stat-label {
+        font-size: 0.68rem;
+        margin-top: 2px;
     }
     .usage-chart-card {
         padding: 14px 16px;

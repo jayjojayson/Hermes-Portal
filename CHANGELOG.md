@@ -5,12 +5,43 @@ Alle wichtigen Änderungen an diesem Projekt werden hier dokumentiert.
 Format: [Keep a Changelog](https://keepachangelog.com/de/1.1.0/) ·
 Versionsschema: [SemVer](https://semver.org/lang/de/).
 
+> 🇬🇧 **English version** → [Changelog_eng.md](Changelog_eng.md)
+
 ---
 
 ## [Unreleased]
 
 ### Added
 - _(noch nichts)_
+
+---
+
+## [1.3.3] — 2026-05-28
+
+🎨 **Settings-UX-Politur: dichterer Usage-Header, klarer Identity-Box-Aufbau,
+Extra-Kategorien-Dropdown in allen Pfaden.**
+
+### Changed
+- **📊 Usage-Tab Header verdichtet** — die drei separaten Zeilen (API
+  Requests / Token-Verbrauch / Zeitraum-Verbrauch) liegen jetzt in
+  einem 3-Spalten-Grid mit eigenen Sub-Headlines. Karten sind kompakter
+  (95 px min statt 140 px, kleinere Werte, dichteres Gap). Auf wide
+  Screens passen alle 12 Kennzahlen in eine Reihe statt in drei.
+  Auf schmalen Screens stapeln sich die Blöcke wieder automatisch.
+- **👤 Identity-Box neu strukturiert** — zwei klar getrennte Zeilen:
+  Zeile 1 = `Your name` + `Agent name` (Personen-Namen),
+  Zeile 2 = `Category: Entities` + `Category: Concepts` +
+  `Extra wiki categories` (alle drei Kategorie-Labels zusammen).
+  Das `wiki_extra_dirs`-Feld wandert aus dem Paths-Block in die
+  Identity-Box, wo es semantisch hingehört.
+
+### Fixed
+- **🗂 Neue-Seiten-Form: Extra-Kategorien-Dropdown** war bei POST-Fehler-
+  Fallbacks unsichtbar (3 verschiedene `render_template`-Aufrufe in
+  `new_page()` haben `extra_categories` nicht durchgereicht). Jetzt
+  einheitlich über `_render_new()`-Helper — Dropdown ist garantiert
+  in JEDEM Pfad sichtbar (GET, leerer Titel, existierende URL,
+  Schreibfehler).
 
 ---
 
