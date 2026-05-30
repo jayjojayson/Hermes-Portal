@@ -16,6 +16,45 @@ Versioning scheme: [SemVer](https://semver.org/).
 
 ---
 
+## [1.3.5] — 2026-05-29
+
+💬 **Chat upgrades: image/PDF preview, scroll comfort, session rename.**
+
+### Added
+- **🖼 Image & PDF preview in the chat editor** — clicking an image
+  file (jpg/png/gif/bmp/webp/svg) or PDF in the file tree now opens a
+  real preview instead of the empty Monaco editor. New backend
+  endpoint `GET /api/chat/shared/raw` streams the file with the
+  correct MIME type (local via `send_file`, SSH via SFTP in-memory).
+  Images render as `<img>`, PDFs as `<embed>`. Read-only — the save
+  button is hidden in preview mode. Code/text files still open in the
+  editable Monaco.
+  - New `read_bytes()` method in both hermes_client backends
+    (local + ssh).
+- **↑↓ Scroll comfort in chat** — opening a session now scrolls
+  directly to the latest message (instead of starting at the top).
+  Plus two floating buttons at the bottom right: "↑ to top" and
+  "↓ to bottom". They appear only when the history is scrollable and
+  hide individually at the respective edge.
+- **✎ Rename session** — new pencil button next to the delete × in
+  each session row. A click opens a prompt with the current title,
+  saves via `POST /api/chat/rename`. Previously the first sentence of
+  the first message was always used as the title — now freely
+  nameable for clean sorting (auto-title only applies while the
+  session is still called "Neuer Chat").
+
+### Documentation
+- **📖 README slash command clarification** — the README chat section
+  still advertised the slash command dropdown removed in v1.1.8. Now
+  correct: slash commands are **not** interpreted by the Portal, but
+  sent verbatim to the agent; whether `/reset` & co. work depends on
+  whether the agent handles them in `hermes -z` mode (many only in
+  the interactive REPL). The ⏹ stop button is the exception — it runs
+  Portal-side via an AbortController. For a fresh session, use the
+  **+** button in the session sidebar.
+
+---
+
 ## [1.3.4] — 2026-05-28
 
 🧹 **Micro polish: range usage in 2×2, shorter Identity label,

@@ -42,9 +42,19 @@ dark-mode web UI:
 - **💬 Chat** — Direct line to the agent, with:
   - 🎤 Voice input (Browser Web Speech API)
   - 📁 Server-side folder picker (or SMB mount path)
-  - 📝 Built-in Monaco code editor (dark + light theme)
-  - ⚡ Slash-command dropdown (`/new`, `/reset`, `/model`, `/stop`, …)
-  - ⏹ Stop button (sends `/stop` to running generation)
+  - 📝 Built-in Monaco code editor (dark + light theme) with image & PDF preview
+  - ↑↓ Jump-to-top / jump-to-bottom buttons + auto-scroll to the latest message
+  - ✎ Rename / 🗑 delete chat sessions
+  - ⏹ Stop button (aborts the running generation)
+
+  > **Slash commands** (`/new`, `/reset`, `/model`, …) are **not**
+  > interpreted by the Portal — type them and they're sent verbatim to the
+  > Hermes Agent. Whether `/reset` actually starts a fresh session depends on
+  > whether your agent handles slash commands in `hermes -z` mode (many only
+  > handle them in interactive REPL mode). The ⏹ **Stop button is the
+  > exception**: it works Portal-side via an AbortController, independent of
+  > the agent. To start a clean session, use the **+** button in the session
+  > sidebar instead.
 - **⚡ Activity** — Live log of all Hermes actions
 - **⚙️ Settings** — Cronjobs, Personality/Memory, Skills, References, Usage stats, App config (with SSH key wizard), Support
 - **🌐 UI in 4 languages** — English (default), German, Spanish, French (community-contributable JSON tables under `_wiki_server/i18n/`)

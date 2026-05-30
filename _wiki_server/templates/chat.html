@@ -154,12 +154,24 @@ body.chat-splitter-dragging * { user-select: none !important; }
     overflow: hidden; text-overflow: ellipsis; margin-top: 2px; padding-right: 20px;
 }
 .chat-list-time { font-size: 0.65rem; color: var(--text-dim); margin-top: 3px; text-align: right; }
-.chat-del-btn {
-    font-size: 1rem; color: var(--text-dim); cursor: pointer; padding: 0 4px;
-    opacity: 0; transition: opacity 0.15s, color 0.15s; line-height: 1;
-    position: absolute; right: 6px; top: 8px;
+/* Aktions-Container oben rechts in jedem Session-Eintrag: ✎ Umbenennen + × Löschen */
+.chat-list-actions {
+    position: absolute;
+    right: 6px;
+    top: 8px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
 }
+.chat-rename-btn, .chat-del-btn {
+    color: var(--text-dim); cursor: pointer; padding: 0 4px; line-height: 1;
+    opacity: 0; transition: opacity 0.15s, color 0.15s;
+}
+.chat-rename-btn { font-size: 0.9rem; }
+.chat-del-btn { font-size: 1rem; }
+.chat-list-item:hover .chat-rename-btn,
 .chat-list-item:hover .chat-del-btn { opacity: 1; }
+.chat-rename-btn:hover { color: var(--accent); }
 .chat-del-btn:hover { color: var(--danger); }
 
 /* === Chat Area === */
@@ -598,6 +610,17 @@ body[data-page="chat"] .footer {
             </div>
         </div>
 
+        <!-- Schwebende Scroll-Buttons (oben/unten) — erscheinen nur wenn
+             der Verlauf scrollbar ist; jeder Button blendet sich am
+             jeweiligen Rand einzeln aus. Liegt im .chat-area-Container
+             damit das absolute Positioning relativ zu diesem greift. -->
+        <div class="chat-scroll-fab" id="chat-scroll-fab" style="display:none;">
+            <button type="button" id="chat-scroll-top" title="{{ t('chat.scroll.top') }}"
+                    aria-label="{{ t('chat.scroll.top') }}" onclick="chatScrollTo('top')">↑</button>
+            <button type="button" id="chat-scroll-bottom" title="{{ t('chat.scroll.bottom') }}"
+                    aria-label="{{ t('chat.scroll.bottom') }}" onclick="chatScrollTo('bottom')">↓</button>
+        </div>
+
         <!-- Input Section -->
         <div class="chat-input-section hidden" id="chat-input-section">
             <div class="chat-input-box">
@@ -661,6 +684,9 @@ body[data-page="chat"] .footer {
         </div>
         <div class="chat-editor-body">
             <div id="monaco-host"></div>
+            <!-- Bild-/PDF-Vorschau (eingeblendet statt Monaco bei
+                 nicht-editierbaren Binärdateien). -->
+            <div id="media-host" style="display:none; position:absolute; inset:0; overflow:auto; background:var(--bg-primary, #0f1115); text-align:center;"></div>
         </div>
         <div class="chat-editor-status" id="chat-editor-status">Bereit.</div>
     </div>
@@ -819,16 +845,50 @@ function renderChatList() {
             escapeHtml(_Tc('chat.session.empty_line2')) + '</div>';
         return;
     }
+    var _Tr = (typeof window.t === 'function') ? window.t : function(k){ return k; };
     el.innerHTML = chats.map(function(c) {
         var active = c.id === currentChatId ? ' active' : '';
-        var delBtn = '<span class="chat-del-btn" onclick="event.stopPropagation();deleteChat(' + c.id + ')" title="Löschen">×</span>';
+        var renameBtn = '<span class="chat-rename-btn" onclick="event.stopPropagation();renameChat(' + c.id + ')" title="' +
+            escapeHtml(_Tr('chat.session.rename')) + '">✎</span>';
+        var delBtn = '<span class="chat-del-btn" onclick="event.stopPropagation();deleteChat(' + c.id + ')" title="' +
+            escapeHtml(_Tr('chat.session.delete_confirm')) + '">×</span>';
         return '<div class="chat-list-item' + active + '" onclick="selectChat(' + c.id + ')">' +
             '<span class="chat-list-title">' + escapeHtml(c.title || 'Neuer Chat') + '</span>' +
             '<span class="chat-list-preview">' + escapeHtml(c.preview || '') + '</span>' +
             '<span class="chat-list-time">' + formatTime(c.updated) + '</span>' +
-            delBtn +
+            '<span class="chat-list-actions">' + renameBtn + delBtn + '</span>' +
             '</div>';
     }).join('');
+}
+
+// Session umbenennen — prompt() mit aktuellem Titel, POST /api/chat/rename.
+function renameChat(chatId) {
+    var _Tc = (typeof window.t === 'function') ? window.t : function(k){ return k; };
+    var current = (chats.find(function(c){ return c.id === chatId; }) || {}).title || '';
+    var name = prompt(_Tc('chat.session.rename_prompt'), current);
+    if (name === null) return;          // Abbrechen
+    name = name.trim();
+    if (!name || name === current) return;
+    fetch('/api/chat/rename', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, title: name }),
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.status === 'ok') {
+            var ch = chats.find(function(c){ return c.id === chatId; });
+            if (ch) ch.title = name;
+            if (chatId === currentChatId) {
+                var areaTitle = document.getElementById('chat-area-title');
+                if (areaTitle) areaTitle.textContent = name;
+            }
+            renderChatList();
+        } else {
+            alert(d.error || 'Rename failed');
+        }
+    })
+    .catch(function(e) { alert('Rename failed: ' + (e.message || e)); });
 }
 
 function selectChat(id) {
@@ -910,8 +970,52 @@ function formatTime(iso) {
 
 function scrollToBottom() {
     var el = document.getElementById('chat-messages');
-    if (el) setTimeout(function() { el.scrollTop = el.scrollHeight; }, 50);
+    if (el) setTimeout(function() { el.scrollTop = el.scrollHeight; updateScrollFab(); }, 50);
 }
+
+// Manuelles Scrollen per FAB-Button (oben/unten).
+function chatScrollTo(where) {
+    var el = document.getElementById('chat-messages');
+    if (!el) return;
+    el.scrollTo({ top: where === 'top' ? 0 : el.scrollHeight, behavior: 'smooth' });
+}
+
+// Zeigt/versteckt die FAB-Buttons je nach Scroll-Position: ↑ nur wenn nicht
+// ganz oben, ↓ nur wenn nicht ganz unten, Container ganz aus wenn der
+// Verlauf nicht scrollbar ist.
+function updateScrollFab() {
+    var el  = document.getElementById('chat-messages');
+    var fab = document.getElementById('chat-scroll-fab');
+    var up  = document.getElementById('chat-scroll-top');
+    var dn  = document.getElementById('chat-scroll-bottom');
+    if (!el || !fab) return;
+    var scrollable = (el.scrollHeight - el.clientHeight) > 40;
+    if (!scrollable || el.classList.contains('hidden')) {
+        fab.style.display = 'none';
+        return;
+    }
+    var atTop    = el.scrollTop <= 20;
+    var atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) <= 20;
+    fab.style.display = 'flex';
+    if (up) up.style.display = atTop ? 'none' : 'flex';
+    if (dn) dn.style.display = atBottom ? 'none' : 'flex';
+}
+
+// Scroll-Listener einmalig registrieren.
+(function initScrollFab() {
+    function attach() {
+        var el = document.getElementById('chat-messages');
+        if (el && !el._scrollFabBound) {
+            el.addEventListener('scroll', updateScrollFab, { passive: true });
+            el._scrollFabBound = true;
+        }
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attach);
+    } else {
+        attach();
+    }
+})();
 
 function autoResize(ta) {
     ta.style.height = 'auto';
@@ -1664,10 +1768,39 @@ function openEditorForPath(path) {
     var pathEl = document.getElementById('chat-editor-path');
     var statusEl = document.getElementById('chat-editor-status');
     col.classList.add('open');
-    titleEl.textContent = '⏳ ' + (path.split('/').pop() || path);
+    var fname = path.split('/').pop() || path;
+    titleEl.textContent = '⏳ ' + fname;
     pathEl.textContent = path;
     statusEl.textContent = 'Lade …';
 
+    var kind = _detectFileKind(fname);
+
+    // ── Bild / PDF: Medien-Vorschau (read-only), kein Monaco-Laden ──
+    if (kind === 'image' || kind === 'pdf') {
+        EDITOR_FILE = null;
+        EDITOR_DIRTY = false;
+        _showEditorMode('media');
+        var mediaHost = document.getElementById('media-host');
+        var rawUrl = (window.hpUrl ? window.hpUrl('/api/chat/shared/raw') : '/api/chat/shared/raw')
+                   + '?path=' + encodeURIComponent(path);
+        if (kind === 'image') {
+            mediaHost.innerHTML =
+                '<img src="' + rawUrl.replace(/"/g, '&quot;') + '" ' +
+                'style="max-width:100%; height:auto; margin:auto; display:block; padding:12px;" ' +
+                'onload="document.getElementById(\'chat-editor-status\').textContent=\'🖼 Bildvorschau\';" ' +
+                'onerror="document.getElementById(\'chat-editor-status\').textContent=\'❌ Bild konnte nicht geladen werden\';">';
+        } else {
+            mediaHost.innerHTML =
+                '<embed src="' + rawUrl.replace(/"/g, '&quot;') + '" type="application/pdf" ' +
+                'style="width:100%; height:100%; min-height:600px; border:0;">';
+            statusEl.textContent = '📄 PDF-Vorschau';
+        }
+        titleEl.textContent = (kind === 'image' ? '🖼 ' : '📄 ') + fname;
+        return;
+    }
+
+    // ── Code / Text: Monaco-Editor (editierbar) ──
+    _showEditorMode('code');
     fetch('/api/chat/shared/read?path=' + encodeURIComponent(path), { cache: 'no-store' })
         .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
         .then(function(res) {
@@ -1723,6 +1856,9 @@ function closeEditor() {
     // die volle verfügbare Breite einnimmt (und der File-Tree rechts fix bleibt).
     editorCol.style.flex = '';
     if (chatArea) chatArea.style.flex = '';
+    // Medien-Vorschau aufräumen (stoppt PDF-/Bild-Loads) und zurück auf
+    // Code-Modus, damit der nächste Datei-Klick sauber startet.
+    _showEditorMode('code');
     EDITOR_FILE = null;
     EDITOR_DIRTY = false;
     document.querySelectorAll('.chat-tree-node.active').forEach(function(n) { n.classList.remove('active'); });

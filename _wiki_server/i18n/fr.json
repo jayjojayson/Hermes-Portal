@@ -309,6 +309,10 @@
     "chat.editor.save":                 "Enregistrer",
     "chat.editor.close":                "Fermer l'éditeur",
     "chat.empty":                       "Aucun message pour le moment — dites bonjour !",
+    "chat.scroll.top":                  "Aller tout en haut",
+    "chat.scroll.bottom":               "Aller tout en bas",
+    "chat.session.rename":              "Renommer la session",
+    "chat.session.rename_prompt":       "Nouveau nom de session :",
     "chat.tree.title":                  "Arborescence",
 
     "briefing.title":                   "Briefing",

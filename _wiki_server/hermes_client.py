@@ -75,6 +75,13 @@ class _LocalBackend:
         except (OSError, UnicodeDecodeError):
             return None
 
+    def read_bytes(self, path: str) -> Optional[bytes]:
+        """Roh-Bytes lesen — für Bild-/PDF-Vorschau im Chat."""
+        try:
+            return Path(path).read_bytes()
+        except OSError:
+            return None
+
     def write_text(self, path: str, content: str) -> bool:
         try:
             p = Path(path)
@@ -642,6 +649,7 @@ class HermesClient:
 
     # --- Delegations ---------------------------------------------------
     def read_text(self, path: str) -> Optional[str]:                    return self._backend().read_text(path)
+    def read_bytes(self, path: str) -> Optional[bytes]:                  return self._backend().read_bytes(path)
     def write_text(self, path: str, content: str) -> bool:              return self._backend().write_text(path, content)
     def exists(self, path: str) -> bool:                                return self._backend().exists(path)
     def is_dir(self, path: str) -> bool:                                return self._backend().is_dir(path)

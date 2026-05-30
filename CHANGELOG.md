@@ -16,6 +16,45 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.5] — 2026-05-29
+
+💬 **Chat-Upgrades: Bild-/PDF-Vorschau, Scroll-Komfort, Session-Umbenennen.**
+
+### Added
+- **🖼 Bild- & PDF-Vorschau im Chat-Editor** — Klick auf eine
+  Bild-Datei (jpg/png/gif/bmp/webp/svg) oder PDF im Datei-Tree öffnet
+  jetzt eine echte Vorschau statt des leeren Monaco-Editors. Neuer
+  Backend-Endpoint `GET /api/chat/shared/raw` streamt die Datei mit
+  korrektem MIME-Type (local via `send_file`, SSH via SFTP-In-Memory).
+  Bilder rendern als `<img>`, PDFs als `<embed>`. Read-only — der
+  Speichern-Button wird in der Vorschau ausgeblendet. Code/Text-
+  Dateien öffnen weiterhin im editierbaren Monaco.
+  - Neue `read_bytes()`-Methode in beiden hermes_client-Backends
+    (local + ssh).
+- **↑↓ Scroll-Komfort im Chat** — beim Öffnen einer Session wird
+  jetzt direkt zur neuesten Nachricht gescrollt (statt am Anfang zu
+  starten). Plus zwei schwebende Buttons unten rechts: „↑ ganz oben"
+  und „↓ ganz unten". Erscheinen nur wenn der Verlauf scrollbar ist
+  und blenden sich am jeweiligen Rand einzeln aus.
+- **✎ Session umbenennen** — neuer Stift-Button neben dem Lösch-×
+  in jeder Session-Zeile. Klick öffnet einen Prompt mit dem aktuellen
+  Titel, speichert via `POST /api/chat/rename`. Vorher wurde immer
+  der erste Satz der ersten Nachricht als Titel verwendet — jetzt
+  frei benennbar für saubere Sortierung (Auto-Titel greift nur noch
+  solange die Session „Neuer Chat" heißt).
+
+### Documentation
+- **📖 README Slash-Command-Klarstellung** — der README-Chat-Abschnitt
+  warb noch mit dem in v1.1.8 entfernten Slash-Command-Dropdown.
+  Jetzt korrekt: Slash-Befehle werden **nicht** vom Portal
+  interpretiert, sondern 1:1 an den Agent gesendet; ob `/reset` &
+  Co. wirken, hängt davon ab, ob der Agent sie im `hermes -z`-Mode
+  behandelt (viele nur im interaktiven REPL). Der ⏹ Stop-Button ist
+  die Ausnahme — er läuft Portal-seitig via AbortController. Für eine
+  frische Session den **+**-Button in der Session-Sidebar nutzen.
+
+---
+
 ## [1.3.4] — 2026-05-28
 
 🧹 **Mikro-Polish: Zeitraum-Verbrauch in 2×2, Identity-Label kürzer,

@@ -3473,6 +3473,33 @@ def api_chat_delete(chat_id):
     return jsonify({"status": "ok", "message": "Chat gelöscht"})
 
 
+@app.route("/api/chat/rename", methods=["POST"])
+def api_chat_rename():
+    """Benennt eine Chat-Session manuell um. Body: ``{chat_id, title}``.
+
+    Der Auto-Titel (erster Satz der ersten Nachricht) greift nur, solange
+    der Titel noch ``"Neuer Chat"`` heißt — sobald hier umbenannt wurde,
+    bleibt der manuelle Name stabil.
+    """
+    data = request.get_json(silent=True) or {}
+    try:
+        chat_id = int(data.get("chat_id"))
+    except (TypeError, ValueError):
+        return jsonify({"error": "chat_id fehlt oder ungültig"}), 400
+    title = (data.get("title") or "").strip()[:120]
+    if not title:
+        return jsonify({"error": "Titel darf nicht leer sein"}), 400
+    conn = _chat_db()
+    cur = conn.cursor()
+    cur.execute("UPDATE chats SET title = ? WHERE id = ?", (title, chat_id))
+    conn.commit()
+    changed = cur.rowcount
+    conn.close()
+    if not changed:
+        return jsonify({"error": "Session nicht gefunden"}), 404
+    return jsonify({"status": "ok", "title": title})
+
+
 @app.route("/api/chat/messages")
 def api_chat_messages():
     """Nachrichten eines Chats laden."""
@@ -3864,6 +3891,45 @@ def api_chat_shared_read():
         "size": st.size,
         "modified": datetime.fromtimestamp(st.modified).isoformat() if st.modified else "",
     })
+
+
+@app.route("/api/chat/shared/raw", methods=["GET"])
+def api_chat_shared_raw():
+    """Liefert eine Binär-Datei aus dem Shared-Folder roh aus (Bilder, PDFs).
+
+    Anders als ``/read`` (das nur Text/Code editorierbar zurückgibt) streamt
+    dieser Endpoint die Datei mit korrektem MIME-Type, sodass der Browser
+    Bilder via ``<img>`` und PDFs via ``<embed>`` direkt rendern kann.
+    Funktioniert sowohl im local- als auch im SSH-Mode — bei SSH wird die
+    Datei in den Server-Memory geladen und durchgereicht.
+    """
+    subpath = request.args.get("path", "")
+    target = _chat_shared_resolve(subpath)
+    if target is None:
+        return jsonify({"error": "Ungültiger Pfad"}), 400
+    client = get_client()
+    st = client.stat(target)
+    if st is None or st.is_dir:
+        return jsonify({"error": "Datei nicht gefunden"}), 404
+    # Sanity: max 50 MB durch die Pipe — sonst Browser-OOM
+    if st.size > 50 * 1024 * 1024:
+        return jsonify({"error": f"Datei zu groß ({st.size//1024//1024} MB > 50 MB)"}), 413
+
+    import mimetypes
+    mime, _ = mimetypes.guess_type(target)
+    if not mime:
+        mime = "application/octet-stream"
+
+    if client.mode == "local":
+        return send_file(target, mimetype=mime, conditional=True)
+
+    # SSH-Mode: Datei in den Server-Memory holen und durchreichen.
+    raw = client.read_bytes(target)
+    if raw is None:
+        return jsonify({"error": "Datei nicht lesbar"}), 502
+    from io import BytesIO
+    return send_file(BytesIO(raw), mimetype=mime,
+                     download_name=target.rsplit("/", 1)[-1])
 
 
 @app.route("/api/chat/shared/write", methods=["POST"])

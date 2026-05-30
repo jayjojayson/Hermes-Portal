@@ -3,6 +3,17 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.5
+
+- **🖼 Bild- & PDF-Vorschau im Chat** — Klick auf Bild/PDF im Datei-Tree
+  zeigt eine echte Vorschau statt leerem Editor (Endpoint
+  `/api/chat/shared/raw`). Code/Text öffnen weiter im Monaco-Editor.
+- **↑↓ Scroll-Komfort** — Auto-Scroll zur neuesten Nachricht beim
+  Öffnen + schwebende „ganz oben / ganz unten"-Buttons.
+- **✎ Session umbenennen** — Stift-Button in der Session-Liste.
+- **📖 README** zu Slash-Commands klargestellt (werden nativ an den
+  Agent gesendet, nicht vom Portal interpretiert).
+
 ## 1.3.4
 
 - **📅 Zeitraum-Verbrauch in 2×2** — Woche oben, Monat unten,

@@ -309,6 +309,10 @@
     "chat.editor.save":                 "Speichern",
     "chat.editor.close":                "Editor schließen",
     "chat.empty":                       "Noch keine Nachrichten — sag hallo!",
+    "chat.scroll.top":                  "Nach ganz oben",
+    "chat.scroll.bottom":               "Nach ganz unten",
+    "chat.session.rename":              "Session umbenennen",
+    "chat.session.rename_prompt":       "Neuer Session-Name:",
     "chat.tree.title":                  "Datei-Baum",
 
     "briefing.title":                   "Briefing",
