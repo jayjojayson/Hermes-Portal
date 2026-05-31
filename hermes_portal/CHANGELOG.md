@@ -3,6 +3,13 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.7
+
+- **🐛 Hotfix für 3 verbleibende Bugs aus v1.3.6:**
+  - Scroll-Buttons (↑/↓) jetzt wirklich sichtbar — CSS war komplett gefehlt
+  - Erste Session scrollt jetzt zum letzten Beitrag (5-stufiger Retry für Race mit Bild-/Code-Ladens)
+  - Logo-404 unter HA-Add-on (3× hardcoded `/static/portal/logo.png` → jetzt via `url_for` mit Ingress-Prefix)
+
 ## 1.3.6
 
 - **🐛 Hotfix für 3 Chat-Bugs aus v1.3.5:**

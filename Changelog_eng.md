@@ -16,6 +16,35 @@ Versioning scheme: [SemVer](https://semver.org/).
 
 ---
 
+## [1.3.7] — 2026-05-30
+
+🐛 **Hotfix: scroll FAB CSS, first session, HA logo 404.**
+
+### Fixed
+- **🔽 Scroll buttons actually visible now** — v1.3.6 only added
+  `position: relative` to `.chat-area`, but the actual
+  `.chat-scroll-fab` CSS (position, size, colors, shadow) never
+  landed in `chat.html` (previous edits silently failed). The FABs
+  were rendered completely unstyled in the layout flow, hidden
+  behind the input section. Now with proper CSS:
+  `position: absolute; right: 18px; bottom: 160px` (above the input
+  box) + round buttons with hover effect + `z-index: 30`.
+- **📭 First session now scrolls to the latest message** — v1.3.6's
+  RAF+250ms chain wasn't enough at the very first auto-select via
+  `loadChats()`, because images/code blocks are still loading.
+  v1.3.7 fires five staggered jump attempts (0/80/250/600/1200 ms)
+  plus a double `requestAnimationFrame`. Each jump is idempotent —
+  guaranteed to hit the final height, even when content loads in
+  afterwards.
+- **🖼 Logo 404 under the HA add-on** — three spots in
+  `settings.html` had `<img src="/static/portal/logo.png">`
+  hard-coded. Under Home Assistant ingress, the tunnel prefix
+  (`/api/hassio_ingress/<TOKEN>/`) is missing, browser got 404. Now
+  via `{{ url_for('static', filename='portal/logo.png') }}` — Flask
+  builds the correct path including ingress.
+
+---
+
 ## [1.3.6] — 2026-05-29
 
 🐛 **Hotfix for three v1.3.5 chat bugs.**

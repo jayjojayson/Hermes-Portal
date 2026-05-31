@@ -16,6 +16,34 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.7] — 2026-05-30
+
+🐛 **Hotfix: Scroll-FAB-CSS, erste Session, HA-Logo-404.**
+
+### Fixed
+- **🔽 Scroll-Buttons jetzt wirklich sichtbar** — v1.3.6 hatte nur
+  `position: relative` auf `.chat-area` ergänzt, aber das eigentliche
+  `.chat-scroll-fab`-CSS (Position, Größe, Farben, Schatten) war nie
+  in `chat.html` gelandet (vorherige Edits stille fehlgeschlagen).
+  Die FABs wurden also komplett ungestylt im Layout-Flow gerendert,
+  hinter der Input-Section versteckt. Jetzt sauberes CSS:
+  `position: absolute; right: 18px; bottom: 160px` (über der
+  Eingabe-Box) + runde Buttons mit Hover-Effekt + `z-index: 30`.
+- **📭 Erste Session scrollt jetzt zur neuesten Nachricht** —
+  v1.3.6's RAF+250ms-Chain reichte nicht beim allerersten Auto-
+  Select via `loadChats()`, weil Bilder/Code-Blöcke noch nachladen.
+  Ab v1.3.7 fünf gestaffelte Jump-Versuche (0/80/250/600/1200 ms)
+  plus doppelter `requestAnimationFrame`. Jeder Jump ist idempotent —
+  trifft also garantiert die Endhöhe, auch wenn Inhalte nachladen.
+- **🖼 Logo-404 unter HA-Add-on** — drei Stellen in `settings.html`
+  hatten `<img src="/static/portal/logo.png">` hardcoded. Unter
+  Home-Assistant-Ingress fehlt da der Tunnel-Prefix
+  (`/api/hassio_ingress/<TOKEN>/`), Browser bekam 404. Jetzt via
+  `{{ url_for('static', filename='portal/logo.png') }}` — Flask
+  baut den korrekten Pfad inkl. Ingress.
+
+---
+
 ## [1.3.6] — 2026-05-29
 
 🐛 **Hotfix für drei v1.3.5-Chat-Bugs.**

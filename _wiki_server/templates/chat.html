@@ -317,6 +317,42 @@ body.chat-splitter-dragging * { user-select: none !important; }
 .chat-messages.hidden { display: none; }
 .chat-input-section.hidden { display: none; }
 
+/* Schwebende Scroll-Buttons (↑ ganz oben / ↓ ganz unten) — absolut
+   positioniert relativ zur .chat-area. WICHTIG: bottom muss über der
+   Chat-Input-Section liegen (~150 px hoch), sonst sind die Buttons
+   hinter der Eingabe versteckt. v1.3.7-Fix für das „unsichtbare
+   FAB"-Problem (CSS-Regel war in v1.3.5/v1.3.6 nie gelandet). */
+.chat-scroll-fab {
+    position: absolute;
+    right: 18px;
+    bottom: 160px;       /* über Input-Section halten */
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.chat-scroll-fab button {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border, #2a2e38);
+    background: var(--surface2, #1a1d24);
+    color: var(--text-secondary, #b0b6c0);
+    font-size: 1.05rem;
+    cursor: pointer;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+    transition: background 0.15s, color 0.15s, transform 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.chat-scroll-fab button:hover {
+    background: var(--accent, #5cc8ff);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
 .message {
     display: flex;
     gap: 12px;
@@ -970,27 +1006,30 @@ function formatTime(iso) {
 }
 
 function scrollToBottom() {
-    // Robust gegen "First Session"-Bug: beim initialen Auto-Select ist der
-    // chat-messages-Container gerade erst sichtbar geworden (.hidden raus)
-    // und das Layout ist noch nicht durchgerechnet → scrollHeight = 0 → der
-    // alte einmalige 50ms-Timeout traf zu früh und scrollte nirgends hin.
-    // Lösung: zwei requestAnimationFrame-Ticks (nach Paint) + eine späte
-    // Fallback-Korrektur via Timeout, falls Bilder nachträglich Höhe
-    // nachladen.
+    // v1.3.7: robust gegen den "First Session"-Bug + nachladende Inhalte
+    // (Bilder, langes Markdown). Wir feuern mehrere Jumps auf einer
+    // wachsenden Timeline, damit die Endhöhe sicher getroffen wird, auch
+    // wenn das initial-Layout noch nicht durch ist oder Bubbles erst
+    // sukzessive Höhe aufbauen.
     var el = document.getElementById('chat-messages');
     if (!el) return;
     var jump = function() {
         el.scrollTop = el.scrollHeight;
         updateScrollFab();
     };
+    // Sofort versuchen (für den Fall dass das Layout schon stabil ist)
+    jump();
+    // Nach Paint (zwei RAFs = nach Style + Layout durch)
     if (window.requestAnimationFrame) {
         requestAnimationFrame(function() { requestAnimationFrame(jump); });
-    } else {
-        setTimeout(jump, 50);
     }
-    // Späterer Korrektur-Tick: wenn das initial-Render gerade die Höhe
-    // erst aufbaut, oder Bilder nachladen, dann nochmal nachjustieren.
+    // Mehrere Fallback-Ticks für nachladende Inhalte (Bilder, Code-Blöcke
+    // mit Highlighting, etc.). Jeder ist idempotent — kein Schaden bei
+    // mehrfachem Aufruf, aber rettet uns vor jedem Layout-Race.
+    setTimeout(jump, 80);
     setTimeout(jump, 250);
+    setTimeout(jump, 600);
+    setTimeout(jump, 1200);
 }
 
 // Manuelles Scrollen per FAB-Button (oben/unten).

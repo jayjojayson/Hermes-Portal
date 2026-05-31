@@ -764,7 +764,7 @@
             📊 {{ t('settings.tab.usage') }}
         </button>
         <button class="settings-tab" onclick="switchTab('app')" id="tab-app">
-            <img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true"> {{ t('settings.tab.app') }}
+            <img src="{{ url_for('static', filename='portal/logo.png') }}" alt="" class="tab-logo" aria-hidden="true"> {{ t('settings.tab.app') }}
         </button>
         <button class="settings-tab" onclick="switchTab('support')" id="tab-support">
             ❤️ {{ t('settings.tab.support') }}
@@ -797,7 +797,7 @@
     <div class="tab-content" id="tab-content-app">
         <div class="settings-section">
             <div class="settings-section-title">
-                <img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true">
+                <img src="{{ url_for('static', filename='portal/logo.png') }}" alt="" class="tab-logo" aria-hidden="true">
                 {{ t('settings.app.section.connection') }}
             </div>
             <div id="app-status-banner" style="margin-bottom:1rem; padding:10px 14px; border-radius:8px; background:var(--bg-tertiary); font-size:0.88rem;">
@@ -1388,7 +1388,7 @@
             <div class="settings-section-title">👤 {{ t('settings.app.section.identity') }}</div>
             <p style="font-size:0.9rem; color:var(--text-secondary); margin:0;">
                 {{ t('personality.intro_pre') }}
-                <a href="#" onclick="switchTab('app');return false;" style="color:var(--accent-primary);"><img src="/static/portal/logo.png" alt="" class="tab-logo" aria-hidden="true"> {{ t('settings.tab.app') }}</a>
+                <a href="#" onclick="switchTab('app');return false;" style="color:var(--accent-primary);"><img src="{{ url_for('static', filename='portal/logo.png') }}" alt="" class="tab-logo" aria-hidden="true"> {{ t('settings.tab.app') }}</a>
                 {{ t('personality.intro_post') }}
             </p>
         </div>
