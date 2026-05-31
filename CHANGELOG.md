@@ -16,6 +16,31 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.8] — 2026-05-30
+
+🐛 **Hotfix: FAB-Buttons immer sichtbar + Monaco Word-Wrap.**
+
+### Fixed
+- **🔽 Scroll-Buttons jetzt wirklich sichtbar (Iteration 3)** — die
+  v1.3.7-Logik versteckte die FABs sobald `scrollHeight - clientHeight
+  ≤ 40`, was bei verzögertem Layout (Bilder laden noch, Bubbles
+  werden gerade gerendert) immer wieder genau im falschen Moment zutraf
+  → User sah die Buttons nie. Jetzt: **Buttons sind immer sichtbar
+  sobald eine Session aktiv ist**, egal ob aktuell scrollbar. Bei
+  ungeeigneter Position (schon ganz oben/unten) wird der jeweilige
+  Button via `opacity: 0.35` gedimmt statt entfernt — bleibt aber
+  klickbar (No-Op am Endpunkt). Plus expliziter `updateScrollFab()`-
+  Call in `selectChat()`, damit die FABs sofort beim Session-Wechsel
+  erscheinen, nicht erst beim ersten Scroll-Event.
+- **📝 MD-/Code-Editor schneidet lange Zeilen nicht mehr ab** — Monaco
+  hatte `wordWrap: 'off'` (Default), bei schmalem Editor-Pane wurden
+  lange Markdown-Zeilen rechts abgeschnitten und ohne horizontalen
+  Scrollbalken war der Inhalt nicht erreichbar. Jetzt
+  `wordWrap: 'on'` + `wrappingIndent: 'same'` — Zeilen brechen
+  automatisch um, alles bleibt lesbar.
+
+---
+
 ## [1.3.7] — 2026-05-30
 
 🐛 **Hotfix: Scroll-FAB-CSS, erste Session, HA-Logo-404.**

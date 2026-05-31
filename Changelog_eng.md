@@ -16,6 +16,31 @@ Versioning scheme: [SemVer](https://semver.org/).
 
 ---
 
+## [1.3.8] — 2026-05-30
+
+🐛 **Hotfix: FAB buttons always visible + Monaco word wrap.**
+
+### Fixed
+- **🔽 Scroll buttons now actually visible (iteration 3)** — the
+  v1.3.7 logic hid the FABs as soon as `scrollHeight - clientHeight
+  ≤ 40`, which kept hitting at exactly the wrong moment whenever
+  layout was delayed (images still loading, bubbles still rendering)
+  → user never saw the buttons. Now: **buttons are always visible as
+  long as a session is active**, regardless of current scrollability.
+  At unsuitable positions (already at top/bottom) the respective
+  button is dimmed via `opacity: 0.35` instead of removed — still
+  clickable (no-op at the endpoint). Plus explicit `updateScrollFab()`
+  call in `selectChat()` so FABs appear immediately on session
+  switch, not just on the first scroll event.
+- **📝 MD/code editor no longer cuts off long lines** — Monaco had
+  `wordWrap: 'off'` (default); on a narrow editor pane long markdown
+  lines were cut off on the right and without a horizontal scrollbar
+  the content was unreachable. Now `wordWrap: 'on'` +
+  `wrappingIndent: 'same'` — lines wrap automatically, everything
+  stays readable.
+
+---
+
 ## [1.3.7] — 2026-05-30
 
 🐛 **Hotfix: scroll FAB CSS, first session, HA logo 404.**

@@ -943,6 +943,11 @@ function selectChat(id) {
     }
 
     renderChatList();
+    // FAB sofort sichtbar machen, sobald die Session aktiv ist — auch
+    // bevor die Messages geladen sind. updateScrollFab macht das anhand
+    // der .hidden-Klasse von chat-messages, die wir oben grade entfernt
+    // haben, also greift es jetzt.
+    updateScrollFab();
 
     fetch('/api/chat/messages?chat_id=' + id)
         .then(function(r) { return r.json(); })
@@ -1048,16 +1053,22 @@ function updateScrollFab() {
     var up  = document.getElementById('chat-scroll-top');
     var dn  = document.getElementById('chat-scroll-bottom');
     if (!el || !fab) return;
-    var scrollable = (el.scrollHeight - el.clientHeight) > 40;
-    if (!scrollable || el.classList.contains('hidden')) {
+    // v1.3.8: Buttons werden IMMER angezeigt sobald eine Session aktiv ist
+    // (nicht .hidden), selbst wenn der Verlauf gerade nicht scrollbar ist.
+    // Klick auf ein Button ist dann ein No-Op, aber der User sieht
+    // verlässlich seine Steuerung. Vorherige „nur wenn scrollHeight >
+    // clientHeight"-Logik war zu restriktiv — bei langsamem Layout/Bild-
+    // Laden konnte das genau im falschen Moment verschwinden.
+    if (el.classList.contains('hidden')) {
         fab.style.display = 'none';
         return;
     }
+    fab.style.display = 'flex';
     var atTop    = el.scrollTop <= 20;
     var atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) <= 20;
-    fab.style.display = 'flex';
-    if (up) up.style.display = atTop ? 'none' : 'flex';
-    if (dn) dn.style.display = atBottom ? 'none' : 'flex';
+    // Beide Buttons immer rendern; opacity dimmt sie wenn nutzlos.
+    if (up) up.style.opacity = atTop ? '0.35' : '1';
+    if (dn) dn.style.opacity = atBottom ? '0.35' : '1';
 }
 
 // Scroll-Listener einmalig registrieren.
@@ -1791,6 +1802,13 @@ function ensureMonacoEditor(language) {
                 automaticLayout: true, minimap: { enabled: false },
                 fontSize: 13, lineNumbers: 'on', tabSize: 2,
                 scrollBeyondLastLine: false, renderWhitespace: 'selection',
+                // Lange Zeilen umbrechen statt rechts abzuschneiden — das
+                // Editor-Pane im Chat ist schmal, und ohne Word-Wrap würde
+                // der Inhalt für den User unsichtbar werden. Wrap auch auf
+                // 'on' für hard limits, damit es bei jedem Spaltenmaß greift.
+                wordWrap: 'on',
+                wrappingStrategy: 'advanced',
+                wrappingIndent: 'same',
             });
             MONACO_EDITOR.onDidChangeModelContent(function() {
                 if (!EDITOR_FILE) return;

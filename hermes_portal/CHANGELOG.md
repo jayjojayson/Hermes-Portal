@@ -3,6 +3,16 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.8
+
+- **🔽 Scroll-Buttons (↑/↓) wirklich sichtbar** — Logik vereinfacht:
+  Buttons sind immer da sobald eine Session aktiv ist (vorherige
+  „nur wenn scrollable"-Regel war zu restriktiv und versteckte sie
+  bei langsamem Layout). Endpunkt-Buttons werden gedimmt statt
+  ausgeblendet.
+- **📝 Monaco-Editor mit Word-Wrap** — lange Markdown-/Code-Zeilen
+  brechen jetzt um statt rechts abgeschnitten zu werden.
+
 ## 1.3.7
 
 - **🐛 Hotfix für 3 verbleibende Bugs aus v1.3.6:**
