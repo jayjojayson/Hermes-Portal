@@ -16,6 +16,33 @@ Versioning scheme: [SemVer](https://semver.org/).
 
 ---
 
+## [1.3.6] — 2026-05-29
+
+🐛 **Hotfix for three v1.3.5 chat bugs.**
+
+### Fixed
+- **🖼 Image & PDF preview was empty** — the helper functions
+  `_detectFileKind()` and `_showEditorMode()` were called in v1.3.5
+  but their definitions never made it into `chat.html` (tooling
+  glitch during the release). Result: silent `ReferenceError` in
+  `openEditorForPath`, no image/PDF rendered, title stayed on "⏳".
+  Functions are now properly defined, preview works for
+  jpg/png/gif/bmp/webp/svg/ico/avif/pdf.
+- **🔽 Scroll buttons (↑/↓) were invisible** — the `.chat-scroll-fab`
+  container was `position: absolute`, but its ancestor `.chat-area`
+  had no `position: relative` → the FABs were positioned against a
+  further-outside element (often outside the visible area). Fix:
+  `position: relative` on `.chat-area`.
+- **📭 First session didn't scroll to the latest message** — on
+  initial auto-select via `loadChats()`, `scrollToBottom()` was
+  fired after 50 ms, but the just-shown `.chat-messages` container
+  wasn't laid out yet at that point → `scrollHeight = 0` → no
+  scroll. Fix: double `requestAnimationFrame` tick (after paint)
+  plus late fallback tick at 250 ms for images that load in
+  afterwards.
+
+---
+
 ## [1.3.5] — 2026-05-29
 
 💬 **Chat upgrades: image/PDF preview, scroll comfort, session rename.**

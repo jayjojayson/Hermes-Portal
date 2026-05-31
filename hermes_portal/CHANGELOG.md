@@ -3,6 +3,13 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.6
+
+- **🐛 Hotfix für 3 Chat-Bugs aus v1.3.5:**
+  - Bild- & PDF-Vorschau war leer (fehlende JS-Definitionen — `ReferenceError` schluckte das Rendering)
+  - Scroll-Buttons (↑/↓) waren unsichtbar (`.chat-area` ohne `position: relative`)
+  - Erste Session scrollte nicht zur neuesten Nachricht (Race mit Layout-Painting beim Auto-Select)
+
 ## 1.3.5
 
 - **🖼 Bild- & PDF-Vorschau im Chat** — Klick auf Bild/PDF im Datei-Tree

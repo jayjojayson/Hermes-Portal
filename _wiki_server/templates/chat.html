@@ -181,6 +181,7 @@ body.chat-splitter-dragging * { user-select: none !important; }
     flex-direction: column;
     min-width: 0;
     overflow: hidden;
+    position: relative;  /* Anker für die absolut positionierten Scroll-FABs */
 }
 
 /* === Editor-Spalte (4. Spalte – öffnet bei Klick auf Datei) === */
@@ -969,8 +970,27 @@ function formatTime(iso) {
 }
 
 function scrollToBottom() {
+    // Robust gegen "First Session"-Bug: beim initialen Auto-Select ist der
+    // chat-messages-Container gerade erst sichtbar geworden (.hidden raus)
+    // und das Layout ist noch nicht durchgerechnet → scrollHeight = 0 → der
+    // alte einmalige 50ms-Timeout traf zu früh und scrollte nirgends hin.
+    // Lösung: zwei requestAnimationFrame-Ticks (nach Paint) + eine späte
+    // Fallback-Korrektur via Timeout, falls Bilder nachträglich Höhe
+    // nachladen.
     var el = document.getElementById('chat-messages');
-    if (el) setTimeout(function() { el.scrollTop = el.scrollHeight; updateScrollFab(); }, 50);
+    if (!el) return;
+    var jump = function() {
+        el.scrollTop = el.scrollHeight;
+        updateScrollFab();
+    };
+    if (window.requestAnimationFrame) {
+        requestAnimationFrame(function() { requestAnimationFrame(jump); });
+    } else {
+        setTimeout(jump, 50);
+    }
+    // Späterer Korrektur-Tick: wenn das initial-Render gerade die Höhe
+    // erst aufbaut, oder Bilder nachladen, dann nochmal nachjustieren.
+    setTimeout(jump, 250);
 }
 
 // Manuelles Scrollen per FAB-Button (oben/unten).
@@ -1760,6 +1780,33 @@ function _detectLanguage(filename) {
     };
     if (filename.toLowerCase() === 'dockerfile') return 'dockerfile';
     return map[ext] || 'plaintext';
+}
+
+// Klassifiziert eine Datei in 'image' / 'pdf' / 'code', damit
+// openEditorForPath den richtigen Viewer wählt.
+function _detectFileKind(name) {
+    var ext = (name.split('.').pop() || '').toLowerCase();
+    if (['jpg','jpeg','png','gif','bmp','webp','svg','ico','avif'].indexOf(ext) >= 0) return 'image';
+    if (ext === 'pdf') return 'pdf';
+    return 'code';
+}
+
+// Schaltet zwischen Monaco-Code-Editor (editierbar) und Medien-Vorschau
+// (read-only, für Bilder + PDFs) um. In 'media'-Mode wird der Save-Button
+// ausgeblendet, weil die Vorschau nicht editierbar ist.
+function _showEditorMode(mode) {
+    var monacoHost = document.getElementById('monaco-host');
+    var mediaHost  = document.getElementById('media-host');
+    var saveBtn    = document.getElementById('chat-editor-save-btn');
+    if (mode === 'media') {
+        if (monacoHost) monacoHost.style.display = 'none';
+        if (mediaHost)  mediaHost.style.display = 'block';
+        if (saveBtn)    saveBtn.style.display = 'none';
+    } else {
+        if (monacoHost) monacoHost.style.display = '';
+        if (mediaHost)  { mediaHost.style.display = 'none'; mediaHost.innerHTML = ''; }
+        if (saveBtn)    saveBtn.style.display = '';
+    }
 }
 
 function openEditorForPath(path) {

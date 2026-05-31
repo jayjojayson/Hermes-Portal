@@ -16,6 +16,33 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.6] — 2026-05-29
+
+🐛 **Hotfix für drei v1.3.5-Chat-Bugs.**
+
+### Fixed
+- **🖼 Bild- & PDF-Vorschau war leer** — die Helper-Funktionen
+  `_detectFileKind()` und `_showEditorMode()` wurden in v1.3.5
+  aufgerufen, aber ihre Definitionen waren nie in `chat.html`
+  gelandet (Tooling-Glitch beim Release). Ergebnis: stiller
+  `ReferenceError` in `openEditorForPath`, kein Bild/PDF wurde
+  gerendert, Titel hing auf „⏳". Funktionen jetzt sauber definiert,
+  Vorschau funktioniert für jpg/png/gif/bmp/webp/svg/ico/avif/pdf.
+- **🔽 Scroll-Buttons (↑/↓) waren unsichtbar** — der `.chat-scroll-fab`-
+  Container war `position: absolute`, aber sein Vorfahre `.chat-area`
+  hatte kein `position: relative` → die FABs wurden gegen ein
+  weiter außen liegendes Element positioniert (oft außerhalb des
+  sichtbaren Bereichs). Fix: `position: relative` auf `.chat-area`.
+- **📭 Erste Session scrollte nicht zur neuesten Nachricht** — beim
+  initialen Auto-Select via `loadChats()` wurde `scrollToBottom()`
+  nach 50 ms gefeuert, aber zu diesem Zeitpunkt war der gerade erst
+  sichtbar gewordene `.chat-messages`-Container noch nicht ausge-
+  layoutet → `scrollHeight = 0` → kein Scroll. Fix: doppelter
+  `requestAnimationFrame`-Tick (nach Paint) plus später Fallback-
+  Tick bei 250 ms für nachladende Bilder.
+
+---
+
 ## [1.3.5] — 2026-05-29
 
 💬 **Chat-Upgrades: Bild-/PDF-Vorschau, Scroll-Komfort, Session-Umbenennen.**
