@@ -16,6 +16,35 @@ Versionsschema: [SemVer](https://semver.org/lang/de/).
 
 ---
 
+## [1.3.9] — 2026-05-31
+
+🐛 **Hotfix: FAB schwebend (position:fixed) + Klick funktioniert auch
+bei Page-Scroll.**
+
+### Fixed
+- **🔽 Scroll-Buttons schweben jetzt wirklich** — vorher
+  `position: absolute` relativ zu `.chat-area`, was bei nicht-
+  constrained-Höhe der Chat-Area dazu führte, dass die Buttons mit
+  dem Content scrollten (User musste runterscrollen um sie zu sehen,
+  und beim Hochscrollen waren sie weg). Jetzt `position: fixed`
+  relativ zum Viewport → bleiben **immer an Ort und Stelle**, unten
+  rechts (24 px rechts, 180 px über dem Fenster-Boden = sicher über
+  der Eingabe-Section), `z-index: 100` damit nichts drüber kommt.
+- **↑↓ Buttons reagieren jetzt auf Klick** — vorher hat
+  `chatScrollTo()` nur `chat-messages.scrollTo()` aufgerufen. Wenn
+  aber die ganze Seite scrollt (weil `.chat-area` keine fixe Höhe
+  hat), war der Container-interne Scroll ein No-Op und nichts
+  passierte. Jetzt wird **beides** versucht: erst der Messages-
+  Container (wenn selbst scrollbar), parallel `window.scrollTo()`
+  als Fallback. So funktioniert der Klick in beiden Layout-Modi.
+- **🎨 FAB-Opacity-Status kennt jetzt auch Window-Scroll** —
+  `updateScrollFab()` checkt jetzt sowohl `.chat-messages.scrollTop`
+  als auch `window.pageYOffset` um zu entscheiden, ob ↑/↓ gedimmt
+  werden sollen. Listener auf `window scroll` + `resize` zusätzlich
+  zum Messages-Container.
+
+---
+
 ## [1.3.8] — 2026-05-30
 
 🐛 **Hotfix: FAB-Buttons immer sichtbar + Monaco Word-Wrap.**

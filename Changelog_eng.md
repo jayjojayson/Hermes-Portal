@@ -16,6 +16,34 @@ Versioning scheme: [SemVer](https://semver.org/).
 
 ---
 
+## [1.3.9] — 2026-05-31
+
+🐛 **Hotfix: FAB truly floating (position:fixed) + click works on page-scroll layouts too.**
+
+### Fixed
+- **🔽 Scroll buttons actually float now** — previously
+  `position: absolute` relative to `.chat-area`, which on
+  unconstrained-height chat areas caused the buttons to scroll with
+  the content (user had to scroll down to see them, and after
+  scrolling up they were gone). Now `position: fixed` relative to
+  the viewport → **always at the same place**, bottom right (24 px
+  right, 180 px above the window bottom = safely above the input
+  section), `z-index: 100` so nothing covers them.
+- **↑↓ buttons actually respond to clicks** — previously
+  `chatScrollTo()` only called `chat-messages.scrollTo()`. But when
+  the whole page scrolls (because `.chat-area` has no fixed height),
+  that container-internal scroll was a no-op and nothing happened.
+  Now **both** are attempted: first the messages container (if it
+  itself is scrollable), then `window.scrollTo()` as a fallback. The
+  click works in either layout mode.
+- **🎨 FAB opacity state also knows about window scroll** —
+  `updateScrollFab()` now checks both `.chat-messages.scrollTop` and
+  `window.pageYOffset` to decide whether ↑/↓ should be dimmed.
+  Listeners on `window scroll` + `resize` in addition to the
+  messages container.
+
+---
+
 ## [1.3.8] — 2026-05-30
 
 🐛 **Hotfix: FAB buttons always visible + Monaco word wrap.**

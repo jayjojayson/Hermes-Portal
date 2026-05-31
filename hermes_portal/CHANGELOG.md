@@ -3,6 +3,14 @@
 > Home Assistant Supervisor zeigt diese Datei beim Update.
 > Vollständige Projekt-History: siehe `CHANGELOG.md` im Repo-Root.
 
+## 1.3.9
+
+- **🔽 Scroll-Buttons jetzt wirklich schwebend** (`position: fixed`)
+  und bleiben immer im Viewport — egal wie weit man scrollt.
+- **↑↓ Klick funktioniert** — vorher No-Op bei Page-Scroll-Layouts;
+  jetzt wird sowohl der Messages-Container als auch das window
+  gescrollt.
+
 ## 1.3.8
 
 - **🔽 Scroll-Buttons (↑/↓) wirklich sichtbar** — Logik vereinfacht:

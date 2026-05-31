@@ -317,16 +317,17 @@ body.chat-splitter-dragging * { user-select: none !important; }
 .chat-messages.hidden { display: none; }
 .chat-input-section.hidden { display: none; }
 
-/* Schwebende Scroll-Buttons (↑ ganz oben / ↓ ganz unten) — absolut
-   positioniert relativ zur .chat-area. WICHTIG: bottom muss über der
-   Chat-Input-Section liegen (~150 px hoch), sonst sind die Buttons
-   hinter der Eingabe versteckt. v1.3.7-Fix für das „unsichtbare
-   FAB"-Problem (CSS-Regel war in v1.3.5/v1.3.6 nie gelandet). */
+/* Schwebende Scroll-Buttons (↑ ganz oben / ↓ ganz unten) — v1.3.9:
+   `position: fixed` statt `absolute`, damit die Buttons IMMER im
+   Viewport bleiben, auch wenn die ganze Seite scrollt (z.B. weil
+   .chat-area die Höhe nicht constrained). User-Wunsch: "Scroll-
+   Button müssen zudem schwebend sein, ansonsten verschwinden sie aus
+   dem Bild/Scrollbereich". */
 .chat-scroll-fab {
-    position: absolute;
-    right: 18px;
-    bottom: 160px;       /* über Input-Section halten */
-    z-index: 30;
+    position: fixed;
+    right: 24px;
+    bottom: 180px;       /* über Input-Section + Bottom-Safe-Area */
+    z-index: 100;        /* über allem im Chat-Bereich */
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1037,11 +1038,36 @@ function scrollToBottom() {
     setTimeout(jump, 1200);
 }
 
-// Manuelles Scrollen per FAB-Button (oben/unten).
+// Manuelles Scrollen per FAB-Button (oben/unten). v1.3.9:
+// scrollt SOWOHL den .chat-messages-Container als AUCH das window —
+// je nachdem was tatsächlich scrollbar ist. Wenn die Chat-Area keine
+// constrained Höhe hat, scrollt die ganze Seite statt nur der
+// Messages-Container, und der vorherige `el.scrollTo`-Aufruf hatte
+// keinen Effekt (deshalb tat der Button-Klick scheinbar nichts).
 function chatScrollTo(where) {
     var el = document.getElementById('chat-messages');
-    if (!el) return;
-    el.scrollTo({ top: where === 'top' ? 0 : el.scrollHeight, behavior: 'smooth' });
+    var top = (where === 'top');
+    // 1. Messages-Container scrollen (wenn er selbst scrollbar ist)
+    if (el && (el.scrollHeight - el.clientHeight) > 5) {
+        try {
+            el.scrollTo({ top: top ? 0 : el.scrollHeight, behavior: 'smooth' });
+        } catch (e) {
+            el.scrollTop = top ? 0 : el.scrollHeight;
+        }
+    }
+    // 2. Window scrollen — als Fallback wenn die ganze Seite scrollt
+    // (z.B. wenn .chat-area keine fixed Höhe hat). Beim "↓ unten" auf
+    // das untere Ende des Chat-Bereichs scrollen, nicht der ganzen Seite.
+    if (top) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (el) {
+        // Untere Kante des Messages-Containers in den Viewport bringen
+        var rect = el.getBoundingClientRect();
+        var bottomY = window.pageYOffset + rect.bottom;
+        window.scrollTo({ top: bottomY, behavior: 'smooth' });
+    }
+    // Nach dem Scroll FAB-Opacity neu berechnen
+    setTimeout(updateScrollFab, 350);
 }
 
 // Zeigt/versteckt die FAB-Buttons je nach Scroll-Position: ↑ nur wenn nicht
@@ -1053,31 +1079,46 @@ function updateScrollFab() {
     var up  = document.getElementById('chat-scroll-top');
     var dn  = document.getElementById('chat-scroll-bottom');
     if (!el || !fab) return;
-    // v1.3.8: Buttons werden IMMER angezeigt sobald eine Session aktiv ist
-    // (nicht .hidden), selbst wenn der Verlauf gerade nicht scrollbar ist.
-    // Klick auf ein Button ist dann ein No-Op, aber der User sieht
-    // verlässlich seine Steuerung. Vorherige „nur wenn scrollHeight >
-    // clientHeight"-Logik war zu restriktiv — bei langsamem Layout/Bild-
-    // Laden konnte das genau im falschen Moment verschwinden.
     if (el.classList.contains('hidden')) {
         fab.style.display = 'none';
         return;
     }
     fab.style.display = 'flex';
-    var atTop    = el.scrollTop <= 20;
-    var atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) <= 20;
-    // Beide Buttons immer rendern; opacity dimmt sie wenn nutzlos.
+
+    // v1.3.9: Position kann je nach Layout entweder im .chat-messages-
+    // Container ODER im window-Scroll liegen. Wir checken beide und
+    // dimmen die Buttons entsprechend.
+    var msgsScrollable = (el.scrollHeight - el.clientHeight) > 5;
+    var pageScrollable = (document.documentElement.scrollHeight - window.innerHeight) > 5;
+
+    var atTop, atBottom;
+    if (msgsScrollable) {
+        atTop    = el.scrollTop <= 20;
+        atBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) <= 20;
+    } else if (pageScrollable) {
+        atTop    = window.pageYOffset <= 20;
+        atBottom = (document.documentElement.scrollHeight - window.pageYOffset - window.innerHeight) <= 20;
+    } else {
+        atTop = true; atBottom = true;
+    }
     if (up) up.style.opacity = atTop ? '0.35' : '1';
     if (dn) dn.style.opacity = atBottom ? '0.35' : '1';
 }
 
-// Scroll-Listener einmalig registrieren.
+// Scroll-Listener einmalig registrieren — auf BEIDE Container, da je
+// nach Höhen-Constraint entweder .chat-messages selbst scrollt ODER die
+// ganze Seite (window). Beide Events müssen FAB-Opacity neu berechnen.
 (function initScrollFab() {
     function attach() {
         var el = document.getElementById('chat-messages');
         if (el && !el._scrollFabBound) {
             el.addEventListener('scroll', updateScrollFab, { passive: true });
             el._scrollFabBound = true;
+        }
+        if (!window._chatFabBound) {
+            window.addEventListener('scroll', updateScrollFab, { passive: true });
+            window.addEventListener('resize', updateScrollFab, { passive: true });
+            window._chatFabBound = true;
         }
     }
     if (document.readyState === 'loading') {
